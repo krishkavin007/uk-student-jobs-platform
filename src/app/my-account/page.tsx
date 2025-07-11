@@ -12,10 +12,11 @@ import { Separator } from "@/components/ui/separator"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Logo } from "@/components/ui/logo"
+import { ContactModal } from "@/components/ui/contact-modal"
 
 // Mock user data
 const mockUser = {
-  type: "employer", // or "student"
+  type: "employer", //employer or student
   firstName: "Emma",
   lastName: "Thompson",
   email: "emma.thompson@manchester.ac.uk",
@@ -50,23 +51,25 @@ const mockTransactions = [
   },
 ]
 
-// Mock applied jobs for students
-const mockAppliedJobs = [
+// Mock applied jobs for students (updated with employerPhone and isContactInfoRevealed)
+const initialAppliedJobs = [
   {
     id: 1,
     title: "Barista - Weekend Shifts",
     company: "Central Perk Coffee",
     appliedDate: "2024-01-15",
     status: "Contacted",
-    contactRevealed: true,
+    employerPhone: "+447911123456", // Example UK mobile number
+    isContactInfoRevealed: false, // Default to false
   },
   {
     id: 2,
     title: "Tutoring - Maths & Science",
     company: "Private Tutor",
     appliedDate: "2024-01-10",
-    status: "Pending",
-    contactRevealed: true,
+    status: "Contacted",
+    employerPhone: "+447700900123", // Example UK mobile number
+    isContactInfoRevealed: false, // Default to false
   },
 ]
 
@@ -121,6 +124,7 @@ export default function MyAccountPage() {
   })
   const [isProcessingUpgrade, setIsProcessingUpgrade] = useState(false)
   const [removingJobId, setRemovingJobId] = useState<number | null>(null)
+  const [appliedJobs, setAppliedJobs] = useState(initialAppliedJobs) // State for applied jobs
 
   const handleSaveProfile = () => {
     setUser({...editForm, profileImage: imagePreview})
@@ -184,7 +188,7 @@ Thank you for using StudentJobs UK!
     const userData = {
       profile: user,
       transactions: mockTransactions,
-      appliedJobs: user.type === "student" ? mockAppliedJobs : undefined,
+      appliedJobs: user.type === "student" ? appliedJobs : undefined, // Use appliedJobs state
       postedJobs: user.type === "employer" ? mockPostedJobs : undefined,
       exportDate: new Date().toISOString(),
     }
@@ -216,6 +220,15 @@ Thank you for using StudentJobs UK!
     // In real app, would update the job list or refetch data
   }
 
+  // Handler to reveal contact info for a specific job
+  const handleRevealContactInfo = (jobId: number) => {
+    setAppliedJobs(prevJobs =>
+      prevJobs.map(job =>
+        job.id === jobId ? { ...job, isContactInfoRevealed: true } : job
+      )
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -225,10 +238,15 @@ Thank you for using StudentJobs UK!
             <Link href="/">
               <Logo />
             </Link>
-            <nav className="flex items-center gap-3">
+            <nav className="flex items-center gap-10">
               <Link href={user.type === "student" ? "/browse-jobs" : "/post-job"} className="text-sm font-medium hover:underline">
                 {user.type === "student" ? "Browse Jobs" : "Post Job"}
               </Link>
+              <ContactModal>
+                <button className="text-sm font-medium hover:underline">
+                  Contact Us
+                </button>
+              </ContactModal>
               <Link href="/login" className="text-sm font-medium hover:underline">
                 Sign Out
               </Link>
@@ -454,12 +472,27 @@ Thank you for using StudentJobs UK!
               <CardContent>
                 {user.type === "student" ? (
                   <div className="space-y-4">
-                    {mockAppliedJobs.map((job) => (
+                    {appliedJobs.map((job) => (
                       <div key={job.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-semibold">{job.title}</h4>
                           <p className="text-sm text-gray-600">{job.company}</p>
                           <p className="text-xs text-gray-500">Applied: {job.appliedDate}</p>
+                          {/* Conditional rendering for employer phone number */}
+                          {job.isContactInfoRevealed ? (
+                            <p className="text-sm text-blue-600 font-medium mt-1">
+                              Employer Phone: {job.employerPhone}
+                            </p>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="mt-2"
+                              onClick={() => handleRevealContactInfo(job.id)}
+                            >
+                              Reveal Contact Info
+                            </Button>
+                          )}
                         </div>
                         <div className="text-right">
                           <Badge
@@ -468,9 +501,6 @@ Thank you for using StudentJobs UK!
                           >
                             {job.status}
                           </Badge>
-                          {job.contactRevealed && (
-                            <p className="text-xs text-gray-500 mt-1">Contact info revealed</p>
-                          )}
                         </div>
                       </div>
                     ))}
@@ -685,7 +715,7 @@ Thank you for using StudentJobs UK!
                             checked={editJobData.sponsored !== undefined ? editJobData.sponsored : currentJob?.sponsored}
                             onChange={(e) => setEditJobData(prev => ({ ...prev, sponsored: e.target.checked }))}
                             className="mt-1"
-                            disabled={currentJob?.sponsored && !editJobData.sponsored}
+                            disabled={currentJob?.sponsored} // Modified this line
                           />
                           <div className="flex-1">
                             <Label htmlFor="editSponsored" className="font-medium cursor-pointer">
@@ -746,7 +776,7 @@ Thank you for using StudentJobs UK!
           <TabsContent value="billing">
             <Card>
               <CardHeader>
-                <CardTitle>Billing History</CardTitle>
+                  <CardTitle>Billing History</CardTitle>
                 <CardDescription>
                   View all your transactions and download receipts
                 </CardDescription>
@@ -1028,6 +1058,7 @@ Thank you for using StudentJobs UK!
                 <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
                 <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
+                 <Link href="/about" className="text-gray-300 hover:text-white">About Us</Link>
               </nav>
             </div>
           </div>

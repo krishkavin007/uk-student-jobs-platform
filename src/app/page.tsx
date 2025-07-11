@@ -36,7 +36,8 @@ export default function HomePage() {
                   </Button>
                 </div>
 
-                {/* Trust Indicators */}
+                {/* REMOVED: Trust Indicators */}
+                {/*
                 <div className="flex items-center gap-6 pt-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1">
                     <span className="text-yellow-500">★★★★★</span>
@@ -45,6 +46,7 @@ export default function HomePage() {
                   <div>25,000+ active students</div>
                   <div>1,200+ verified employers</div>
                 </div>
+                */}
               </div>
             </div>
             <div className="flex items-center justify-center">

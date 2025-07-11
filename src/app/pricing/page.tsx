@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/ui/header"
+import { ContactModal } from "@/components/ui/contact-modal" // Added ContactModal import here!
 
 export default function PricingPage() {
   return (
@@ -396,6 +397,11 @@ export default function PricingPage() {
                 <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
                 <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
+                <ContactModal>
+                  <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">
+                    Contact Us
+                  </button>
+                </ContactModal>
               </nav>
             </div>
           </div>

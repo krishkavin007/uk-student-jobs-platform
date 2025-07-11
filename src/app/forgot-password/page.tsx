@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Header } from "@/components/ui/header"
+import { ContactModal } from "@/components/ui/contact-modal"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -25,8 +27,14 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="flex items-center justify-center p-4 min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* --- Change Made Here --- */}
+      {/* Pass showAuth={false} to the Header component to hide Sign In/Sign Up */}
+      <Header showAuth={false} />
+      {/* ---------------------- */}
+
+      {/* Increased space after header: Changed p-4 to px-4 pt-16, maintaining pb-16 */}
+      <div className="flex-grow flex items-center justify-center px-4 pt-16 pb-16">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <div className="text-center mb-4">
@@ -122,7 +130,6 @@ export default function ForgotPasswordPage() {
         </Card>
       </div>
 
-      {/* Footer */}
       <footer className="w-full py-6 bg-gray-900 text-white">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="grid gap-8 lg:grid-cols-4">
@@ -154,6 +161,11 @@ export default function ForgotPasswordPage() {
                 <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
                 <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
+                <ContactModal>
+                  <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">
+                    Contact Us
+                  </button>
+                </ContactModal>
               </nav>
             </div>
           </div>
