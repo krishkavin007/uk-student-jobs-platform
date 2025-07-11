@@ -410,7 +410,7 @@ export default function HomePage() {
                 <span className="font-bold text-xl text-white">StudentJobs UK</span>
               </div>
               <p className="text-gray-300 text-sm">
-                Connecting UK students with flexible part-time opportunities since 2024.
+                Connecting UK students with flexible part-time opportunities.
               </p>
             </div>
 
@@ -448,7 +448,7 @@ export default function HomePage() {
           </div>
 
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
-            © 2024 StudentJobs UK. All rights reserved.
+            © 2025 StudentJobs UK. All rights reserved.
           </div>
         </div>
       </footer>

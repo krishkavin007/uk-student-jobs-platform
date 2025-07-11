@@ -347,7 +347,7 @@ function PostJobContent() {
             <div>
               <h3 className="font-bold text-lg mb-4">StudentJobs UK</h3>
               <p className="text-gray-300 text-sm">
-                Connecting UK students with flexible part-time opportunities since 2024.
+                Connecting UK students with flexible part-time opportunities.
               </p>
             </div>
             <div>
@@ -380,7 +380,7 @@ function PostJobContent() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-300">
-            © 2024 StudentJobs UK. All rights reserved.
+            © 2025 StudentJobs UK. All rights reserved.
           </div>
         </div>
       </footer>

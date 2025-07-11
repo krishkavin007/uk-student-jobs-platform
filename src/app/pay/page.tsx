@@ -2,12 +2,14 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import Link from "next/link" // Ensure Link is imported
 import { Header } from '@/components/ui/header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ContactModal } from "@/components/ui/contact-modal" // Ensure ContactModal is imported
 
 function PaymentContent() {
   const searchParams = useSearchParams()
@@ -129,16 +131,16 @@ function PaymentContent() {
                       <Input id="cardNumber" placeholder="1234 5678 9012 3456" required />
                     </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="expiry">Expiry</Label>
-                    <Input id="expiry" placeholder="MM/YY" required />
-                  </div>
-                  <div>
-                    <Label htmlFor="cvv">CVV</Label>
-                    <Input id="cvv" placeholder="123" required />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="expiry">Expiry</Label>
+                        <Input id="expiry" placeholder="MM/YY" required />
+                      </div>
+                      <div>
+                        <Label htmlFor="cvv">CVV</Label>
+                        <Input id="cvv" placeholder="123" required />
+                      </div>
+                    </div>
 
                     <div>
                       <Label htmlFor="name">Name on Card</Label>
@@ -168,6 +170,53 @@ function PaymentContent() {
           </Card>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="w-full py-6 bg-gray-900 text-white mt-16">
+        <div className="container px-4 md:px-6 mx-auto">
+          <div className="grid gap-8 lg:grid-cols-4">
+            <div>
+              <h3 className="font-bold text-lg mb-4">StudentJobs UK</h3>
+              <p className="text-gray-300 text-sm">
+                Connecting UK students with flexible part-time opportunities.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-3">For Students</h4>
+              <nav className="flex flex-col space-y-2 text-sm">
+                <Link href="/browse-jobs" className="text-gray-300 hover:text-white">Browse Jobs</Link>
+                <Link href="/how-it-works" className="text-gray-300 hover:text-white">How It Works</Link>
+                <Link href="/student-guide" className="text-gray-300 hover:text-white">Student Guide</Link>
+              </nav>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-3">For Employers</h4>
+              <nav className="flex flex-col space-y-2 text-sm">
+                <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
+                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
+                <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
+              </nav>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-3">Legal</h4>
+              <nav className="flex flex-col space-y-2 text-sm">
+                <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
+                <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
+                <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
+                <Link href="/about" className="text-gray-300 hover:text-white">About Us</Link>
+                <ContactModal>
+                  <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">
+                    Contact Us
+                  </button>
+                </ContactModal>
+              </nav>
+            </div>
+          </div>
+          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-300">
+            © 2025 StudentJobs UK. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
