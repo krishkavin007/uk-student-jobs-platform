@@ -2,15 +2,16 @@
   "name": "nextjs-shadcn",
   "version": "0.1.0",
   "private": true,
- "scripts": {
+  "scripts": {
     "dev": "next dev -H 0.0.0.0 --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "bunx tsc --noEmit && next lint",
     "format": "bunx biome format --write",
-    "postinstall": "npm run build && (cd backend && npm install)"
+    "postinstall": "npm run build"
   },
   "dependencies": {
+    "express": "^4.19.2",
     "@hookform/resolvers": "^5.1.1",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-avatar": "^1.1.10",
