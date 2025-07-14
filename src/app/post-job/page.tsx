@@ -33,7 +33,9 @@ function PostJobContent() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (searchParams.get('sponsored') === 'true') {
+    // --- MODIFIED LINE START HERE ---
+    if (searchParams?.get('sponsored') === 'true') { // Added '?' for optional chaining
+    // --- MODIFIED LINE END HERE ---
       setFormData(prev => ({ ...prev, sponsored: true }))
     }
   }, [searchParams])

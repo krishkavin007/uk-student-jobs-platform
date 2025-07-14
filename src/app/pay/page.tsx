@@ -22,8 +22,11 @@ function PaymentContent() {
     { id: 2, last4: "1234", brand: "Mastercard", expiryMonth: 8, expiryYear: 2027 }
   ])
 
-  const jobId = searchParams.get('jobId')
-  const type = searchParams.get('type') // 'phone' or 'apply'
+  // --- MODIFIED LINES START HERE ---
+  const jobId = searchParams?.get('jobId') // Added '?' for optional chaining
+  const type = searchParams?.get('type') // Added '?' for optional chaining
+  // --- MODIFIED LINES END HERE ---
+
   const amount = type === 'phone' ? '1.00' : '1.00'
 
   const handlePayment = async (e: React.FormEvent) => {

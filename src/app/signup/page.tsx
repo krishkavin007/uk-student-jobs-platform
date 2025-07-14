@@ -1,3 +1,4 @@
+// src/app/signup/page.tsx
 "use client"
 
 import { useState } from "react"
@@ -13,6 +14,20 @@ import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/ui/header"
 import { ContactModal } from "@/components/ui/contact-modal";
 
+// Define a TypeScript interface for the payload to satisfy ESLint
+interface UserPayload {
+  user_username: string;
+  user_email: string;
+  password: string;
+  user_type: "student" | "employer";
+  user_first_name: string;
+  user_last_name: string;
+  contact_phone_number: string;
+  university_college?: string; // Optional for employer, required for student
+  organization_name?: string; // Optional for student, required for employer
+  // google_id is not included in this form, so it's omitted
+}
+
 export default function SignupPage() {
   const [userType, setUserType] = useState<"student" | "employer">("student")
   const [formData, setFormData] = useState({
@@ -27,25 +42,98 @@ export default function SignupPage() {
     agreeToTerms: false,
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState(''); // Added for success messages
+  const [error, setError] = useState('');     // Added for error messages
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  // UPDATED handleSubmit function to connect to backend API and adhere to TypeScript
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage(''); // Clear previous messages
+    setError('');   // Clear previous errors
 
-    // Simulate signup process
-    setTimeout(() => {
-      setIsLoading(false)
-      console.log("Signup attempt:", { userType, ...formData })
-      // In real app, handle signup and redirect to verification
-    }, 1000)
-  }
+    // --- Frontend Validation ---
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      setIsLoading(false);
+      return;
+    }
+    if (!formData.agreeToTerms) {
+      setError("You must agree to the Terms & Conditions and Privacy Policy.");
+      setIsLoading(false);
+      return;
+    }
+
+    // Determine username (backend requires it, but form doesn't have an explicit field)
+    // Using email prefix or a combination of names as a default username for the backend 'user_username'
+    const user_username = formData.email.split('@')[0] || `${formData.firstName}${formData.lastName}`.toLowerCase();
+
+    // Prepare payload based on user type, mapping to backend database fields
+    // Using const for payload as the object itself is not reassigned, only its properties are modified.
+    const payload: UserPayload = {
+      user_username: user_username, // Dynamically set username for backend
+      user_email: formData.email,
+      password: formData.password, // Matches backend's 'password' field in server.js
+      user_type: userType, // 'student' or 'employer'
+      user_first_name: formData.firstName,
+      user_last_name: formData.lastName,
+      contact_phone_number: formData.phone,
+    };
+
+    // Add type-specific fields based on user_type
+    if (userType === 'student') {
+      payload.university_college = formData.university;
+      // For employer, organization_name will be undefined as it's not set here
+    } else if (userType === 'employer') {
+      payload.organization_name = formData.businessName;
+      // For student, university_college will be undefined as it's not set here
+    }
+
+    try {
+      // Your backend is at /api/user. Ensure your Next.js project proxies this correctly,
+      // or that you are using absolute paths if your Next.js is not on the same domain as Node.js.
+      // For now, assuming /api/user correctly targets your Node.js backend.
+      const res = await fetch('/api/user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setMessage('Account created successfully! Welcome!');
+        // Optionally clear form fields after successful submission
+        setFormData({
+          firstName: "", lastName: "", email: "", phone: "",
+          password: "", confirmPassword: "", university: "",
+          businessName: "", agreeToTerms: false,
+        });
+        // You might want to redirect the user to a login page or dashboard here
+        // To use useRouter, you would import it: import { useRouter } from 'next/navigation';
+        // const router = useRouter();
+        // router.push('/login');
+      } else {
+        // Handle API errors (e.g., duplicate email from backend, validation errors)
+        setError(data.error || 'Failed to create account. Please try again.');
+      }
+    } catch (err) {
+      console.error("Frontend signup error:", err);
+      setError('An unexpected error occurred. Please try again. Check browser console for more details.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleSignup = () => {
     console.log("Google signup clicked for:", userType)
+    // This will require integration with Google's OAuth, which is a separate complex step.
   }
 
   return (
@@ -109,6 +197,11 @@ export default function SignupPage() {
                     <span className="bg-white px-2 text-gray-500">Or continue with email</span>
                   </div>
                 </div>
+
+                {/* Display messages for success or error */}
+                {message && <p style={{ color: 'green', textAlign: 'center', marginBottom: '10px' }}>{message}</p>}
+                {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '10px' }}>{error}</p>}
+
 
                 <TabsContent value="student" className="mt-0">
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -346,7 +439,6 @@ export default function SignupPage() {
       </div>
 
       {/* Footer */}
-      {/* ADDED mt-16 FOR MORE MARGIN ABOVE THE FOOTER */}
       <footer className="w-full py-6 bg-gray-900 text-white mt-16">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="grid gap-8 lg:grid-cols-4">
@@ -375,9 +467,9 @@ export default function SignupPage() {
             <div>
               <h4 className="font-semibold mb-3">Legal</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
+                <Link href="/privacy" className="text-gray-300 hover:underline">Privacy Policy</Link>
+                <Link href="/terms" className="text-gray-300 hover:underline">Terms & Conditions</Link>
+                <Link href="/refund-policy" className="text-gray-300 hover:underline">Refund Policy</Link>
                 <ContactModal>
                     <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
                 </ContactModal>
@@ -390,5 +482,5 @@ export default function SignupPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
