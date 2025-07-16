@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "./globals.css"; // This import is correct
 import ClientBody from "./ClientBody";
 import Script from "next/script";
 import { CookieConsent } from "../components/ui/cookie-consent";
@@ -28,12 +28,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
-        <Script
+        {/* <Script
           crossOrigin="anonymous"
           src="//unpkg.com/same-runtime/dist/index.global.js"
-        />
+        /> */}
       </head>
-      <body suppressHydrationWarning className="antialiased">
+      {/* CORRECTED LINE BELOW: Added bg-background and text-foreground classes */}
+      <body suppressHydrationWarning className="antialiased bg-background text-foreground">
         <ClientBody>{children}</ClientBody>
         <CookieConsent />
       </body>

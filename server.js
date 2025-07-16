@@ -1,6 +1,9 @@
+// server.js
+
 const express = require('express');
 const next = require('next');
 const { Pool } = require('pg');
+const session = require('express-session'); // Import express-session
 // If you plan to implement user registration/login, you MUST hash passwords.
 // Install bcryptjs: npm install bcryptjs
 // Then uncomment the line below:
@@ -27,6 +30,63 @@ const pool = new Pool({
 app.prepare().then(async () => {
   const server = express();
   server.use(express.json()); // Essential middleware to parse JSON request bodies for POST/PUT
+
+  // IMPORTANT: Add this line to tell Express to trust proxy headers (like X-Forwarded-Proto)
+  // This is essential when running behind a reverse proxy like Plesk that handles HTTPS.
+  server.set('trust proxy', 1);
+
+  // Configure and use express-session middleware
+  server.use(session({
+    secret: process.env.SESSION_SECRET || 'a_very_secret_key_please_change_this_in_production', // IMPORTANT: Use a strong, random key! Set as env variable in Plesk.
+    resave: false, // Don't save session if unmodified
+    saveUninitialized: false, // Don't create session until something is stored
+    cookie: {
+      secure: process.env.NODE_ENV === 'production', // This will now correctly evaluate based on the original HTTPS request
+      httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
+      maxAge: 24 * 60 * 60 * 1000 // Session expires in 24 hours (adjust as needed)
+    }
+  }));
+
+
+  // NEW: Authentication Middleware
+  // This middleware will check if a user is logged in via session
+  // and attach their user data to req.user for subsequent routes.
+  const authenticateUser = async (req, res, next) => {
+    // If no userId in the session, the user is not authenticated
+    if (!req.session.userId) {
+      return res.status(401).json({ error: 'Unauthorized: No active session' });
+    }
+
+    try {
+      // Fetch user details from the database using the ID stored in the session
+      const result = await pool.query(
+        `SELECT
+          user_id, user_username, user_email, google_id, user_type,
+          organization_name, contact_phone_number, user_first_name,
+          user_last_name, university_college, created_at
+        FROM Users WHERE user_id = $1`,
+        [req.session.userId]
+      );
+
+      if (result.rows.length === 0) {
+        // If user ID in session doesn't match any user (e.g., user deleted),
+        // destroy the invalid session to prevent stale sessions.
+        req.session.destroy(err => {
+          if (err) console.error('Error destroying invalid session:', err);
+        });
+        return res.status(401).json({ error: 'Unauthorized: User not found or session invalid' });
+      }
+
+      // Attach the user object to the request. This makes user data available
+      // to any route that uses this 'authenticateUser' middleware.
+      req.user = result.rows[0];
+      next(); // Continue to the actual route handler
+    } catch (err) {
+      console.error('Error in authentication middleware:', err.stack);
+      res.status(500).json({ error: 'Internal server error during authentication check' });
+    }
+  };
+  // END NEW: Authentication Middleware
 
 
   // ============== YOUR BACKEND API ROUTES START HERE ==============
@@ -93,8 +153,8 @@ app.prepare().then(async () => {
 
       const result = await pool.query(
         `INSERT INTO Users (user_username, user_email, password_hash, google_id, user_type, organization_name, contact_phone_number, user_first_name, user_last_name, university_college)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING user_id, user_username, user_email, user_type, created_at`,
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING user_id, user_username, user_email, user_type, created_at`,
         [user_username, user_email, password_hash, google_id, user_type, organization_name, contact_phone_number, user_first_name, user_last_name, university_college]
       );
       console.log('--- DEBUG: User created successfully ---');
@@ -153,26 +213,30 @@ app.prepare().then(async () => {
     }
   });
 
-  // (Optional) POST Login endpoint
+  // POST Login endpoint
   // Path: /api/login
   server.post('/api/login', async (req, res) => {
-    const { user_email, password } = req.body;
-    if (!user_email || !password) {
+    const { email, password } = req.body;
+    if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
     try {
-      const result = await pool.query('SELECT user_id, user_email, password_hash, user_type FROM Users WHERE user_email = $1', [user_email]);
+      const result = await pool.query('SELECT user_id, user_email, password_hash, user_type FROM Users WHERE user_email = $1', [email]);
       if (result.rows.length === 0) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
       const user = result.rows[0];
-      const isPasswordValid = (password === user.password_hash);
+      const isPasswordValid = (password === user.password_hash); // WARNING: This is insecure, should use bcryptjs
 
       if (!isPasswordValid) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
+
+      // Store user ID in the session after successful login
+      req.session.userId = user.user_id;
+
       res.json({ message: 'Login successful', user: { user_id: user.user_id, user_email: user.user_email, user_type: user.user_type } });
 
     } catch (err) {
@@ -180,6 +244,30 @@ app.prepare().then(async () => {
       res.status(500).json({ error: 'Login failed' });
     }
   });
+
+  // NEW: API Endpoint for Current User
+  // Path: /api/auth/me
+  // This route is protected by 'authenticateUser' middleware
+  server.get('/api/auth/me', authenticateUser, (req, res) => {
+    // If we reach here, 'req.user' has been populated by the 'authenticateUser' middleware
+    // It contains the full details of the currently logged-in user.
+    res.json(req.user);
+  });
+
+  // NEW: Logout Endpoint
+  // Path: /api/logout
+  server.post('/api/logout', (req, res) => {
+    req.session.destroy(err => {
+      if (err) {
+        console.error('Error destroying session during logout:', err.stack);
+        return res.status(500).json({ error: 'Failed to log out' });
+      }
+      // Also clear the session cookie from the client's browser
+      res.clearCookie('connect.sid'); // 'connect.sid' is the default name for express-session cookie
+      res.status(200).json({ message: 'Logged out successfully' });
+    });
+  });
+
 
   // --- NEW API Endpoints for 'job_applications' Table ---
   // Note: Database table name is 'job_applications' (all lowercase)
@@ -226,8 +314,8 @@ app.prepare().then(async () => {
     try {
       const result = await pool.query(
         `INSERT INTO job_applications (job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, contact_name, contact_phone, contact_email, is_sponsored, posted_by_user_id, expires_at, job_status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-         RETURNING *`, // Return all fields of the newly created job
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          RETURNING *`, // Return all fields of the newly created job
         [job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, contact_name, contact_phone, contact_email, is_sponsored, posted_by_user_id, expires_at, job_status]
       );
       res.status(201).json(result.rows[0]);

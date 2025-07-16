@@ -2,49 +2,84 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation" // <-- ADDED THIS IMPORT
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Header } from "@/components/ui/header" // <--- ADD THIS IMPORT
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- ADD THIS IMPORT
+import { Header } from "@/components/ui/header"
+import { ContactModal } from "@/components/ui/contact-modal";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null); // <-- ADDED THIS STATE FOR ERROR MESSAGES
+  const router = useRouter() // <-- INITIALIZED useRouter
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null); // Clear previous errors
 
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false)
-      // In real app, handle authentication here
-      console.log("Login attempt:", { email, password })
-    }, 1000)
+    try {
+      // --- REPLACE THIS WITH YOUR ACTUAL BACKEND LOGIN API CALL ---
+      const response = await fetch('/api/login', { // <-- ASSUMING YOUR LOGIN API IS AT /api/login
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        // Handle errors from the API (e.g., invalid credentials)
+        const errorData = await response.json();
+        // CHANGED THIS LINE: Access errorData.error instead of errorData.message
+        throw new Error(errorData.error || 'Login failed. Please check your credentials.');
+      }
+
+      const userData = await response.json(); // Assuming your API returns user data, including type
+      console.log("Login successful:", userData);
+
+      // Store user type (e.g., in localStorage, or a global state management)
+      // For demonstration, we'll store it in localStorage.
+      // In a real app, you might receive a JWT token and store it.
+      localStorage.setItem('userType', userData.type); // e.g., 'student' or 'employer'
+
+      // Redirect to the my-account page
+      router.push('/my-account');
+
+    } catch (err: unknown) { // <--- CHANGED `any` TO `unknown` HERE TO FIX ESLINT ERROR
+      // Safely check if the error is an instance of Error
+      if (err instanceof Error) {
+        console.error("Login error:", err.message);
+        setError(err.message || 'An unexpected error occurred. Please try again.');
+      } else {
+        // Handle cases where the error is not an Error object (e.g., a string or other value)
+        console.error("Login error:", err);
+        setError('An unknown error occurred. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleGoogleLogin = () => {
     // In real app, integrate with Google OAuth
     console.log("Google login clicked")
+    // You would typically redirect to your backend's Google OAuth initiation endpoint here
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* ADD THE HEADER COMPONENT HERE */}
-      {/* Assuming you want the header to always show auth links on login page, or it can be configured */}
-      <Header showAuth={false} /> {/* Setting showAuth to false to prevent duplicate Sign In/Up links in header */}
+      <Header showAuth={false} />
 
       <div className="flex items-center justify-center p-4 min-h-screen">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            {/* The Logo and site title from the original login card can be kept or removed
-                depending on whether you want redundancy with the main header's logo.
-                I'll keep it for now as it's common on login pages.
-            */}
             <div className="text-center mb-4">
               <Link href="/" className="font-bold text-2xl text-gray-900">
                 StudentJobs UK
@@ -115,6 +150,12 @@ export default function LoginPage() {
                   required
                 />
               </div>
+
+              {/* Display error message if any */}
+              {error && (
+                <p className="text-red-500 text-sm text-center">{error}</p>
+              )}
+
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
@@ -167,7 +208,6 @@ export default function LoginPage() {
                 <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
                 <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
-                {/* ADD THE CONTACT MODAL HERE */}
                 <ContactModal>
                     <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
                 </ContactModal>
