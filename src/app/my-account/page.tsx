@@ -1,3 +1,4 @@
+// app/my-account/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -16,6 +17,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Logo } from "@/components/ui/logo"
 import { ContactModal } from "@/components/ui/contact-modal"
 
+import { useAuth } from "@/app/context/AuthContext";
+
+// User, Transaction, AppliedJob, Applicant, PostedJob interfaces remain the same.
 interface User {
   user_id: string;
   user_username: string;
@@ -28,9 +32,9 @@ interface User {
   user_last_name?: string;
   university_college?: string;
   created_at: string;
+  user_image?: string;
 }
 
-// Re-defining Transaction interface to match the old code's mockTransactions structure more closely
 interface Transaction {
   id: number;
   date: string;
@@ -41,7 +45,6 @@ interface Transaction {
   invoiceNumber: string;
 }
 
-// Re-defining AppliedJob interface based on the old code's structure
 interface AppliedJob {
   id: number;
   title: string;
@@ -52,7 +55,6 @@ interface AppliedJob {
   isContactInfoRevealed: boolean;
 }
 
-// Re-defining PostedJob interface based on the old code's structure
 interface Applicant {
   id: number;
   name: string;
@@ -75,22 +77,25 @@ interface PostedJob {
 }
 
 
-// Removed mock data for transactions, appliedJobs, and postedJobs
-// const mockTransactions: Transaction[] = []; // Will be an empty array now
-// const initialAppliedJobs: AppliedJob[] = []; // Will be an empty array now
-// const mockPostedJobs: PostedJob[] = []; // Will be an empty array now
-
-
 export default function MyAccountPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoading, refreshUser, logout } = useAuth();
+
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
 
-  // State variables for old code's functionality, initialized as empty or default
-  const [appliedJobs, setAppliedJobs] = useState<AppliedJob[]>([]); // Now an empty array
-  const [postedJobs, setPostedJobs] = useState<PostedJob[]>([]); // Now an empty array
+  // --- NEW STATE FOR EDITABLE PROFILE FIELDS ---
+  const [editedFirstName, setEditedFirstName] = useState<string>('');
+  const [editedLastName, setEditedLastName] = useState<string>('');
+  const [editedContactPhoneNumber, setEditedContactPhoneNumber] = useState<string>('');
+  const [editedUniversityCollege, setEditedUniversityCollege] = useState<string>('');
+  const [editedOrganizationName, setEditedOrganizationName] = useState<string>('');
+  const [editedEmail, setEditedEmail] = useState<string>('');
+  // --- END NEW STATE ---
+
+  const [appliedJobs, setAppliedJobs] = useState<AppliedJob[]>([]);
+  const [postedJobs, setPostedJobs] = useState<PostedJob[]>([]);
   const [editingJobId, setEditingJobId] = useState<number | null>(null);
   const [editJobData, setEditJobData] = useState({
     title: "",
@@ -100,71 +105,108 @@ export default function MyAccountPage() {
   const [isProcessingUpgrade, setIsProcessingUpgrade] = useState(false);
   const [removingJobId, setRemovingJobId] = useState<number | null>(null);
 
-  // Dialog states for settings tab
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showDataDialog, setShowDataDialog] = useState(false);
 
   const router = useRouter();
 
+  // Unified useEffect for initial data setup and redirect
+  // This useEffect will run when 'user' or 'isLoading' changes
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-          const userData: User = await response.json();
-          setUser(userData);
-          // Initialize profile image with a placeholder or actual image URL if available
-          setProfileImage(null);
-          // In a real app, you would fetch actual applied/posted jobs here
-          // For now, they remain empty arrays as per request.
-        } else if (response.status === 401) {
-          router.push('/login');
-        } else {
-          console.error('Failed to fetch user data:', response.status, response.statusText);
-          router.push('/login');
-        }
-      } catch (error) {
-        console.error('Network error or unexpected issue fetching user data:', error);
-        router.push('/login');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    console.log("MyAccountPage useEffect: user:", user, "isLoading:", isLoading);
 
-    fetchUserData();
-  }, [router]);
+    // 1. Redirect to login if user is not authenticated and not in a loading state
+    if (!isLoading && !user) {
+      console.log("MyAccountPage: User not found and not loading, redirecting to /login.");
+      router.push('/login');
+      return; // Exit early to prevent further execution for unauthenticated state
+    }
 
-  const handleSaveProfile = () => {
-    // In a real app, you would send this updated `user` object to your backend
-    console.log("Saving profile changes for:", user);
-    setIsEditingProfile(false);
-  };
+    // 2. Initialize local states when user data becomes available and AuthContext is not loading
+    // This condition ensures that the initialization happens only when the 'user' object is stable.
+    if (user && !isLoading) {
+      console.log("MyAccountPage: User data available and not loading. Initializing profile states.");
+      setProfileImage(user.user_image || null);
+      setEditedFirstName(user.user_first_name || '');
+      setEditedLastName(user.user_last_name || '');
+      setEditedContactPhoneNumber(user.contact_phone_number || '');
+      setEditedUniversityCollege(user.university_college || '');
+      setEditedOrganizationName(user.organization_name || '');
+      setEditedEmail(user.user_email || '');
+    }
+  }, [user, isLoading, router]); // Dependencies: user, isLoading, router
 
+
+  // handleImageUpload now directly sets profileImage preview.
+  // The selectedFile will be used by handleSaveProfile.
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result as string);
+        setProfileImage(reader.result as string); // Update profileImage for preview
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    const formData = new FormData();
+    if (selectedFile) {
+      formData.append('userImage', selectedFile);
+    }
+
+    // --- USE EDITED STATES FOR FORM DATA ---
+    formData.append('user_username', user.user_username); // Username is typically not editable by user
+    formData.append('user_email', editedEmail); // Email is now editable via editedEmail state
+    formData.append('user_first_name', editedFirstName);
+    formData.append('user_last_name', editedLastName);
+    formData.append('contact_phone_number', editedContactPhoneNumber);
+
+    if (user.user_type === "student") {
+        formData.append('university_college', editedUniversityCollege);
+    } else if (user.user_type === "employer") {
+        formData.append('organization_name', editedOrganizationName);
+    }
+    // --- END EDITED STATES ---
+
+    try {
+      const response = await fetch(`/api/user/${user.user_id}`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (response.ok) {
+        await refreshUser(); // Refresh global user state from backend
+        setSelectedFile(null); // Clear selected file after successful upload
+        setIsEditingProfile(false);
+        alert('Profile updated successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to save profile:', response.status, errorData);
+        alert(`Failed to save profile: ${errorData.message || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Network error or unexpected issue saving profile:', error);
+      alert('Network error while saving profile.');
+    }
+  };
+
+
   const handleResendVerification = (type: 'email' | 'phone') => {
     console.log(`Resending ${type} verification...`);
-    // In real app, trigger verification resend
   };
 
   const handleDeleteAccount = () => {
     console.log("Deleting account...");
-    // In real app, handle GDPR compliant account deletion
-    router.push('/login'); // Redirect after deletion
+    logout();
   };
 
   const downloadReceipt = (transaction: Transaction) => {
-    // Create a simple receipt document
     const receiptContent = `
 STUDENTJOBS UK - RECEIPT
 ========================
@@ -193,12 +235,8 @@ Thank you for using StudentJobs UK!
   };
 
   const downloadMyData = () => {
-    // Create a comprehensive data export
     const userData = {
       profile: user,
-      // transactions: mockTransactions, // Removed mock data, actual data would be fetched
-      // appliedJobs: user?.user_type === "student" ? appliedJobs : undefined, // Removed mock data
-      // postedJobs: user?.user_type === "employer" ? postedJobs : undefined, // Removed mock data
       exportDate: new Date().toISOString(),
     };
 
@@ -210,13 +248,12 @@ Thank you for using StudentJobs UK!
     a.download = `StudentJobs-MyData-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
   };
 
   const handleRemoveJob = async (jobId: number, reason: "filled" | "removed") => {
     setRemovingJobId(jobId);
-    // Simulate job removal process
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     if (reason === "filled") {
@@ -247,7 +284,6 @@ Thank you for using StudentJobs UK!
 
     if (needsPayment) {
       setIsProcessingUpgrade(true);
-      // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
       alert('Payment successful! Your job has been upgraded to sponsored and will now appear at the top of search results.');
     } else {
@@ -265,7 +301,6 @@ Thank you for using StudentJobs UK!
     setEditJobData({ title: "", applications: 0, sponsored: false });
   };
 
-  // Handler to reveal contact info for a specific job (student view)
   const handleRevealContactInfo = (jobId: number) => {
     setAppliedJobs(prevJobs =>
       prevJobs.map(job =>
@@ -274,7 +309,7 @@ Thank you for using StudentJobs UK!
     );
   };
 
-
+  // Render loading state if still loading
   if (isLoading) {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center">
@@ -283,31 +318,33 @@ Thank you for using StudentJobs UK!
     );
   }
 
+  // If not loading and no user, it means we've already redirected or should not render
+  // The useEffect above ensures redirection, so this acts as a final safeguard.
   if (!user) {
     return null;
   }
 
+  // Rest of the component renders only when user is available and not loading
   return (
     <div className="flex min-h-screen w-full flex-col">
-      {/* Header adapted from old code for alignment and URLs */}
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between"> {/* Use justify-between for left/right alignment */}
+          <div className="flex items-center justify-between">
             <Link href="/">
               <Logo />
             </Link>
-            <nav className="flex items-center gap-10"> {/* Gap-10 from old code */}
+            <nav className="flex items-center gap-10">
               <Link href={user.user_type === "student" ? "/browse-jobs" : "/post-job"} className="text-sm font-medium hover:underline">
                 {user.user_type === "student" ? "Browse Jobs" : "Post Job"}
               </Link>
               <ContactModal isLoggedIn={!!user}>
-                <button className="text-sm font-medium hover:underline"> {/* button inside ContactModal */}
+                <button className="text-sm font-medium hover:underline">
                   Contact Us
                 </button>
               </ContactModal>
-              <Link href="/login" className="text-sm font-medium hover:underline"> {/* Old code used /login for Sign Out */}
+              <button onClick={logout} className="text-sm font-medium hover:underline">
                 Sign Out
-              </Link>
+              </button>
             </nav>
           </div>
         </div>
@@ -318,9 +355,7 @@ Thank you for using StudentJobs UK!
           <h1 className="text-3xl font-semibold">My Account</h1>
         </div>
 
-        {/* Outer Tabs structure maintained from new code for vertical layout */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mx-auto grid w-full max-w-6xl items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-          {/* TabsList for vertical navigation */}
           <nav className="grid gap-4 text-sm text-muted-foreground">
             <TabsList className="flex flex-col h-auto p-2 justify-start items-start">
               <TabsTrigger value="profile" className="w-full text-left" onClick={() => setActiveTab("profile")}>Profile</TabsTrigger>
@@ -332,9 +367,7 @@ Thank you for using StudentJobs UK!
             </TabsList>
           </nav>
 
-          {/* Content area for tabs */}
           <div className="grid gap-6">
-            {/* Profile Tab Content (adapted from old code) */}
             <TabsContent value="profile">
               <Card>
                 <CardHeader>
@@ -345,16 +378,17 @@ Thank you for using StudentJobs UK!
                         Your personal details and verification status
                       </CardDescription>
                     </div>
+                    {/* --- ONLY ONE EDIT/CANCEL BUTTON HERE --- */}
                     <Button
                       variant={isEditingProfile ? "outline" : "default"}
                       onClick={() => setIsEditingProfile(!isEditingProfile)}
                     >
                       {isEditingProfile ? "Cancel" : "Edit Profile"}
                     </Button>
+                    {/* --- END SINGLE BUTTON --- */}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Profile Image (style adapted from old code) */}
                   <div className="flex items-center gap-6">
                     <div className="relative">
                       <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
@@ -385,33 +419,31 @@ Thank you for using StudentJobs UK!
                     )}
                   </div>
 
-                  {/* Verification Status (simplified as per new code's mock data) */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                       <span className="text-sm font-medium">Email Verified</span>
                       <Badge variant="secondary" className="bg-green-100 text-green-800">
                         ✓ Verified
-                      </Badge> {/* Assuming verified as per API success */}
+                      </Badge>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                       <span className="text-sm font-medium">Phone Verified</span>
                       <Badge variant="secondary" className="bg-green-100 text-green-800">
                         ✓ Verified
-                      </Badge> {/* Assuming verified as per API success */}
+                      </Badge>
                     </div>
                   </div>
 
                   <Separator />
 
-                  {/* Profile Form */}
                   <div className="grid gap-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstName">First Name</Label>
                         <Input
                           id="firstName"
-                          value={user.user_first_name || ''}
-                          onChange={(e) => setUser(prev => prev ? { ...prev, user_first_name: e.target.value } : null)}
+                          value={isEditingProfile ? editedFirstName : user.user_first_name || ''}
+                          onChange={(e) => setEditedFirstName(e.target.value)}
                           disabled={!isEditingProfile}
                         />
                       </div>
@@ -419,8 +451,8 @@ Thank you for using StudentJobs UK!
                         <Label htmlFor="lastName">Last Name</Label>
                         <Input
                           id="lastName"
-                          value={user.user_last_name || ''}
-                          onChange={(e) => setUser(prev => prev ? { ...prev, user_last_name: e.target.value } : null)}
+                          value={isEditingProfile ? editedLastName : user.user_last_name || ''}
+                          onChange={(e) => setEditedLastName(e.target.value)}
                           disabled={!isEditingProfile}
                         />
                       </div>
@@ -431,29 +463,31 @@ Thank you for using StudentJobs UK!
                       <Input
                         id="email"
                         type="email"
-                        value={user.user_email || ''}
-                        onChange={(e) => setUser(prev => prev ? { ...prev, user_email: e.target.value } : null)}
-                        disabled={!isEditingProfile}
-                      />
-                    </div>
-
+                       value={isEditingProfile ? editedEmail : user.user_email || ''}
+    					onChange={(e) => setEditedEmail(e.target.value)}
+    					disabled={!isEditingProfile}
+ 						 />
+						</div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number</Label>
                         <Input
                           id="phone"
-                          value={user.contact_phone_number || ''}
-                          onChange={(e) => setUser(prev => prev ? { ...prev, contact_phone_number: e.target.value } : null)}
+                          value={isEditingProfile ? editedContactPhoneNumber : user.contact_phone_number || ''}
+                          onChange={(e) => setEditedContactPhoneNumber(e.target.value)}
                           disabled={!isEditingProfile}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="city">City</Label>
+                        {/* Assuming city is represented by university/organization name for simplicity in this context */}
                         <Input
                           id="city"
                           placeholder="e.g., Manchester"
-                          value={user.university_college || user.organization_name || ''} // Adjusted to use existing fields
-                          onChange={(e) => user.user_type === "student" ? setUser(prev => prev ? { ...prev, university_college: e.target.value } : null) : setUser(prev => prev ? { ...prev, organization_name: e.target.value } : null)}
+                          value={isEditingProfile
+                            ? (user.user_type === "student" ? editedUniversityCollege : editedOrganizationName)
+                            : (user.university_college || user.organization_name || '')}
+                          onChange={(e) => user.user_type === "student" ? setEditedUniversityCollege(e.target.value) : setEditedOrganizationName(e.target.value)}
                           disabled={!isEditingProfile}
                         />
                       </div>
@@ -464,8 +498,8 @@ Thank you for using StudentJobs UK!
                         <Label htmlFor="university">University/College</Label>
                         <Input
                           id="university"
-                          value={user.university_college || ''}
-                          onChange={(e) => setUser(prev => prev ? { ...prev, university_college: e.target.value } : null)}
+                          value={isEditingProfile ? editedUniversityCollege : user.university_college || ''}
+                          onChange={(e) => setEditedUniversityCollege(e.target.value)}
                           disabled={!isEditingProfile}
                         />
                       </div>
@@ -474,8 +508,8 @@ Thank you for using StudentJobs UK!
                         <Label htmlFor="businessName">Business Name</Label>
                         <Input
                           id="businessName"
-                          value={user.organization_name || ''}
-                          onChange={(e) => setUser(prev => prev ? { ...prev, organization_name: e.target.value } : null)}
+                          value={isEditingProfile ? editedOrganizationName : user.organization_name || ''}
+                          onChange={(e) => setEditedOrganizationName(e.target.value)}
                           disabled={!isEditingProfile}
                         />
                       </div>
@@ -486,9 +520,6 @@ Thank you for using StudentJobs UK!
                         <Button onClick={handleSaveProfile} className="bg-blue-600 hover:bg-blue-700">
                           Save Changes
                         </Button>
-                        <Button variant="outline" onClick={() => setIsEditingProfile(false)}>
-                          Cancel
-                        </Button>
                       </div>
                     )}
                   </div>
@@ -496,7 +527,6 @@ Thank you for using StudentJobs UK!
               </Card>
             </TabsContent>
 
-            {/* Activity Tab Content (adapted from old code, mock data removed) */}
             <TabsContent value="activity">
               <Card>
                 <CardHeader>
@@ -517,10 +547,8 @@ Thank you for using StudentJobs UK!
                         appliedJobs.map((job) => (
                           <div key={job.id} className="flex items-center justify-between p-4 border rounded-lg">
                             <div>
-                              <h4 className="font-semibold">{job.title}</h4>
-                              <p className="text-sm text-gray-600">{job.company}</p>
-                              <p className="text-xs text-gray-500">Applied: {job.appliedDate}</p>
-                              {/* Conditional rendering for employer phone number */}
+                              <h4 className="font-semibold">{job.title} at {job.company}</h4>
+                              <p className="text-sm text-gray-600">Applied: {job.appliedDate}</p>
                               {job.isContactInfoRevealed ? (
                                 <p className="text-sm text-blue-600 font-medium mt-1">
                                   Employer Phone: {job.employerPhone}
@@ -579,7 +607,6 @@ Thank you for using StudentJobs UK!
                                     Edit
                                   </Button>
 
-                                  {/* Mark Position as Filled Dialog */}
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button
@@ -610,7 +637,6 @@ Thank you for using StudentJobs UK!
                                     </AlertDialogContent>
                                   </AlertDialog>
 
-                                  {/* Remove Job Dialog */}
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button
@@ -644,7 +670,6 @@ Thank you for using StudentJobs UK!
                               </div>
                             </div>
 
-                            {/* Applications */}
                             <div className="mt-4">
                               <h5 className="font-medium mb-3">Applicants ({job.applicants.length}):</h5>
                               <div className="space-y-3">
@@ -694,7 +719,6 @@ Thank you for using StudentJobs UK!
                                         </div>
                                       </div>
 
-                                      {/* Application Message */}
                                       <div className="mt-3 p-3 bg-white rounded border">
                                         <p className="text-sm font-medium text-gray-700 mb-1">Application Message:</p>
                                         <p className="text-sm text-gray-600">{applicant.message}</p>
@@ -716,7 +740,6 @@ Thank you for using StudentJobs UK!
                 </CardContent>
               </Card>
 
-              {/* Edit Job Dialog (adapted from old code) */}
               <Dialog open={editingJobId !== null} onOpenChange={() => {
                 setEditingJobId(null)
                 setEditJobData({ title: "", applications: 0, sponsored: false })
@@ -730,14 +753,14 @@ Thank you for using StudentJobs UK!
                   </DialogHeader>
                   {editingJobId && (() => {
                     const currentJob = postedJobs.find(j => j.id === editingJobId)
-                    if (!currentJob) return null; // Should not happen if editingJobId is valid
+                    if (!currentJob) return null;
                     return (
                       <div className="space-y-4">
                         <div>
                           <Label htmlFor="editTitle">Job Title</Label>
                           <Input
                             id="editTitle"
-                            value={editJobData.title || currentJob.title || ""}
+                            value={editJobData.title}
                             onChange={(e) => setEditJobData(prev => ({ ...prev, title: e.target.value }))}
                           />
                         </div>
@@ -746,7 +769,7 @@ Thank you for using StudentJobs UK!
                           <Input
                             id="editApplications"
                             type="number"
-                            value={editJobData.applications || currentJob.applications || 0}
+                            value={editJobData.applications}
                             onChange={(e) => setEditJobData(prev => ({ ...prev, applications: parseInt(e.target.value) || 0 }))}
                             disabled
                             className="bg-gray-50"
@@ -754,13 +777,12 @@ Thank you for using StudentJobs UK!
                           <p className="text-xs text-gray-500 mt-1">Applications count is read-only</p>
                         </div>
 
-                        {/* Sponsored Upgrade Section */}
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-start space-x-3">
                             <input
                               type="checkbox"
                               id="editSponsored"
-                              checked={editJobData.sponsored !== undefined ? editJobData.sponsored : currentJob.sponsored}
+                              checked={editJobData.sponsored}
                               onChange={(e) => setEditJobData(prev => ({ ...prev, sponsored: e.target.checked }))}
                               className="mt-1"
                               disabled={currentJob.sponsored}
@@ -804,7 +826,6 @@ Thank you for using StudentJobs UK!
               </Dialog>
             </TabsContent>
 
-            {/* Billing Tab Content (adapted from old code, mock data removed) */}
             <TabsContent value="billing">
               <Card>
                 <CardHeader>
@@ -814,7 +835,6 @@ Thank you for using StudentJobs UK!
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Saved Payment Methods */}
                   <div className="mb-8">
                     <h3 className="text-lg font-semibold mb-4">Saved Payment Methods</h3>
                     <div className="space-y-3">
@@ -860,9 +880,7 @@ Thank you for using StudentJobs UK!
 
                   <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
                   <div className="space-y-4">
-                    {/* Render transaction history only if data is present */}
-                    {/* Currently, mockTransactions is an empty array per request */}
-                    {[] /* Replace mockTransactions with an empty array or actual fetched data */.map((transaction: Transaction) => (
+                    {[] .map((transaction: Transaction) => (
                       <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-semibold">{transaction.type}</h4>
@@ -885,8 +903,7 @@ Thank you for using StudentJobs UK!
                         </div>
                       </div>
                     ))}
-                    {/* Display message if no transactions */}
-                    {[] /* Replace mockTransactions with an empty array or actual fetched data */.length === 0 && (
+                    {[] .length === 0 && (
                       <p className="text-muted-foreground">No transactions found.</p>
                     )}
                   </div>
@@ -894,7 +911,6 @@ Thank you for using StudentJobs UK!
               </Card>
             </TabsContent>
 
-            {/* Settings Tab Content (adapted from old code, mock data removed) */}
             <TabsContent value="settings">
               <div className="space-y-6">
                 <Card>
@@ -1065,7 +1081,6 @@ Thank you for using StudentJobs UK!
         </Tabs>
       </main>
 
-      {/* Footer (remains same as previous iteration, adapted from old code) */}
       <footer className="w-full py-6 bg-gray-900 text-white mt-16">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="grid gap-8 lg:grid-cols-4">

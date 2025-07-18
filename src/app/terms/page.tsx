@@ -1,14 +1,19 @@
+"use client"; // <-- ADD THIS LINE AT THE VERY TOP
+
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Header } from "@/components/ui/header" // Correctly imported
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- ADD THIS IMPORT
+import { ContactModal } from "@/components/ui/contact-modal";
+import { useAuth } from "@/app/context/AuthContext"; // Import useAuth hook
 
 export default function TermsPage() {
+  const { user, isLoading: authLoading, logout } = useAuth(); // Now correctly called on the client
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      {/* Replaced the custom <header> with the reusable Header component */}
-      <Header />
+      {/* Pass user, isLoading, and logout to the Header component */}
+      <Header user={user} isLoading={authLoading} logout={logout} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card>

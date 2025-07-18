@@ -1,3 +1,4 @@
+// src/app/browse-jobs/page.tsx
 "use client"
 
 import { useState, useMemo } from "react"
@@ -5,7 +6,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- This import is correctly present
+import { ContactModal } from "@/components/ui/contact-modal"
+import { useAuth } from "@/app/context/AuthContext" // Import the useAuth hook
 
 interface Job {
   id: number
@@ -135,6 +137,8 @@ const JOBS_PER_PAGE = 20
 
 export default function BrowseJobsPage() {
   const router = useRouter()
+  const { user, isLoading, logout } = useAuth(); // Use useAuth hook
+
   const [searchTerm, setSearchTerm] = useState("")
   const [locationFilter, setLocationFilter] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("")
@@ -146,7 +150,6 @@ export default function BrowseJobsPage() {
 
   // Mock applied jobs for logged in user
   const [appliedJobs] = useState<Set<number>>(new Set([1, 3])) // User has applied to jobs 1 and 3
-  const [isLoggedIn] = useState(true) // Mock logged in state
 
   const filteredJobs = useMemo(() => {
     return mockJobs.filter(job => {
@@ -215,9 +218,8 @@ export default function BrowseJobsPage() {
   }
 
   const handleApply = (job: Job) => {
-    // Check if user is logged in (mock check)
-    const isLoggedIn = false // In real app, check auth state
-    if (!isLoggedIn) {
+    // Check if user is logged in (using the actual user state)
+    if (!user) { // Check if user object exists (i.e., user is logged in)
       router.push('/login')
       return
     }
@@ -226,7 +228,7 @@ export default function BrowseJobsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header userType="student" />
+      <Header user={user} logout={logout} isLoading={isLoading} /> {/* Pass user, logout, and isLoading */}
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -363,7 +365,7 @@ export default function BrowseJobsPage() {
                         Sponsored
                       </span>
                     )}
-                    {isLoggedIn && appliedJobs.has(job.id) && (
+                    {user && appliedJobs.has(job.id) && ( // Use 'user' for login check
                       <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
                         Applied
                       </span>
@@ -414,26 +416,26 @@ export default function BrowseJobsPage() {
                 <button
                   onClick={() => handleApply(job)}
                   className={`px-6 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    isLoggedIn && appliedJobs.has(job.id)
+                    user && appliedJobs.has(job.id)
                       ? 'bg-green-600 text-white hover:bg-green-700'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
-                  disabled={isLoggedIn && appliedJobs.has(job.id)}
+                  disabled={!!user && appliedJobs.has(job.id)} // Ensure boolean for disabled prop
                 >
-                  {isLoggedIn && appliedJobs.has(job.id) ? 'Applied ✓' : 'Apply Now'}
+                  {user && appliedJobs.has(job.id) ? 'Applied ✓' : 'Apply Now'}
                 </button>
 
                 {/* Reveal Phone Number Button */}
                 <button
                   onClick={() => handleRevealPhone(job.id)}
                   className={`px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    revealedPhones.has(job.id) || (isLoggedIn && appliedJobs.has(job.id))
+                    revealedPhones.has(job.id) || (user && appliedJobs.has(job.id))
                       ? 'border-green-300 bg-green-50 text-green-700'
                       : 'border-gray-300 hover:bg-gray-50'
                   }`}
-                  disabled={revealedPhones.has(job.id) || (isLoggedIn && appliedJobs.has(job.id))}
+                  disabled={revealedPhones.has(job.id) || (!!user && appliedJobs.has(job.id))} // Ensure boolean for disabled prop
                 >
-                  {revealedPhones.has(job.id) || (isLoggedIn && appliedJobs.has(job.id))
+                  {revealedPhones.has(job.id) || (user && appliedJobs.has(job.id))
                     ? `📞 ${job.phoneNumber}`
                     : '📞 Reveal Phone (£1)'
                   }

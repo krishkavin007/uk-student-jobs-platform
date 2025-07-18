@@ -1,14 +1,20 @@
+"use client"; // <-- ADD THIS LINE AT THE VERY TOP
+
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal" // Added ContactModal import here!
+import { ContactModal } from "@/components/ui/contact-modal"
+import { useAuth } from '@/app/context/AuthContext';
 
 export default function PricingPage() {
+  const { user, isLoading, logout } = useAuth(); // This line requires it to be a client component
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      {/* Pass authentication state to Header */}
+      <Header user={user} isLoading={isLoading} logout={logout} />
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="text-center mb-12">
@@ -90,25 +96,25 @@ export default function PricingPage() {
                   <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs">⭐</span>
                   </div>
-                  <span className="text-gray-700"><strong>Top of search results</strong></span>
+                  <span className="text-gray-700">**Top of search results**</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs">⭐</span>
                   </div>
-                  <span className="text-gray-700"><strong>3x more visibility</strong></span>
+                  <span className="text-gray-700">**3x more visibility**</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs">⭐</span>
                   </div>
-                  <span className="text-gray-700"><strong>Highlighted with badge</strong></span>
+                  <span className="text-gray-700">**Highlighted with badge**</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs">⭐</span>
                   </div>
-                  <span className="text-gray-700"><strong>Priority customer support</strong></span>
+                  <span className="text-gray-700">**Priority customer support**</span>
                 </div>
               </div>
 
@@ -194,22 +200,22 @@ export default function PricingPage() {
                 <tr>
                   <td className="p-4">Position in search results</td>
                   <td className="p-4 text-center">Standard order</td>
-                  <td className="p-4 text-center"><strong>Top of results</strong></td>
+                  <td className="p-4 text-center">**Top of results**</td>
                 </tr>
                 <tr className="bg-gray-50">
                   <td className="p-4">Visual highlighting</td>
                   <td className="p-4 text-center">None</td>
-                  <td className="p-4 text-center"><strong>Blue highlight + badge</strong></td>
+                  <td className="p-4 text-center">**Blue highlight + badge**</td>
                 </tr>
                 <tr>
                   <td className="p-4">Expected visibility increase</td>
                   <td className="p-4 text-center">Baseline</td>
-                  <td className="p-4 text-center"><strong>3x more views</strong></td>
+                  <td className="p-4 text-center">**3x more views**</td>
                 </tr>
                 <tr className="bg-gray-50">
                   <td className="p-4">Customer support priority</td>
                   <td className="p-4 text-center">Standard</td>
-                  <td className="p-4 text-center"><strong>Priority support</strong></td>
+                  <td className="p-4 text-center">**Priority support**</td>
                 </tr>
                 <tr>
                   <td className="p-4">Edit/delete job</td>
@@ -219,7 +225,7 @@ export default function PricingPage() {
                 <tr className="bg-gray-50">
                   <td className="p-4">Analytics dashboard</td>
                   <td className="p-4 text-center">Basic</td>
-                  <td className="p-4 text-center"><strong>Enhanced metrics</strong></td>
+                  <td className="p-4 text-center">**Enhanced metrics**</td>
                 </tr>
               </tbody>
             </table>

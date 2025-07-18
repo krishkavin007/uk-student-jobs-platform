@@ -1,9 +1,14 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css"; // This import is correct
+import "./globals.css";
 import ClientBody from "./ClientBody";
 import Script from "next/script";
 import { CookieConsent } from "../components/ui/cookie-consent";
+
+// --- ADD THIS IMPORT ---
+import { AuthProvider } from './context/AuthContext';
+// --- END ADDITION ---
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,14 +33,20 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
+        {/* Keep your existing head content, including any Script components */}
         {/* <Script
           crossOrigin="anonymous"
           src="//unpkg.com/same-runtime/dist/index.global.js"
         /> */}
       </head>
-      {/* CORRECTED LINE BELOW: Added bg-background and text-foreground classes */}
       <body suppressHydrationWarning className="antialiased bg-background text-foreground">
-        <ClientBody>{children}</ClientBody>
+
+        {/* --- WRAP YOUR CLIENTBODY WITH AUTHPROVIDER --- */}
+        <AuthProvider>
+          <ClientBody>{children}</ClientBody>
+        </AuthProvider>
+        {/* --- END WRAP --- */}
+
         <CookieConsent />
       </body>
     </html>

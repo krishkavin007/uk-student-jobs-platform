@@ -1,14 +1,19 @@
+"use client"; // <-- THIS IS THE CRUCIAL ADDITION
+
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Header } from "@/components/ui/header" // Correctly imported
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- ADD THIS IMPORT
+import { ContactModal } from "@/components/ui/contact-modal"; // <--- ADDED THIS IMPORT
+import { useAuth } from '@/app/context/AuthContext';
 
 export default function PrivacyPolicyPage() {
+  const { user, isLoading, logout } = useAuth(); // This line now runs on the client
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       {/* Replaced the custom <header> with the reusable Header component */}
-      <Header />
+      <Header user={user} isLoading={isLoading} logout={logout} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card>

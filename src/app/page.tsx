@@ -1,14 +1,22 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal"
-import Link from "next/link"
+// app/page.tsx
+"use client"; // This directive is crucial for using hooks like useAuth
+
+import { useAuth } from "@/app/context/AuthContext"; // Import the useAuth hook
+import { Header } from "@/components/ui/header"; // Import your Header component
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ContactModal } from "@/components/ui/contact-modal";
+import Link from "next/link";
 
 export default function HomePage() {
+  const { user, isLoading, logout } = useAuth(); // Use the useAuth hook to get user, loading state, and logout function
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <Header />
+      {/* Pass user, logout, and isLoading to the Header component */}
+      <Header user={user} logout={logout} isLoading={isLoading} />
 
       {/* Hero Section */}
       <section className="w-full py-12 md:py-24 lg:py-32">
@@ -35,18 +43,6 @@ export default function HomePage() {
                     <Link href="/post-job">Post a Job</Link>
                   </Button>
                 </div>
-
-                {/* REMOVED: Trust Indicators */}
-                {/*
-                <div className="flex items-center gap-6 pt-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <span className="text-yellow-500">★★★★★</span>
-                    <span>4.8/5 (2,847 reviews)</span>
-                  </div>
-                  <div>25,000+ active students</div>
-                  <div>1,200+ verified employers</div>
-                </div>
-                */}
               </div>
             </div>
             <div className="flex items-center justify-center">
@@ -154,7 +150,7 @@ export default function HomePage() {
                   Apply Now
                 </Button>
               </CardContent>
-            </Card>
+              </Card>
             </Link>
 
             <Link href="/browse-jobs" className="hover:no-underline group">
@@ -181,7 +177,7 @@ export default function HomePage() {
                   Apply Now
                 </Button>
               </CardContent>
-            </Card>
+              </Card>
             </Link>
 
             <Link href="/browse-jobs" className="hover:no-underline group">
@@ -208,7 +204,7 @@ export default function HomePage() {
                   Apply Now
                 </Button>
               </CardContent>
-            </Card>
+              </Card>
             </Link>
           </div>
           <div className="text-center mt-8">
@@ -453,5 +449,5 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

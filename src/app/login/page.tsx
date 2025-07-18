@@ -1,8 +1,9 @@
+// app/login/page.tsx
 "use client"
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation" // <-- ADDED THIS IMPORT
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,13 +11,21 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Header } from "@/components/ui/header"
 import { ContactModal } from "@/components/ui/contact-modal";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null); // <-- ADDED THIS STATE FOR ERROR MESSAGES
-  const router = useRouter() // <-- INITIALIZED useRouter
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter()
+  const { login: authLogin, user } = useAuth();
+
+  // Optional: Redirect if already logged in (similar to signup page)
+  if (user) {
+    router.replace('/my-account');
+    return null; // Or a loading spinner, or some message
+  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +33,6 @@ export default function LoginPage() {
     setError(null); // Clear previous errors
 
     try {
-      // --- REPLACE THIS WITH YOUR ACTUAL BACKEND LOGIN API CALL ---
       const response = await fetch('/api/login', { // <-- ASSUMING YOUR LOGIN API IS AT /api/login
         method: 'POST',
         headers: {
@@ -34,30 +42,23 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        // Handle errors from the API (e.g., invalid credentials)
         const errorData = await response.json();
-        // CHANGED THIS LINE: Access errorData.error instead of errorData.message
         throw new Error(errorData.error || 'Login failed. Please check your credentials.');
       }
 
-      const userData = await response.json(); // Assuming your API returns user data, including type
-      console.log("Login successful:", userData);
+      const userData = await response.json();
+      console.log("LoginPage: API Response User Data:", userData); // <-- ADDED LOG
+      
+      authLogin(userData);
+      console.log("LoginPage: authLogin called, navigating to /my-account."); // <-- ADDED LOG
 
-      // Store user type (e.g., in localStorage, or a global state management)
-      // For demonstration, we'll store it in localStorage.
-      // In a real app, you might receive a JWT token and store it.
-      localStorage.setItem('userType', userData.type); // e.g., 'student' or 'employer'
-
-      // Redirect to the my-account page
       router.push('/my-account');
 
-    } catch (err: unknown) { // <--- CHANGED `any` TO `unknown` HERE TO FIX ESLINT ERROR
-      // Safely check if the error is an instance of Error
+    } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("Login error:", err.message);
         setError(err.message || 'An unexpected error occurred. Please try again.');
       } else {
-        // Handle cases where the error is not an Error object (e.g., a string or other value)
         console.error("Login error:", err);
         setError('An unknown error occurred. Please try again.');
       }
@@ -74,8 +75,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* ADD THE HEADER COMPONENT HERE */}
-      <Header showAuth={false} />
+      {/* Assuming Header uses AuthContext internally to show correct state */}
+      <Header />
 
       <div className="flex items-center justify-center p-4 min-h-screen">
         <Card className="w-full max-w-md">

@@ -1,15 +1,19 @@
+"use client"; // <-- ADD THIS LINE AT THE VERY TOP
+
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/ui/header" // Correctly imported
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- ADD THIS IMPORT
+import { ContactModal } from "@/components/ui/contact-modal"; // <--- ADDED THIS IMPORT
+import { useAuth } from '@/app/context/AuthContext'; // Ensure this path is correct
 
 export default function RefundPolicyPage() {
+  const { user, isLoading, logout } = useAuth(); // Now correctly called on the client
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      {/* Replaced the custom <header> with the reusable Header component */}
-      <Header />
+      <Header user={user} isLoading={isLoading} logout={logout} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card>

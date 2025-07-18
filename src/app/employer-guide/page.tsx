@@ -1,14 +1,21 @@
+"use client" // Added: This directive is needed for client-side components that use hooks
+
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Header } from "@/components/ui/header" // Import the Header component
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- This import is correct and needed!
+import { Header } from "@/components/ui/header"
+import { ContactModal } from "@/components/ui/contact-modal";
+import { useAuth } from "@/app/context/AuthContext" // Added: Import the useAuth hook
 
 export default function EmployerGuidePage() {
+  // Added: Use the useAuth hook to get user, isLoading, and logout
+  const { user, isLoading, logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <Header />
+      {/* Modified: Pass the user, logout, and isLoading props to Header */}
+      <Header user={user} logout={logout} isLoading={isLoading} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-12">

@@ -1,8 +1,8 @@
-// src/app/signup/page.tsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react" // Import useEffect
 import Link from "next/link"
+import { useRouter } from 'next/navigation'; // Import useRouter
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/ui/header"
 import { ContactModal } from "@/components/ui/contact-modal";
+import { useAuth } from "@/app/context/AuthContext";
 
 // Define a TypeScript interface for the payload to satisfy ESLint
 interface UserPayload {
@@ -23,9 +24,8 @@ interface UserPayload {
   user_first_name: string;
   user_last_name: string;
   contact_phone_number: string;
-  university_college?: string; // Optional for employer, required for student
-  organization_name?: string; // Optional for student, required for employer
-  // google_id is not included in this form, so it's omitted
+  university_college?: string;
+  organization_name?: string;
 }
 
 export default function SignupPage() {
@@ -42,21 +42,29 @@ export default function SignupPage() {
     agreeToTerms: false,
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState(''); // Added for success messages
-  const [error, setError] = useState('');     // Added for error messages
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const { user, isLoading: authLoading, logout } = useAuth();
+  const router = useRouter(); // Initialize useRouter
+
+  // Effect to redirect if user is already logged in
+  useEffect(() => {
+    if (!authLoading && user) { // Check if auth state has loaded and user is authenticated
+      router.replace('/my-account'); // Redirect to my-account page
+    }
+  }, [user, authLoading, router]); // Depend on user, authLoading, and router
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  // UPDATED handleSubmit function to connect to backend API and adhere to TypeScript
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setMessage(''); // Clear previous messages
-    setError('');   // Clear previous errors
+    setMessage('');
+    setError('');
 
-    // --- Frontend Validation ---
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
       setIsLoading(false);
@@ -68,35 +76,25 @@ export default function SignupPage() {
       return;
     }
 
-    // Determine username (backend requires it, but form doesn't have an explicit field)
-    // Using email prefix or a combination of names as a default username for the backend 'user_username'
     const user_username = formData.email.split('@')[0] || `${formData.firstName}${formData.lastName}`.toLowerCase();
 
-    // Prepare payload based on user type, mapping to backend database fields
-    // Using const for payload as the object itself is not reassigned, only its properties are modified.
     const payload: UserPayload = {
-      user_username: user_username, // Dynamically set username for backend
+      user_username: user_username,
       user_email: formData.email,
-      password: formData.password, // Matches backend's 'password' field in server.js
-      user_type: userType, // 'student' or 'employer'
+      password: formData.password,
+      user_type: userType,
       user_first_name: formData.firstName,
       user_last_name: formData.lastName,
       contact_phone_number: formData.phone,
     };
 
-    // Add type-specific fields based on user_type
     if (userType === 'student') {
       payload.university_college = formData.university;
-      // For employer, organization_name will be undefined as it's not set here
     } else if (userType === 'employer') {
       payload.organization_name = formData.businessName;
-      // For student, university_college will be undefined as it's not set here
     }
 
     try {
-      // Your backend is at /api/user. Ensure your Next.js project proxies this correctly,
-      // or that you are using absolute paths if your Next.js is not on the same domain as Node.js.
-      // For now, assuming /api/user correctly targets your Node.js backend.
       const res = await fetch('/api/user', {
         method: 'POST',
         headers: {
@@ -109,18 +107,15 @@ export default function SignupPage() {
 
       if (res.ok) {
         setMessage('Account created successfully! Welcome!');
-        // Optionally clear form fields after successful submission
         setFormData({
           firstName: "", lastName: "", email: "", phone: "",
           password: "", confirmPassword: "", university: "",
           businessName: "", agreeToTerms: false,
         });
-        // You might want to redirect the user to a login page or dashboard here
-        // To use useRouter, you would import it: import { useRouter } from 'next/navigation';
-        // const router = useRouter();
-        // router.push('/login');
+        // Optionally, you might want to log the user in after successful signup
+        // and then redirect them to /my-account. This would depend on your auth flow.
+        // For now, we'll just show the success message.
       } else {
-        // Handle API errors (e.g., duplicate email from backend, validation errors)
         setError(data.error || 'Failed to create account. Please try again.');
       }
     } catch (err) {
@@ -133,12 +128,21 @@ export default function SignupPage() {
 
   const handleGoogleSignup = () => {
     console.log("Google signup clicked for:", userType)
-    // This will require integration with Google's OAuth, which is a separate complex step.
+  }
+
+  // If authentication state is still loading, you might want to show a loading spinner
+  // or return null to prevent content from flashing before redirection.
+  if (authLoading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <p className="text-gray-700">Loading user state...</p>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
-      <Header showAuth={false} />
+      <Header user={user} isLoading={authLoading} logout={logout} />
 
       <div className="flex-grow flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">
@@ -201,7 +205,6 @@ export default function SignupPage() {
                 {/* Display messages for success or error */}
                 {message && <p style={{ color: 'green', textAlign: 'center', marginBottom: '10px' }}>{message}</p>}
                 {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '10px' }}>{error}</p>}
-
 
                 <TabsContent value="student" className="mt-0">
                   <form onSubmit={handleSubmit} className="space-y-4">

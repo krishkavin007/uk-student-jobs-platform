@@ -1,15 +1,23 @@
+// src/app/about/page.tsx
+"use client"; // This directive is crucial for using hooks like useAuth
+
+import { useAuth } from "@/app/context/AuthContext"; // Import the useAuth hook
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/ui/header" // Import your global Header component
-import { Logo } from "@/components/ui/logo" // Import the Logo component as it's used in Header
+// The Logo component is not directly used in AboutPage, only inside Header, so it's not needed here.
+// import { Logo } from "@/components/ui/logo" // Import the Logo component as it's used in Header
 import { ContactModal } from "@/components/ui/contact-modal" // NEW: Import ContactModal
 
 export default function AboutPage() {
+  const { user, isLoading, logout } = useAuth(); // Use the useAuth hook to get user, loading state, and logout function
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Replaced the local header with the global Header component */}
-      <Header />
+      {/* Pass user, logout, and isLoading to the Header component */}
+      <Header user={user} logout={logout} isLoading={isLoading} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-12">
@@ -182,6 +190,7 @@ export default function AboutPage() {
                   <li>• Generic, one-size-fits-all approach</li>
                   <li>• Multiple intermediaries</li>
                   <li>• Complex application processes</li>
+                  <li>• Unclear work hour requirements</li>
                 </ul>
               </div>
             </div>
@@ -336,5 +345,5 @@ export default function AboutPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

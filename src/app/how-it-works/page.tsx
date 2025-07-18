@@ -6,13 +6,17 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- ADDED THIS LINE BACK
+import { ContactModal } from "@/components/ui/contact-modal";
+import { useAuth } from '@/app/context/AuthContext';
 
 export default function HowItWorksPage() {
+  const { user, isLoading, logout } = useAuth(); // Destructure user, isLoading, and logout from useAuth
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <Header />
+      {/* Pass user, isLoading, and logout to the Header component */}
+      <Header user={user} isLoading={isLoading} logout={logout} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-12">
@@ -110,7 +114,7 @@ export default function HowItWorksPage() {
                 <p className="text-gray-600 text-sm">
                   Only £1 per application - much cheaper than traditional job boards and recruitment fees.
                 </p>
-              </div>
+              </div> {/* <--- REMOVED THE EXTRA </p> TAG HERE */}
             </div>
 
             <div className="flex items-start gap-4">
@@ -252,5 +256,5 @@ export default function HowItWorksPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

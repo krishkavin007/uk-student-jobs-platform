@@ -2,14 +2,15 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Link from "next/link" // Ensure Link is imported
+import Link from "next/link"
 import { Header } from '@/components/ui/header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ContactModal } from "@/components/ui/contact-modal" // Ensure ContactModal is imported
+import { ContactModal } from "@/components/ui/contact-modal"
+import { useAuth } from '@/app/context/AuthContext'
 
 function PaymentContent() {
   const searchParams = useSearchParams()
@@ -22,10 +23,11 @@ function PaymentContent() {
     { id: 2, last4: "1234", brand: "Mastercard", expiryMonth: 8, expiryYear: 2027 }
   ])
 
-  // --- MODIFIED LINES START HERE ---
-  const jobId = searchParams?.get('jobId') // Added '?' for optional chaining
-  const type = searchParams?.get('type') // Added '?' for optional chaining
-  // --- MODIFIED LINES END HERE ---
+  // Get authentication state from useAuth hook
+  const { user, isLoading: isAuthLoading, logout } = useAuth();
+
+  const jobId = searchParams?.get('jobId')
+  const type = searchParams?.get('type')
 
   const amount = type === 'phone' ? '1.00' : '1.00'
 
@@ -70,7 +72,8 @@ function PaymentContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header userType="student" />
+      {/* Pass user, isLoading, and logout to the Header component */}
+      <Header user={user} isLoading={isAuthLoading} logout={logout} />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">

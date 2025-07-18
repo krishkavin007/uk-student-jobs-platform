@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
@@ -13,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- ADD THIS IMPORT HERE
+import { ContactModal } from "@/components/ui/contact-modal";
+import { Header } from '@/components/ui/header'; // Import the Header component
+import { useAuth } from '@/app/context/AuthContext';
 
 function PostJobContent() {
   const searchParams = useSearchParams()
@@ -32,10 +34,11 @@ function PostJobContent() {
   })
   const [isLoading, setIsLoading] = useState(false)
 
+  // Use the useAuth hook to get user authentication state
+  const { user, isLoading: isAuthLoading, logout } = useAuth();
+
   useEffect(() => {
-    // --- MODIFIED LINE START HERE ---
-    if (searchParams?.get('sponsored') === 'true') { // Added '?' for optional chaining
-    // --- MODIFIED LINE END HERE ---
+    if (searchParams?.get('sponsored') === 'true') {
       setFormData(prev => ({ ...prev, sponsored: true }))
     }
   }, [searchParams])
@@ -81,24 +84,8 @@ function PostJobContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/">
-              <Logo />
-            </Link>
-            <nav className="flex items-center gap-4">
-              <Link href="/my-account" className="text-sm font-medium hover:underline">
-                My Account
-              </Link>
-              <Link href="/login" className="text-sm font-medium hover:underline">
-                Sign Out
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      {/* Use the Header component instead of custom header */}
+      <Header user={user} isLoading={isAuthLoading} logout={logout} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
@@ -376,7 +363,7 @@ function PostJobContent() {
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
                 {/* ADD THE CONTACT MODAL HERE */}
                 <ContactModal>
-                    <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
+                  <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
                 </ContactModal>
               </nav>
             </div>

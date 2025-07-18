@@ -1,14 +1,20 @@
+"use client"; // <-- ADD THIS LINE AT THE VERY TOP
+
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal"; // <--- This import is correct and needed!
+import { ContactModal } from "@/components/ui/contact-modal";
+import { useAuth } from "@/app/context/AuthContext"; // Import useAuth hook
 
 export default function StudentGuidePage() {
+  const { user, isLoading: authLoading, logout } = useAuth(); // Now correctly called on the client
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <Header />
+      {/* Pass user, isLoading, and logout to the Header component */}
+      <Header user={user} isLoading={authLoading} logout={logout} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-12">
@@ -38,7 +44,7 @@ export default function StudentGuidePage() {
                 <li>• Maximum 20 hours per week during term-time</li>
                 <li>• Can work full-time (40 hours) during official university holidays</li>
                 <li>• Must have "work permitted" stamp in passport or visa</li>
-                <li>• <strong>e-Visa Share Code:</strong> Required for employers to verify your right to work</li>
+                <li>• **e-Visa Share Code:** Required for employers to verify your right to work</li>
                 <li>• Generate your share code at gov.uk/prove-right-to-work</li>
                 <li>• Cannot be self-employed or start a business</li>
                 <li>• Some restrictions on certain job types (entertainers, professional sports)</li>
@@ -165,10 +171,10 @@ export default function StudentGuidePage() {
             <div>
               <h3 className="text-lg font-semibold mb-3">Understanding Your Pay</h3>
               <ul className="space-y-2 text-gray-700">
-                <li>• <strong>Minimum Wage:</strong> £10.42/hour (18-20), £11.44/hour (21+)</li>
-                <li>• <strong>National Insurance:</strong> Paid automatically if earning over £12,570/year</li>
-                <li>• <strong>Income Tax:</strong> Only pay if earning over £12,570/year</li>
-                <li>• <strong>Emergency Tax:</strong> May apply initially - claim back if overpaid</li>
+                <li>• **Minimum Wage:** £10.42/hour (18-20), £11.44/hour (21+)</li>
+                <li>• **National Insurance:** Paid automatically if earning over £12,570/year</li>
+                <li>• **Income Tax:** Only pay if earning over £12,570/year</li>
+                <li>• **Emergency Tax:** May apply initially - claim back if overpaid</li>
               </ul>
             </div>
 
