@@ -1,8 +1,9 @@
+// app/signup/page.tsx
 "use client"
 
-import { useState, useEffect } from "react" // Import useEffect
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -25,7 +26,8 @@ interface UserPayload {
   user_last_name: string;
   contact_phone_number: string;
   university_college?: string;
-  organization_name?: string;
+  organisation_name?: string; // Corrected to 'organisation_name' for consistency
+  user_city?: string; // Added user_city to payload interface
 }
 
 export default function SignupPage() {
@@ -38,22 +40,27 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
     university: "",
-    businessName: "",
+    businessName: "", // This will be mapped to organisation_name in payload
+    city: "", // ADDED: city to formData state
     agreeToTerms: false,
   })
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const { user, isLoading: authLoading, logout } = useAuth();
-  const router = useRouter(); // Initialize useRouter
+  // Destructure 'login' from useAuth
+  const { user, isLoading: authLoading, logout, login } = useAuth();
+  const router = useRouter();
 
   // Effect to redirect if user is already logged in
   useEffect(() => {
-    if (!authLoading && user) { // Check if auth state has loaded and user is authenticated
-      router.replace('/my-account'); // Redirect to my-account page
+    if (!authLoading && user) {
+      router.replace('/my-account');
     }
-  }, [user, authLoading, router]); // Depend on user, authLoading, and router
+  }, [user, authLoading, router]);
+
+  // UPDATED: Phone number validation regex for common UK formats.
+  const UK_PHONE_REGEX = /^(?:(?:\+44\s?|0)\d{10}|(?:\+44\s?|0)1\d{9}|(?:\+44\s?|0)2\d{9}|(?:\+44\s?|0)3\d{9}|(?:\+44\s?|0)7\d{9})$/;
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -70,13 +77,26 @@ export default function SignupPage() {
       setIsLoading(false);
       return;
     }
+    if (formData.password.length < 6) { // Basic password length check
+      setError("Password must be at least 6 characters long.");
+      setIsLoading(false);
+      return;
+    }
     if (!formData.agreeToTerms) {
       setError("You must agree to the Terms & Conditions and Privacy Policy.");
       setIsLoading(false);
       return;
     }
 
-    const user_username = formData.email.split('@')[0] || `${formData.firstName}${formData.lastName}`.toLowerCase();
+    const cleanedPhoneNumber = formData.phone.replace(/[\s()-]/g, '');
+
+    if (!UK_PHONE_REGEX.test(cleanedPhoneNumber)) {
+      setError("Please enter a valid UK phone number format (e.g., 07123456789 or +447123456789).");
+      setIsLoading(false);
+      return;
+    }
+
+    const user_username = formData.email; // Use the full email as the username
 
     const payload: UserPayload = {
       user_username: user_username,
@@ -85,13 +105,16 @@ export default function SignupPage() {
       user_type: userType,
       user_first_name: formData.firstName,
       user_last_name: formData.lastName,
-      contact_phone_number: formData.phone,
+      contact_phone_number: cleanedPhoneNumber,
+      user_city: formData.city, // ADDED: city to payload
     };
 
     if (userType === 'student') {
       payload.university_college = formData.university;
+      delete payload.organisation_name; // Ensure it's not sent for student
     } else if (userType === 'employer') {
-      payload.organization_name = formData.businessName;
+      payload.organisation_name = formData.businessName; // Mapping businessName to organisation_name
+      delete payload.university_college; // Ensure it's not sent for employer
     }
 
     try {
@@ -106,15 +129,13 @@ export default function SignupPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setMessage('Account created successfully! Welcome!');
-        setFormData({
-          firstName: "", lastName: "", email: "", phone: "",
-          password: "", confirmPassword: "", university: "",
-          businessName: "", agreeToTerms: false,
-        });
-        // Optionally, you might want to log the user in after successful signup
-        // and then redirect them to /my-account. This would depend on your auth flow.
-        // For now, we'll just show the success message.
+        setMessage('Account created successfully! Redirecting you to your account...');
+        
+        if (data.user) {
+          login(data.user);
+        }
+
+        router.replace('/my-account');
       } else {
         setError(data.error || 'Failed to create account. Please try again.');
       }
@@ -128,10 +149,9 @@ export default function SignupPage() {
 
   const handleGoogleSignup = () => {
     console.log("Google signup clicked for:", userType)
+    alert("Google signup is not yet implemented. Please use email registration.");
   }
 
-  // If authentication state is still loading, you might want to show a loading spinner
-  // or return null to prevent content from flashing before redirection.
   if (authLoading || user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -208,6 +228,7 @@ export default function SignupPage() {
 
                 <TabsContent value="student" className="mt-0">
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Student Form Order: First Name, Last Name, University/College, City, Email, Phone Number, Password, Confirm Password */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstName">First Name</Label>
@@ -230,6 +251,28 @@ export default function SignupPage() {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="university">University/College</Label>
+                      <Input
+                        id="university"
+                        placeholder="e.g., University of Manchester"
+                        value={formData.university}
+                        onChange={(e) => handleInputChange("university", e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label> {/* ADDED City input for Student */}
+                      <Input
+                        id="city"
+                        placeholder="e.g., Manchester"
+                        value={formData.city}
+                        onChange={(e) => handleInputChange("city", e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="email">Student Email</Label>
                       <Input
                         id="email"
@@ -243,21 +286,11 @@ export default function SignupPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="university">University/College</Label>
-                      <Input
-                        id="university"
-                        placeholder="e.g., University of Manchester"
-                        value={formData.university}
-                        onChange={(e) => handleInputChange("university", e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="phone">Phone Number</Label>
                       <Input
                         id="phone"
                         type="tel"
+                        inputMode="numeric"
                         placeholder="+44 7XXX XXX XXX"
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
@@ -319,6 +352,7 @@ export default function SignupPage() {
 
                 <TabsContent value="employer" className="mt-0">
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Employer Form Order: First Name, Last Name, Business/Organisation Name, City, Email, Phone Number, Password, Confirm Password */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstName">First Name</Label>
@@ -341,12 +375,23 @@ export default function SignupPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="businessName">Business/Organization Name</Label>
+                      <Label htmlFor="businessName">Business/Organisation Name</Label>
                       <Input
                         id="businessName"
                         placeholder="e.g., Local Coffee Shop Ltd"
                         value={formData.businessName}
                         onChange={(e) => handleInputChange("businessName", e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label> {/* ADDED City input for Employer */}
+                      <Input
+                        id="city"
+                        placeholder="e.g., London"
+                        value={formData.city}
+                        onChange={(e) => handleInputChange("city", e.target.value)}
                         required
                       />
                     </div>
@@ -368,6 +413,7 @@ export default function SignupPage() {
                       <Input
                         id="phone"
                         type="tel"
+                        inputMode="numeric"
                         placeholder="+44 7XXX XXX XXX"
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
@@ -441,7 +487,6 @@ export default function SignupPage() {
         </Card>
       </div>
 
-      {/* Footer */}
       <footer className="w-full py-6 bg-gray-900 text-white mt-16">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="grid gap-8 lg:grid-cols-4">

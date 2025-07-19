@@ -26,13 +26,14 @@ interface User {
   user_email: string;
   google_id?: string;
   user_type: "employer" | "student";
-  organization_name?: string;
+  organisation_name?: string; // CHANGED: Consistent British spelling for interface
   contact_phone_number?: string;
   user_first_name?: string;
   user_last_name?: string;
   university_college?: string;
   created_at: string;
   user_image?: string;
+  user_city?: string;
 }
 
 interface Transaction {
@@ -90,8 +91,9 @@ export default function MyAccountPage() {
   const [editedLastName, setEditedLastName] = useState<string>('');
   const [editedContactPhoneNumber, setEditedContactPhoneNumber] = useState<string>('');
   const [editedUniversityCollege, setEditedUniversityCollege] = useState<string>('');
-  const [editedOrganizationName, setEditedOrganizationName] = useState<string>('');
+  const [editedOrganisationName, setEditedOrganisationName] = useState<string>(''); // CHANGED: Local state name to match British spelling
   const [editedEmail, setEditedEmail] = useState<string>('');
+  const [editedUserCity, setEditedUserCity] = useState<string>(''); // Added state for user_city
   // --- END NEW STATE ---
 
   const [appliedJobs, setAppliedJobs] = useState<AppliedJob[]>([]);
@@ -112,7 +114,6 @@ export default function MyAccountPage() {
   const router = useRouter();
 
   // Unified useEffect for initial data setup and redirect
-  // This useEffect will run when 'user' or 'isLoading' changes
   useEffect(() => {
     console.log("MyAccountPage useEffect: user:", user, "isLoading:", isLoading);
 
@@ -120,11 +121,10 @@ export default function MyAccountPage() {
     if (!isLoading && !user) {
       console.log("MyAccountPage: User not found and not loading, redirecting to /login.");
       router.push('/login');
-      return; // Exit early to prevent further execution for unauthenticated state
+      return;
     }
 
     // 2. Initialize local states when user data becomes available and AuthContext is not loading
-    // This condition ensures that the initialization happens only when the 'user' object is stable.
     if (user && !isLoading) {
       console.log("MyAccountPage: User data available and not loading. Initializing profile states.");
       setProfileImage(user.user_image || null);
@@ -132,10 +132,11 @@ export default function MyAccountPage() {
       setEditedLastName(user.user_last_name || '');
       setEditedContactPhoneNumber(user.contact_phone_number || '');
       setEditedUniversityCollege(user.university_college || '');
-      setEditedOrganizationName(user.organization_name || '');
+      setEditedOrganisationName(user.organisation_name || ''); // Accessing user.organisation_name from AuthContext
       setEditedEmail(user.user_email || '');
+      setEditedUserCity(user.user_city || '');
     }
-  }, [user, isLoading, router]); // Dependencies: user, isLoading, router
+  }, [user, isLoading, router]);
 
 
   // handleImageUpload now directly sets profileImage preview.
@@ -161,16 +162,17 @@ export default function MyAccountPage() {
     }
 
     // --- USE EDITED STATES FOR FORM DATA ---
-    formData.append('user_username', user.user_username); // Username is typically not editable by user
-    formData.append('user_email', editedEmail); // Email is now editable via editedEmail state
+    formData.append('user_username', user.user_username);
+    formData.append('user_email', editedEmail);
     formData.append('user_first_name', editedFirstName);
     formData.append('user_last_name', editedLastName);
     formData.append('contact_phone_number', editedContactPhoneNumber);
+    formData.append('user_city', editedUserCity);
 
     if (user.user_type === "student") {
         formData.append('university_college', editedUniversityCollege);
     } else if (user.user_type === "employer") {
-        formData.append('organization_name', editedOrganizationName);
+        formData.append('organisation_name', editedOrganisationName); // Sending to backend with British spelling
     }
     // --- END EDITED STATES ---
 
@@ -480,14 +482,11 @@ Thank you for using StudentJobs UK!
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="city">City</Label>
-                        {/* Assuming city is represented by university/organization name for simplicity in this context */}
                         <Input
                           id="city"
                           placeholder="e.g., Manchester"
-                          value={isEditingProfile
-                            ? (user.user_type === "student" ? editedUniversityCollege : editedOrganizationName)
-                            : (user.university_college || user.organization_name || '')}
-                          onChange={(e) => user.user_type === "student" ? setEditedUniversityCollege(e.target.value) : setEditedOrganizationName(e.target.value)}
+                          value={isEditingProfile ? editedUserCity : user.user_city || ''}
+                          onChange={(e) => setEditedUserCity(e.target.value)}
                           disabled={!isEditingProfile}
                         />
                       </div>
@@ -508,8 +507,8 @@ Thank you for using StudentJobs UK!
                         <Label htmlFor="businessName">Business Name</Label>
                         <Input
                           id="businessName"
-                          value={isEditingProfile ? editedOrganizationName : user.organization_name || ''}
-                          onChange={(e) => setEditedOrganizationName(e.target.value)}
+                          value={isEditingProfile ? editedOrganisationName : user.organisation_name || ''}
+                          onChange={(e) => setEditedOrganisationName(e.target.value)}
                           disabled={!isEditingProfile}
                         />
                       </div>
@@ -932,7 +931,7 @@ Thank you for using StudentJobs UK!
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Email Notification Preferences</DialogTitle>
+                            <DialogTitle>Email Notification Preferences</DialogTitle> {/* FIX: Changed </CardTitle> to </DialogTitle> */}
                             <DialogDescription>
                               Choose which email notifications you'd like to receive
                             </DialogDescription>

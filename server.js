@@ -3,19 +3,24 @@
 const express = require('express');
 const next = require('next');
 const { Pool } = require('pg');
-const session = require('express-session'); // Import express-session
-
-// --- NEW IMPORTS AND MULTER CONFIGURATION START ---
+const session = require('express-session');
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid'); // For generating unique filenames
+const fs = require('fs'); // Import fs for directory creation
 
 // Configure storage for multer
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        // This is the absolute path to your new image directory
-        // Make sure this path is correct and accessible
-        cb(null, '/var/www/vhosts/upbeat-swanson.217-154-37-86.plesk.page/httpdocs/uploads/users_images/');
+        // Construct path relative to server.js.
+        // This will create 'uploads/users_images' within your project directory
+        // where server.js is located.
+        const uploadDir = path.join(__dirname, 'uploads', 'users_images');
+        
+        // Ensure the directory exists. If not, create it recursively.
+        fs.mkdirSync(uploadDir, { recursive: true });
+        cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
         // Generate a unique filename using UUID and the original file extension
@@ -40,13 +45,7 @@ const upload = multer({
         cb(new Error('Only images (JPEG, JPG, PNG, GIF) are allowed!'));
     }
 });
-// --- NEW IMPORTS AND MULTER CONFIGURATION END ---
 
-
-// If you plan to implement user registration/login, you MUST hash passwords.
-// Install bcryptjs: npm install bcryptjs
-// Then uncomment the line below:
-// const bcrypt = require('bcryptjs');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -71,7 +70,7 @@ app.prepare().then(async () => {
     server.use(express.json()); // Essential middleware to parse JSON request bodies for POST/PUT
 
     // IMPORTANT: Add this line to tell Express to trust proxy headers (like X-Forwarded-Proto)
-    // This is essential when running behind a reverse proxy like Plesk that handles HTTPS.
+    // This is essential when running behind a reverse proxy like Plesk.
     server.set('trust proxy', 1);
 
     // Configure and use express-session middleware
@@ -86,10 +85,9 @@ app.prepare().then(async () => {
         }
     }));
 
-    // --- NEW STATIC FILES ROUTE START ---
     // Serve static files (like images) from the 'uploads' directory
+    // This assumes your 'uploads' folder is at the same level as your 'server.js' file.
     server.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-    // --- NEW STATIC FILES ROUTE END ---
 
 
     // NEW: Authentication Middleware
@@ -106,9 +104,9 @@ app.prepare().then(async () => {
             const result = await pool.query(
                 `SELECT
                     user_id, user_username, user_email, google_id, user_type,
-                    organization_name, contact_phone_number, user_first_name,
-                    user_last_name, university_college, created_at, user_image
-                FROM Users WHERE user_id = $1`, // <<< user_image added here
+                    organisation_name, contact_phone_number, user_first_name,
+                    user_last_name, university_college, created_at, user_image, user_city
+                FROM Users WHERE user_id = $1`,
                 [req.session.userId]
             );
 
@@ -149,9 +147,9 @@ app.prepare().then(async () => {
         try {
             const result = await pool.query(`SELECT
                 user_id, user_username, user_email, google_id, user_type,
-                organization_name, contact_phone_number, user_first_name,
-                user_last_name, university_college, created_at, user_image
-                FROM Users`); // <<< user_image added here
+                organisation_name, contact_phone_number, user_first_name,
+                user_last_name, university_college, created_at, user_image, user_city
+                FROM Users`);
             res.json(result.rows);
         } catch (err) {
             console.error('Error fetching users:', err.stack);
@@ -166,9 +164,9 @@ app.prepare().then(async () => {
         try {
             const result = await pool.query(`SELECT
                 user_id, user_username, user_email, google_id, user_type,
-                organization_name, contact_phone_number, user_first_name,
-                user_last_name, university_college, created_at, user_image
-                FROM Users WHERE user_id = $1`, [id]); // <<< user_image added here
+                organisation_name, contact_phone_number, user_first_name,
+                user_last_name, university_college, created_at, user_image, user_city
+                FROM Users WHERE user_id = $1`, [id]);
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'User not found' });
             }
@@ -185,7 +183,8 @@ app.prepare().then(async () => {
         console.log('--- DEBUG: POST /api/user endpoint hit ---');
         console.log('Request body:', req.body);
 
-        const { user_username, user_email, password, google_id, user_type, organization_name, contact_phone_number, user_first_name, user_last_name, university_college } = req.body;
+        // MODIFIED: Changed organization_name to organisation_name in destructuring
+        const { user_username, user_email, password, google_id, user_type, organisation_name, contact_phone_number, user_first_name, user_last_name, university_college, user_city } = req.body;
 
         if (!user_email || !password || !user_type) {
             console.log('--- DEBUG: Missing required fields ---');
@@ -193,19 +192,27 @@ app.prepare().then(async () => {
         }
 
         try {
-            const password_hash = password; // WARNING: Storing plaintext password for demonstration.
+            // Hash the password before storing it
+            const salt = await bcrypt.genSalt(10);
+            const password_hash = await bcrypt.hash(password, salt);
 
             const result = await pool.query(
-                `INSERT INTO Users (user_username, user_email, password_hash, google_id, user_type, organization_name, contact_phone_number, user_first_name, user_last_name, university_college)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-                RETURNING user_id, user_username, user_email, user_type, created_at`,
-                [user_username, user_email, password_hash, google_id, user_type, organization_name, contact_phone_number, user_first_name, user_last_name, university_college]
+                `INSERT INTO Users (user_username, user_email, password_hash, google_id, user_type, organisation_name, contact_phone_number, user_first_name, user_last_name, university_college, user_city)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                 RETURNING user_id, user_username, user_email, google_id, user_type, organisation_name, contact_phone_number, user_first_name, user_last_name, university_college, created_at, user_image, user_city`, // MODIFIED: Changed organization_name to organisation_name in RETURNING clause
+                [user_username, user_email, password_hash, google_id, user_type, organisation_name, contact_phone_number, user_first_name, user_last_name, university_college, user_city]
             );
             console.log('--- DEBUG: User created successfully ---');
-            res.status(201).json(result.rows[0]);
+
+            // Log in the newly created user immediately by setting session ID
+            req.session.userId = result.rows[0].user_id;
+
+            // Return the full user object for automatic frontend login, wrapped in a 'user' property
+            res.status(201).json({ message: 'Account created successfully', user: result.rows[0] });
+
         } catch (err) {
             console.error('--- DEBUG: Error creating user:', err.stack);
-            if (err.code === '23505') {
+            if (err.code === '23505') { // Unique violation
                 return res.status(409).json({ error: 'User with this email or username already exists.' });
             }
             res.status(500).json({ error: 'Failed to create user' });
@@ -215,18 +222,35 @@ app.prepare().then(async () => {
     // PUT update user (including optional image upload)
     // Path: /api/user/:id
     // Use `upload.single('userImage')` as middleware. 'userImage' is the name of the form field for the image.
-    server.put('/api/user/:id', upload.single('userImage'), async (req, res) => {
+    server.put('/api/user/:id', (req, res, next) => {
+        upload.single('userImage')(req, res, function (err) {
+            if (err instanceof multer.MulterError) {
+                // A Multer error occurred when uploading.
+                // These errors have specific codes that you can use for more precise messages.
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(400).json({ error: 'File too large. Maximum file size is 5MB.' });
+                }
+                // For other Multer errors like 'LIMIT_UNEXPECTED_FILE', 'LIMIT_FIELD_COUNT', etc.
+                return res.status(400).json({ error: `File upload error: ${err.message}` });
+            } else if (err) {
+                // An unknown error occurred, likely from your fileFilter function.
+                // This will catch the 'Only images (JPEG, JPG, PNG, GIF) are allowed!' message.
+                return res.status(400).json({ error: err.message });
+            }
+            // Everything went fine with the upload, continue to the route handler
+            next();
+        });
+    }, async (req, res) => {
         const { id } = req.params;
         // Destructure other profile fields from req.body (non-file fields)
-        const { user_username, user_email, user_type, organization_name, contact_phone_number, user_first_name, user_last_name, university_college } = req.body;
+        // MODIFIED: Changed organization_name to organisation_name in destructuring
+        const { user_username, user_email, user_type, organisation_name, contact_phone_number, user_first_name, user_last_name, university_college, user_city } = req.body;
 
         let user_image_url = undefined; // Use undefined initially, so COALESCE doesn't update it if not provided
 
         // Check if a file was uploaded by multer
         if (req.file) {
             // Construct the full public URL for the image
-            // IMPORTANT: This now dynamically generates the URL based on the request's protocol and host.
-            // This is crucial for working correctly behind a reverse proxy like Plesk.
             user_image_url = `${req.protocol}://${req.get('host')}/uploads/users_images/${req.file.filename}`;
             console.log('--- DEBUG: Image uploaded, URL:', user_image_url); // For debugging
         }
@@ -249,9 +273,10 @@ app.prepare().then(async () => {
                 queryParts.push(`user_type = $${paramCounter++}`);
                 queryParams.push(user_type);
             }
-            if (organization_name !== undefined) {
-                queryParts.push(`organization_name = $${paramCounter++}`);
-                queryParams.push(organization_name);
+            // MODIFIED: Changed organization_name to organisation_name in query part
+            if (organisation_name !== undefined) {
+                queryParts.push(`organisation_name = $${paramCounter++}`);
+                queryParams.push(organisation_name);
             }
             if (contact_phone_number !== undefined) {
                 queryParts.push(`contact_phone_number = $${paramCounter++}`);
@@ -269,13 +294,17 @@ app.prepare().then(async () => {
                 queryParts.push(`university_college = $${paramCounter++}`);
                 queryParams.push(university_college);
             }
+            if (user_city !== undefined) {
+                queryParts.push(`user_city = $${paramCounter++}`);
+                queryParams.push(user_city);
+            }
             // IMPORTANT: Add user_image to updates if a new image URL was generated OR if the client explicitly sent a user_image field (e.g., to clear it)
             if (user_image_url !== undefined) {
                 queryParts.push(`user_image = $${paramCounter++}`);
                 queryParams.push(user_image_url);
             } else if (Object.prototype.hasOwnProperty.call(req.body, 'user_image')) { // Check if 'user_image' key exists in req.body
-                 queryParts.push(`user_image = $${paramCounter++}`);
-                 queryParams.push(req.body.user_image); // Allow explicit setting to null, empty string, etc.
+                queryParts.push(`user_image = $${paramCounter++}`);
+                queryParams.push(req.body.user_image); // Allow explicit setting to null, empty string, etc.
             }
 
 
@@ -297,7 +326,8 @@ app.prepare().then(async () => {
             res.json(result.rows[0]); // Return the updated user data (which will now include user_image)
         } catch (err) {
             console.error('--- DEBUG: Error updating user with image:', err.stack);
-            res.status(500).json({ error: 'Failed to update user', details: err.message });
+            // This remains a generic 500, as it's an unexpected server/database error.
+            res.status(500).json({ error: 'Failed to update user' });
         }
     });
 
@@ -310,7 +340,7 @@ app.prepare().then(async () => {
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'User not found' });
             }
-            res.status(204).send();
+            res.status(204).send(); // 204 No Content - successful deletion
         } catch (err) {
             console.error('Error deleting user:', err.stack);
             res.status(500).json({ error: 'Failed to delete user' });
@@ -326,13 +356,13 @@ app.prepare().then(async () => {
         }
 
         try {
-            // UPDATED: Select all user profile fields from the database
+            // Select all user profile fields from the database
             const result = await pool.query(
                 `SELECT
                     user_id, user_username, user_email, password_hash, user_type,
-                    organization_name, contact_phone_number, user_first_name,
-                    user_last_name, university_college, created_at, user_image
-                FROM Users WHERE user_email = $1`,
+                    organisation_name, contact_phone_number, user_first_name,
+                    user_last_name, university_college, created_at, user_image, user_city
+                FROM Users WHERE user_email = $1`, // MODIFIED: Changed organization_name to organisation_name
                 [email]
             );
 
@@ -341,7 +371,8 @@ app.prepare().then(async () => {
             }
 
             const user = result.rows[0];
-            const isPasswordValid = (password === user.password_hash); // WARNING: This is insecure, should use bcryptjs
+            // Compare the provided password with the hashed password in the database
+            const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
             if (!isPasswordValid) {
                 return res.status(401).json({ error: 'Invalid credentials' });
@@ -350,7 +381,7 @@ app.prepare().then(async () => {
             // Store user ID in the session after successful login
             req.session.userId = user.user_id;
 
-            // UPDATED: Include ALL fetched user fields in the returned user object
+            // Include ALL fetched user fields in the returned user object
             res.json({
                 message: 'Login successful',
                 user: {
@@ -363,7 +394,8 @@ app.prepare().then(async () => {
                     user_first_name: user.user_first_name,
                     user_last_name: user.user_last_name,
                     university_college: user.university_college,
-                    organization_name: user.organization_name, // Include this for employers
+                    organisation_name: user.organisation_name, // MODIFIED: Changed organization_name to organisation_name
+                    user_city: user.user_city,
                     created_at: user.created_at
                 }
             });
@@ -398,7 +430,7 @@ app.prepare().then(async () => {
     });
 
 
-    // --- NEW API Endpoints for 'job_applications' Table ---
+    // --- API Endpoints for 'job_applications' Table ---
     // Note: Database table name is 'job_applications' (all lowercase)
     // API path is '/api/job' (singular, as preferred)
 
@@ -430,29 +462,118 @@ app.prepare().then(async () => {
         }
     });
 
-    // POST new job
+    // POST new job (MODIFIED TO HANDLE EMPLOYER REGISTRATION/LOGIN)
     // Path: /api/job
     server.post('/api/job', async (req, res) => {
-        const { job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, contact_name, contact_phone, contact_email, is_sponsored, posted_by_user_id, expires_at, job_status } = req.body;
+        const { job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, is_sponsored, employer_registration_data } = req.body;
 
-        // Basic validation for required fields
-        if (!job_title || !job_description || !job_category || !job_location || hourly_pay === undefined || !hours_per_week || !contact_name || !contact_phone || !contact_email || is_sponsored === undefined || !posted_by_user_id) {
-            return res.status(400).json({ error: 'Missing required job fields' });
-        }
+        let posted_by_user_id;
+        let job_contact_name;
+        let job_contact_phone;
+        let job_contact_email;
 
         try {
+            if (req.session.userId) {
+                // Scenario 1: User is already logged in
+                const userResult = await pool.query(
+                    `SELECT user_id, user_type, user_first_name, user_last_name, user_email, contact_phone_number, organisation_name
+                    FROM Users WHERE user_id = $1`, // MODIFIED: Changed organization_name to organisation_name
+                    [req.session.userId]
+                );
+
+                if (userResult.rows.length === 0) {
+                    req.session.destroy(() => {}); // Clear invalid session
+                    return res.status(401).json({ error: 'Authenticated user not found or session invalid.' });
+                }
+
+                const user = userResult.rows[0];
+
+                if (user.user_type !== 'employer') {
+                    return res.status(403).json({ error: 'Only employers can post jobs.' });
+                }
+
+                posted_by_user_id = user.user_id;
+                job_contact_name = `${user.user_first_name || ''} ${user.user_last_name || ''}`.trim();
+                job_contact_phone = user.contact_phone_number;
+                job_contact_email = user.user_email;
+
+            } else {
+                // Scenario 2: User is not logged in, expect employer_registration_data
+                if (!employer_registration_data) {
+                    return res.status(400).json({ error: 'Employer registration data is required if not logged in.' });
+                }
+
+                // MODIFIED: Changed businessName to organisationName in destructuring
+                const { firstName, lastName, email, phoneNumber, city, organisationName, password } = employer_registration_data;
+
+                // Basic validation for new employer registration fields
+                if (!firstName || !lastName || !email || !phoneNumber || !city || !organisationName || !password) { // MODIFIED: Changed businessName to organisationName
+                    return res.status(400).json({ error: 'All employer registration fields are required.' });
+                }
+                if (password.length < 6) {
+                    return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+                }
+
+                // Check if email already exists and get its user_type
+                const existingUserResult = await pool.query('SELECT user_id, user_type FROM Users WHERE user_email = $1', [email]);
+                if (existingUserResult.rows.length > 0) {
+                    const existingUserType = existingUserResult.rows[0].user_type;
+                    let errorMessage = 'An account is already registered with this email address. Please log in or use a different email.';
+
+                    if (existingUserType === 'employer') {
+                        errorMessage = 'An employer account is already registered with this email address. Please log in or use a different email.';
+                    } else if (existingUserType === 'student') {
+                        errorMessage = 'A student account is already registered with this email address. Please log in or use a different email.';
+                    }
+                    return res.status(409).json({ error: errorMessage });
+                }
+
+                // Hash the password
+                const salt = await bcrypt.genSalt(10);
+                const password_hash = await bcrypt.hash(password, salt);
+
+                // Create new employer user
+                const newUserResult = await pool.query(
+                    `INSERT INTO Users (user_first_name, user_last_name, user_email, contact_phone_number, user_city, organisation_name, password_hash, user_type, user_username)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, 'employer', $3) -- user_username is set to user_email
+                    RETURNING user_id, user_first_name, user_last_name, user_email, contact_phone_number, user_city, organisation_name, user_username, user_type, created_at, user_image`, // MODIFIED: Changed organization_name to organisation_name and added all returning fields
+                    [firstName, lastName, email, phoneNumber, city, organisationName, password_hash] // MODIFIED: Changed businessName to organisationName
+                );
+
+                const newUser = newUserResult.rows[0];
+
+                // Log in the newly created user (employer)
+                req.session.userId = newUser.user_id;
+
+                posted_by_user_id = newUser.user_id;
+                job_contact_name = `${newUser.user_first_name} ${newUser.user_last_name}`;
+                job_contact_phone = newUser.contact_phone_number;
+                job_contact_email = newUser.user_email;
+            }
+
+            // Basic validation for required job fields
+            if (!job_title || !job_description || !job_category || !job_location || hourly_pay === undefined || !hours_per_week || is_sponsored === undefined || !posted_by_user_id) {
+                return res.status(400).json({ error: 'Missing required job fields or employer information.' });
+            }
+
+            // Insert job application
             const result = await pool.query(
-                `INSERT INTO job_applications (job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, contact_name, contact_phone, contact_email, is_sponsored, posted_by_user_id, expires_at, job_status)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-                RETURNING *`, // Return all fields of the newly created job
-                [job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, contact_name, contact_phone, contact_email, is_sponsored, posted_by_user_id, expires_at, job_status]
+                `INSERT INTO job_applications (job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, contact_name, contact_phone, contact_email, is_sponsored, posted_by_user_id)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                RETURNING *`,
+                [job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, job_contact_name, job_contact_phone, job_contact_email, is_sponsored, posted_by_user_id]
             );
             res.status(201).json(result.rows[0]);
+
         } catch (err) {
-            console.error('Error creating job:', err.stack);
-            res.status(500).json({ error: 'Failed to create job' });
+            console.error('Error posting job or creating employer:', err.stack);
+            if (err.code === '23505') {
+                return res.status(409).json({ error: 'A user with this email already exists. Please log in or use a different email.' });
+            }
+            res.status(500).json({ error: 'Failed to post job due to a server error.' });
         }
     });
+
 
     // PUT update job
     // Path: /api/job/:id
@@ -476,7 +597,7 @@ app.prepare().then(async () => {
                    posted_by_user_id = COALESCE($11, posted_by_user_id),
                    expires_at = COALESCE($12, expires_at),
                    job_status = COALESCE($13, job_status)
-                 WHERE job_id = $14 RETURNING *`, // Return all fields of the updated job
+                 WHERE job_id = $14 RETURNING *`,
                 [job_title, job_description, job_category, job_location, hourly_pay, hours_per_week, contact_name, contact_phone, contact_email, is_sponsored, posted_by_user_id, expires_at, job_status, id]
             );
             if (result.rows.length === 0) {

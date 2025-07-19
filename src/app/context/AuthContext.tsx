@@ -11,13 +11,14 @@ interface User {
     user_email: string;
     google_id?: string;
     user_type: "employer" | "student";
-    organization_name?: string;
+    organisation_name?: string;
     contact_phone_number?: string;
     user_first_name?: string;
     user_last_name?: string;
     university_college?: string;
     created_at: string;
     user_image?: string;
+    user_city?: string; // ADDED THIS LINE
 }
 
 // --- NEW: Define a type for the data passed to the login function ---

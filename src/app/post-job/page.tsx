@@ -1,4 +1,5 @@
-'use client'
+// app/post-job/page.tsx
+"use client"
 
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
@@ -14,11 +15,42 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ContactModal } from "@/components/ui/contact-modal";
-import { Header } from '@/components/ui/header'; // Import the Header component
+import { Header } from '@/components/ui/header';
 import { useAuth } from '@/app/context/AuthContext';
+
+// Define the interface for JobPayload
+interface JobPayload {
+  job_title: string;
+  job_category: string;
+  job_location: string;
+  hourly_pay: number;
+  hours_per_week: string;
+  job_description: string;
+  is_sponsored: boolean;
+  contact_name: string;
+  contact_phone: string;
+  contact_email: string;
+}
+
+// MODIFIED: Define the interface for EmployerRegistrationPayload
+// These keys must match what your server.js is expecting to destructure directly
+interface EmployerRegistrationPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  organisationName: string; // CHANGED: This key now explicitly matches the backend's 'organisationName'
+  user_type: 'employer';
+  password: string;
+  city?: string;
+}
+
 
 function PostJobContent() {
   const searchParams = useSearchParams()
+  const { user, isLoading: isAuthLoading, logout } = useAuth();
+
+  // MODIFIED: Updated formData state with 'organisationName' instead of 'businessName'
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -26,16 +58,44 @@ function PostJobContent() {
     hourlyPay: "",
     hoursPerWeek: "",
     description: "",
-    contactName: "",
-    contactPhone: "",
-    contactEmail: "",
+    // Employer Contact/Account Info
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    city: "",
+    organisationName: "", // CHANGED: This state field is now 'organisationName'
+
+    password: "",
+    confirmPassword: "",
     externalUrl: "",
     sponsored: false,
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null);
 
-  // Use the useAuth hook to get user authentication state
-  const { user, isLoading: isAuthLoading, logout } = useAuth();
+  // Redirect logic for logged-in students
+  useEffect(() => {
+    if (!isAuthLoading && user && user.user_type === 'student') {
+      window.location.href = '/browse-jobs';
+    }
+  }, [user, isAuthLoading]);
+
+  // If a user is logged in (specifically an employer), pre-fill relevant contact details
+  useEffect(() => {
+    if (!isAuthLoading && user && user.user_type === 'employer') {
+      setFormData(prev => ({
+        ...prev,
+        firstName: user.user_first_name || "",
+        lastName: user.user_last_name || "",
+        email: user.user_email || "",
+        phoneNumber: user.contact_phone_number || "",
+        city: user.user_city || "",
+        organisationName: user.organisation_name || "", // CHANGED: Pre-fill from user.organisation_name
+      }));
+    }
+  }, [user, isAuthLoading]);
+
 
   useEffect(() => {
     if (searchParams?.get('sponsored') === 'true') {
@@ -50,43 +110,122 @@ function PostJobContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null);
 
-    // Simulate job posting and payment process
-    setTimeout(() => {
-      // Create employer account after successful payment
-      const employerAccount = {
-        type: 'employer',
-        email: formData.contactEmail,
-        businessName: formData.contactName + "'s Business",
-        contactName: formData.contactName,
-        contactPhone: formData.contactPhone,
-        createdAt: new Date().toISOString(),
-        firstJobPost: {
-          title: formData.title,
-          sponsored: formData.sponsored,
-          amount: postingCost,
-          location: formData.location
-        }
+    // Frontend validation for password fields if displayed (non-logged-in flow)
+    if (!user && !isAuthLoading) {
+      if (!formData.password) {
+        setError("Password is required to create an account.");
+        setIsLoading(false);
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError("Passwords do not match.");
+        setIsLoading(false);
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError("Password must be at least 6 characters long.");
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    try {
+      // Prepare data for the API request for the Job Posting
+      const jobPayload: JobPayload = {
+        job_title: formData.title,
+        job_category: formData.category,
+        job_location: formData.location,
+        hourly_pay: parseFloat(formData.hourlyPay),
+        hours_per_week: formData.hoursPerWeek,
+        job_description: formData.description,
+        is_sponsored: formData.sponsored,
+        contact_name: user ? `${user.user_first_name || ''} ${user.user_last_name || ''}`.trim() : `${formData.firstName} ${formData.lastName}`.trim(),
+        contact_phone: user ? (user.contact_phone_number || '') : formData.phoneNumber,
+        contact_email: user ? (user.user_email || '') : formData.email,
+      };
+
+      // MODIFIED: Payload for new employer account creation (if not logged in)
+      // These keys now directly match what the backend's `employer_registration_data` expects to destructure.
+      const employerRegistrationDataForBackend: EmployerRegistrationPayload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        city: formData.city,
+        organisationName: formData.organisationName, // CHANGED: Sending 'organisationName' to backend
+        user_type: 'employer',
+        password: formData.password,
+      };
+
+      // Combine payloads for the single API call, the backend will decide what to use
+      const finalPayload = {
+        ...jobPayload,
+        ...(!user && !isAuthLoading ? { employer_registration_data: employerRegistrationDataForBackend } : {})
+      };
+
+
+      const response = await fetch('/api/job', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(finalPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to post job.');
       }
 
-      console.log("Employer account created:", employerAccount)
-      console.log("Job posting:", formData)
+      const responseData = await response.json();
+      console.log("Job posted successfully:", responseData);
 
-      setIsLoading(false)
-      alert(`Payment successful! Employer account created for ${formData.contactEmail}. Job posted successfully!`)
+      alert(`Job posted successfully!`);
 
-      // Redirect to account page
-      window.location.href = '/my-account'
-    }, 2000)
+      // Redirect to account page or job list
+      window.location.href = '/my-account'; // Or '/browse-jobs'
+
+    } catch (err: unknown) {
+      console.error("Error posting job:", err instanceof Error ? err.message : "An unknown error occurred.");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const postingCost = formData.sponsored ? 5 : 1
 
+  // Render loading spinner if authentication is still loading
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect for logged-in students
+  if (user && user.user_type === 'student') {
+    return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <p className="text-lg text-gray-700">Redirecting to job listings for students...</p>
+        </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Use the Header component instead of custom header */}
-      <Header user={user} isLoading={isAuthLoading} logout={logout} />
-
+     <Header
+        key={user ? user.user_id || 'employer-logged-in' : 'logged-out'}
+        user={user}
+        isLoading={isAuthLoading}
+        logout={logout}
+      />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Post a Part-Time Job</h1>
@@ -134,7 +273,7 @@ function PostJobContent() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="location">Location *</Label>
+                      <Label htmlFor="location">Job Location *</Label>
                       <Input
                         id="location"
                         placeholder="e.g., Manchester City Centre"
@@ -187,46 +326,118 @@ function PostJobContent() {
                   <Separator />
 
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Contact Information</h3>
+                    <h3 className="text-lg font-semibold">Contact Information & Account Creation</h3>
                     <p className="text-sm text-gray-600">
-                      Students will pay £1 to reveal your contact details
+                      Students will pay £1 to reveal your contact details.
+                      {user ? " Your account details will be used." : " Create an employer account to manage your jobs."}
                     </p>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="contactName">Contact Name *</Label>
-                        <Input
-                          id="contactName"
-                          placeholder="Your name"
-                          value={formData.contactName}
-                          onChange={(e) => handleInputChange("contactName", e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="contactPhone">Phone Number *</Label>
-                        <Input
-                          id="contactPhone"
-                          type="tel"
-                          placeholder="+44 7XXX XXX XXX"
-                          value={formData.contactPhone}
-                          onChange={(e) => handleInputChange("contactPhone", e.target.value)}
-                          required
-                        />
-                      </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName">First Name *</Label>
+                            <Input
+                                id="firstName"
+                                placeholder="Your first name"
+                                value={formData.firstName}
+                                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                                required
+                                disabled={!!user}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName">Last Name *</Label>
+                            <Input
+                                id="lastName"
+                                placeholder="Your last name"
+                                value={formData.lastName}
+                                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                                required
+                                disabled={!!user}
+                            />
+                        </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="contactEmail">Contact Email *</Label>
-                      <Input
-                        id="contactEmail"
-                        type="email"
-                        placeholder="you@business.co.uk"
-                        value={formData.contactEmail}
-                        onChange={(e) => handleInputChange("contactEmail", e.target.value)}
-                        required
-                      />
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            placeholder="you@business.co.uk"
+                            value={formData.email}
+                            onChange={(e) => handleInputChange("email", e.target.value)}
+                            required
+                            disabled={!!user}
+                        />
                     </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="phoneNumber">Phone Number *</Label>
+                            <Input
+                                id="phoneNumber"
+                                type="tel"
+                                placeholder="+44 7XXX XXX XXX"
+                                value={formData.phoneNumber}
+                                onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                                required
+                                disabled={!!user}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="city">City *</Label>
+                            <Input
+                                id="city"
+                                placeholder="e.g., London"
+                                value={formData.city}
+                                onChange={(e) => handleInputChange("city", e.target.value)}
+                                required
+                                disabled={!!user}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        {/* CHANGED: Input field uses 'organisationName' */}
+                        <Label htmlFor="organisationName">Business/Organisation Name *</Label>
+                        <Input
+                            id="organisationName" // CHANGED: id now matches 'organisationName'
+                            placeholder="e.g., My Cafe Ltd."
+                            value={formData.organisationName} // CHANGED: value uses formData.organisationName
+                            onChange={(e) => handleInputChange("organisationName", e.target.value)} // CHANGED: onChange uses "organisationName"
+                            required
+                            disabled={!!user}
+                        />
+                    </div>
+
+
+                    {/* Password and Confirm Password fields, shown only if not logged in */}
+                    {!user && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="password">Password *</Label>
+                          <Input
+                            id="password"
+                            type="password"
+                            placeholder="Set a password for your employer account"
+                            value={formData.password}
+                            onChange={(e) => handleInputChange("password", e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            placeholder="Re-enter your password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
+
                   </div>
 
                   <Separator />
@@ -253,6 +464,23 @@ function PostJobContent() {
                       </div>
                     </div>
                   </div>
+
+                  {error && (
+                    <p className="text-red-500 text-sm text-center">{error}</p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={isLoading || !formData.title || !formData.category || (!!user && user.user_type === 'student')}
+                    size="lg"
+                  >
+                    {isLoading ? "Processing..." : `Post Job - £${postingCost}`}
+                  </Button>
+
+                  <p className="text-xs text-gray-500 text-center">
+                    Secure payment processed by Stripe. You'll receive a receipt via email.
+                  </p>
                 </form>
               </CardContent>
             </Card>
@@ -298,18 +526,6 @@ function PostJobContent() {
                   )}
                 </div>
 
-                <Button
-                  onClick={handleSubmit}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={isLoading || !formData.title || !formData.category}
-                  size="lg"
-                >
-                  {isLoading ? "Processing..." : `Post Job - £${postingCost}`}
-                </Button>
-
-                <p className="text-xs text-gray-500 text-center">
-                  Secure payment processed by Stripe. You'll receive a receipt via email.
-                </p>
               </CardContent>
             </Card>
 
@@ -361,7 +577,6 @@ function PostJobContent() {
                 <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
                 <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
-                {/* ADD THE CONTACT MODAL HERE */}
                 <ContactModal>
                   <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
                 </ContactModal>
