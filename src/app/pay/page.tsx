@@ -1,3 +1,4 @@
+// src/app/payment/page.tsx
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
@@ -98,10 +99,13 @@ function PaymentContent() {
     return null;
   }
 
+  // Determine the correct pricing href based on user type for the Header and Footer
+  const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Pass user, isLoading, and logout to the Header component */}
-      <Header user={user} isLoading={isAuthLoading} logout={logout} />
+      <Header user={user} isLoading={isAuthLoading} logout={logout} pricingHref={pricingHref} />
 
       <div className="flex-grow container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
@@ -120,7 +124,7 @@ function PaymentContent() {
                 </p>
                 <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    <strong>No additional fees:</strong> What you see is what you pay.
+                    No additional fees: What you see is what you pay.
                     Includes secure payment processing and instant access.
                   </p>
                 </div>
@@ -145,7 +149,7 @@ function PaymentContent() {
                             <div className="flex items-center space-x-3">
                               <input type="radio" name="savedCard" defaultChecked={card.id === 1} />
                               <div>
-                                <p className="font-medium">{card.brand} •••• {card.last4}</p>
+                                <p className="font-medium">{card.brand} {card.last4}</p>
                                 <p className="text-sm text-gray-500">Expires {card.expiryMonth}/{card.expiryYear}</p>
                               </div>
                             </div>
@@ -227,7 +231,7 @@ function PaymentContent() {
               <h4 className="font-semibold mb-3">For Employers</h4>
               <nav className="flex flex-col space-y-2 text-sm">
                 <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
+                <Link href={pricingHref} className="text-gray-300 hover:text-white">Pricing</Link>
                 <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
               </nav>
             </div>

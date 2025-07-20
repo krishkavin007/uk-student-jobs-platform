@@ -13,10 +13,13 @@ import Link from "next/link";
 export default function HomePage() {
   const { user, isLoading, logout } = useAuth(); // Use the useAuth hook to get user, loading state, and logout function
 
+  // Determine the correct pricing href based on user type
+  const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Pass user, logout, and isLoading to the Header component */}
-      <Header user={user} logout={logout} isLoading={isLoading} />
+      {/* Pass user, logout, isLoading, and the dynamically determined pricingHref to the Header component */}
+      <Header user={user} logout={logout} isLoading={isLoading} pricingHref={pricingHref} />
 
       {/* Hero Section */}
       <section className="w-full py-12 md:py-24 lg:py-32">
@@ -423,7 +426,15 @@ export default function HomePage() {
               <h3 className="font-semibold mb-4">For Employers</h3>
               <ul className="space-y-2 text-sm">
                 <li><Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link></li>
-                <li><Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link></li>
+                {/* MODIFIED: Dynamically set pricing link for employers based on user type */}
+                <li>
+                  <Link
+                    href={user?.user_type === "student" ? "/pricing#student" : "/pricing#employer"}
+                    className="text-gray-300 hover:text-white"
+                  >
+                    Pricing
+                  </Link>
+                </li>
                 <li><Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link></li>
               </ul>
             </div>

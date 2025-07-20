@@ -254,10 +254,14 @@ export default function BrowseJobsPage() {
     router.push(`/pay?jobId=${job.job_id}&type=apply`) // Use job.job_id
   }
 
+  // Determine the correct pricing href based on user type for the Header and Footer
+  const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
+
   return (
     // Added overflow-x-hidden to the main container to prevent horizontal scroll
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
-      <Header user={user} logout={logout} isLoading={isAuthLoading} />
+      {/* Pass the dynamically determined pricingHref to the Header component */}
+      <Header user={user} logout={logout} isLoading={isAuthLoading} pricingHref={pricingHref} />
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -593,7 +597,13 @@ export default function BrowseJobsPage() {
               <h4 className="font-semibold mb-3">For Employers</h4>
               <nav className="flex flex-col space-y-2 text-sm">
                 <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
+                {/* Dynamically set pricing link for employers based on user type in the footer */}
+                <Link
+                  href={pricingHref} // Use the same pricingHref calculated above
+                  className="text-gray-300 hover:text-white"
+                >
+                  Pricing
+                </Link>
                 <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
               </nav>
             </div>
@@ -604,8 +614,9 @@ export default function BrowseJobsPage() {
                 <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
                 {/* ContactModal component correctly placed here */}
+                {/* Ensure the ContactModal's child is a button with appropriate styles */}
                 <ContactModal>
-                    <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
+                    <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">Contact Us</button>
                 </ContactModal>
               </nav>
             </div>

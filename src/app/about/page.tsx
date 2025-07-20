@@ -6,18 +6,21 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/ui/header" // Import your global Header component
-// The Logo component is not directly used in AboutPage, only inside Header, so it's not needed here.
-// import { Logo } from "@/components/ui/logo" // Import the Logo component as it's used in Header
 import { ContactModal } from "@/components/ui/contact-modal" // NEW: Import ContactModal
 
 export default function AboutPage() {
   const { user, isLoading, logout } = useAuth(); // Use the useAuth hook to get user, loading state, and logout function
 
+  // Determine the correct pricing href based on user type.
+  // Added a fallback to "/pricing#employer" if user or user_type is undefined,
+  // to prevent the "undefined" href error from the previous turn.
+  const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Replaced the local header with the global Header component */}
-      {/* Pass user, logout, and isLoading to the Header component */}
-      <Header user={user} logout={logout} isLoading={isLoading} />
+      {/* Pass user, logout, isLoading, AND the dynamically determined pricingHref to the Header component */}
+      <Header user={user} logout={logout} isLoading={isLoading} pricingHref={pricingHref} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-12">
@@ -320,7 +323,13 @@ export default function AboutPage() {
               <h4 className="font-semibold mb-3">For Employers</h4>
               <nav className="flex flex-col space-y-2 text-sm">
                 <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
+                {/* REMOVED: The unnecessary <li> tag that caused the bullet icon */}
+                <Link
+                  href={pricingHref} // Use the same pricingHref calculated above
+                  className="text-gray-300 hover:text-white"
+                >
+                  Pricing
+                </Link>
                 <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
               </nav>
             </div>

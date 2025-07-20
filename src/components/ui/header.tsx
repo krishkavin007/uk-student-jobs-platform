@@ -23,14 +23,17 @@ interface User {
 }
 
 interface HeaderProps {
-  user?: User | null; // <--- MADE OPTIONAL
-  logout?: () => void; // <--- MADE OPTIONAL
-  isLoading?: boolean; // <--- MADE OPTIONAL
+  user?: User | null;
+  logout?: () => void;
+  isLoading?: boolean;
   showAuth?: boolean;
+  // MODIFIED: Make pricingHref optional and provide a default in the component
+  pricingHref?: string; 
 }
 
 // Updated Header function to accept showAuth with a default value of true
-export function Header({ user, logout, isLoading, showAuth = true }: HeaderProps) {
+// MODIFIED: Destructure pricingHref with a default value
+export function Header({ user, logout, isLoading, showAuth = true, pricingHref = "/pricing#employer" }: HeaderProps) {
   return (
     <header className="bg-white dark:bg-gray-900 border-b dark:border-gray-700">
       <div className="container mx-auto px-4 py-4">
@@ -41,7 +44,8 @@ export function Header({ user, logout, isLoading, showAuth = true }: HeaderProps
 
           {/* Main navigation with larger gap for primary items */}
           <nav className="flex items-center gap-10">
-            <Link href="/pricing" className="text-sm font-medium hover:underline dark:text-gray-300">
+            {/* Use the pricingHref prop for the Pricing link */}
+            <Link href={pricingHref} className="text-sm font-medium hover:underline dark:text-gray-300">
               Pricing
             </Link>
 

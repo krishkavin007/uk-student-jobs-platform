@@ -1,3 +1,4 @@
+// src/app/terms/page.tsx
 "use client"; // <-- ADD THIS LINE AT THE VERY TOP
 
 import Link from "next/link"
@@ -9,11 +10,14 @@ import { useAuth } from "@/app/context/AuthContext"; // Import useAuth hook
 export default function TermsPage() {
   const { user, isLoading: authLoading, logout } = useAuth(); // Now correctly called on the client
 
+  // Determine the correct pricing href based on user type for the Header and Footer
+  const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      {/* Pass user, isLoading, and logout to the Header component */}
-      <Header user={user} isLoading={authLoading} logout={logout} />
+      {/* Pass user, isLoading, logout, AND the dynamically determined pricingHref to the Header component */}
+      <Header user={user} isLoading={authLoading} logout={logout} pricingHref={pricingHref} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card>
@@ -37,12 +41,12 @@ export default function TermsPage() {
             <section>
               <h2 className="text-2xl font-semibold mb-3">2. Definitions</h2>
               <ul className="list-disc pl-6 space-y-1">
-                <li>**"Platform"** refers to the StudentJobs UK website and mobile applications</li>
-                <li>**"User"** refers to any person who accesses or uses our Platform</li>
-                <li>**"Student"** refers to users seeking part-time employment opportunities</li>
-                <li>**"Employer"** refers to users posting job opportunities</li>
-                <li>**"Job Posting"** refers to employment opportunities listed on our Platform</li>
-                <li>**"Services"** refers to all features and functionality provided through our Platform</li>
+                <li>"Platform" refers to the StudentJobs UK website and mobile applications</li>
+                <li>"User" refers to any person who accesses or uses our Platform</li>
+                <li>"Student" refers to users seeking part-time employment opportunities</li>
+                <li>"Employer" refers to users posting job opportunities</li>
+                <li>"Job Posting" refers to employment opportunities listed on our Platform</li>
+                <li>"Services" refers to all features and functionality provided through our Platform</li>
               </ul>
             </section>
 
@@ -137,15 +141,15 @@ export default function TermsPage() {
 
               <h3 className="text-xl font-medium mb-2">Employer Payments</h3>
               <ul className="list-disc pl-6 space-y-1">
-                <li>**Basic Job Posting:** £1.00 per job posting, valid for 30 days</li>
-                <li>**Sponsored Job Posting:** £5.00 per job posting with enhanced visibility</li>
+                <li>Basic Job Posting: £1.00 per job posting, valid for 30 days</li>
+                <li>Sponsored Job Posting: £5.00 per job posting with enhanced visibility</li>
                 <li>All payments are due at the time of job posting</li>
                 <li>Payments are non-refundable except as outlined in our Refund Policy</li>
               </ul>
 
               <h3 className="text-xl font-medium mb-2 mt-4">Student Payments</h3>
               <ul className="list-disc pl-6 space-y-1">
-                <li>**Contact Information Access:** £1.00 per job application</li>
+                <li>Contact Information Access: £1.00 per job application</li>
                 <li>Payment grants access to employer contact details</li>
                 <li>No additional charges for applying to jobs</li>
                 <li>Refunds available only in exceptional circumstances</li>
@@ -268,9 +272,9 @@ export default function TermsPage() {
               <h2 className="text-2xl font-semibold mb-3">15. Contact Information</h2>
               <p>If you have questions about these Terms, please contact us:</p>
               <div className="bg-gray-50 p-4 rounded-lg mt-4">
-                <p>**Email:** legal@studentjobs.uk</p>
-                <p>**Support:** support@studentjobs.uk</p>
-                <p>**Address:** StudentJobs UK Ltd, London, United Kingdom</p>
+                <p>Email: legal@studentjobs.uk</p>
+                <p>Support: support@studentjobs.uk</p>
+                <p>Address: StudentJobs UK Ltd, London, United Kingdom</p>
               </div>
             </section>
 
@@ -307,7 +311,13 @@ export default function TermsPage() {
               <h4 className="font-semibold mb-3">For Employers</h4>
               <nav className="flex flex-col space-y-2 text-sm">
                 <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
+                {/* Dynamically set pricing link for employers based on user type in the footer */}
+                <Link
+                  href={pricingHref} // Use the same pricingHref calculated above
+                  className="text-gray-300 hover:text-white"
+                >
+                  Pricing
+                </Link>
                 <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
               </nav>
             </div>
@@ -318,8 +328,9 @@ export default function TermsPage() {
                 <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
                 {/* ADD THE CONTACT MODAL HERE */}
+                {/* Ensure the ContactModal's child is a button with appropriate styles */}
                 <ContactModal>
-                    <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
+                    <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">Contact Us</button>
                 </ContactModal>
               </nav>
             </div>
