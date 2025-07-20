@@ -330,11 +330,11 @@ export default function SignupPage() {
                       />
                       <label htmlFor="terms" className="text-sm">
                         I agree to the{" "}
-                        <Link href="/terms" className="text-blue-600 hover:underline">
+                        <Link href="/terms" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
                           Terms & Conditions
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-blue-600 hover:underline">
+                        <Link href="/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
                           Privacy Policy
                         </Link>
                       </label>
@@ -453,11 +453,11 @@ export default function SignupPage() {
                       />
                       <label htmlFor="terms" className="text-sm">
                         I agree to the{" "}
-                        <Link href="/terms" className="text-blue-600 hover:underline">
+                        <Link href="/terms" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
                           Terms & Conditions
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-blue-600 hover:underline">
+                        <Link href="/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
                           Privacy Policy
                         </Link>
                       </label>

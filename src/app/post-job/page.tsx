@@ -70,6 +70,7 @@ function PostJobContent() {
     confirmPassword: "",
     externalUrl: "",
     sponsored: false,
+    agreeToTerms: false, // ADDED: New state for terms agreement
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +127,12 @@ function PostJobContent() {
       }
       if (formData.password.length < 6) {
         setError("Password must be at least 6 characters long.");
+        setIsLoading(false);
+        return;
+      }
+      // ADDED: Terms agreement check for non-logged-in users
+      if (!formData.agreeToTerms) {
+        setError("You must agree to the Terms & Conditions and Privacy Policy.");
         setIsLoading(false);
         return;
       }
@@ -435,6 +442,24 @@ function PostJobContent() {
                             required
                           />
                         </div>
+                        {/* ADDED: Terms and Conditions Checkbox for non-logged-in users */}
+                        <div className="flex items-center space-x-2 mt-4">
+                          <Checkbox
+                            id="postJobTerms" // Unique ID for this checkbox
+                            checked={formData.agreeToTerms}
+                            onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
+                          />
+                          <label htmlFor="postJobTerms" className="text-sm">
+                            I agree to the{" "}
+                            <Link href="/terms" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                              Terms & Conditions
+                            </Link>{" "}
+                            and{" "}
+                            <Link href="/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                              Privacy Policy
+                            </Link>
+                          </label>
+                        </div>
                       </>
                     )}
 
@@ -472,7 +497,8 @@ function PostJobContent() {
                   <Button
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700"
-                    disabled={isLoading || !formData.title || !formData.category || (!!user && user.user_type === 'student')}
+                    // Modified disabled condition to include agreeToTerms for non-logged-in users
+                    disabled={isLoading || !formData.title || !formData.category || (!!user && user.user_type === 'student') || (!user && !formData.agreeToTerms)}
                     size="lg"
                   >
                     {isLoading ? "Processing..." : `Post Job - £${postingCost}`}
@@ -574,9 +600,10 @@ function PostJobContent() {
             <div>
               <h4 className="font-semibold mb-3">Legal</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
+                {/* Updated footer links to open in new tab */}
+                <Link href="/privacy" className="text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
+                <Link href="/terms" className="text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>
+                <Link href="/refund-policy" className="text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer">Refund Policy</Link>
                 <ContactModal>
                   <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
                 </ContactModal>

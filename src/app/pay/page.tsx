@@ -27,68 +27,96 @@ function PaymentContent() {
   const { user, isLoading: isAuthLoading, logout } = useAuth();
 
   const jobId = searchParams?.get('jobId')
-  const type = searchParams?.get('type')
+  const purchaseType = searchParams?.get('type'); // This will now correctly capture 'pro_pack'
 
-  const amount = type === 'phone' ? '1.00' : '1.00'
+  let displayAmount = '0.00';
+  let purchaseItemName = 'Purchase';
+  let redirectPathOnSuccess = '/my-account'; // Default redirect path
+
+  // --- Logic to determine payment details based on 'type' query parameter ---
+  if (purchaseType === 'pro_pack') {
+    // IMPORTANT: Check if a logged-in employer is trying to buy a student pack
+    if (!isAuthLoading && user && user.user_type === 'employer') {
+      // Removed alert, now directly redirects
+      router.replace('/post-job'); // Redirect employer to post job page
+      return null; // Stop rendering this page for employers trying to buy student pack
+    }
+    displayAmount = '5.00'; // Fixed amount for Pro Pack
+    purchaseItemName = 'Student Pro Pack';
+    redirectPathOnSuccess = '/my-account?tab=credits'; // Redirect to a specific tab for credits
+  } else if (purchaseType === 'phone') { // Existing 'phone' reveal flow
+    displayAmount = '1.00'; // Fixed amount for phone reveal
+    purchaseItemName = `Phone Number Reveal for Job ID: ${jobId || 'N/A'}`;
+    redirectPathOnSuccess = `/browse-jobs?revealed=${jobId}`;
+  } else {
+    // Fallback for any other type or if 'type' is missing
+    displayAmount = searchParams?.get('amount') || '1.00'; // Use 'amount' param if present, or default
+    purchaseItemName = `Service Fee for: ${purchaseType || 'Unknown Item'}`;
+    // Default redirectPathOnSuccess remains '/my-account'
+  }
+  // --- END OF KEY LOGIC ---
+
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
-    // Simulate payment processing
+    // --- In a real application, this is where actual payment gateway integration would happen ---
+    // Example: Stripe.js tokenization, then sending token to your backend.
+    // await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement } });
+    // ---
+
+    // Simulate payment processing for demonstration purposes
     await new Promise(resolve => setTimeout(resolve, 2000))
 
-    // Auto account creation after successful payment
-    const userEmail = "user@example.com" // In real app, get from form or context
-    const userType = type === 'phone' ? 'student' : 'employer'
+    // After simulated payment success:
+    console.log(`Payment successful for ${purchaseItemName}.`);
+    console.log(`User: ${user?.user_email || 'Logged Out User (just signed up)'}`); // User info from AuthContext
+    console.log(`Amount: £${displayAmount}`);
+    console.log(`Saved card: ${saveCard}, Used saved card: ${useSavedCard}`);
 
-    // Create account with payment details
-    const newAccount = {
-      email: userEmail,
-      type: userType,
-      createdAt: new Date().toISOString(),
-      paymentMethod: useSavedCard ? 'saved_card' : 'new_card',
-      firstPayment: {
-        amount: parseFloat(amount),
-        type: type === 'phone' ? 'Phone Reveal' : 'Job Application',
-        jobId: jobId
-      }
-    }
+    alert(`Payment successful for ${purchaseItemName}! Redirecting...`);
 
-    console.log('Account created:', newAccount)
+    // Redirect to the determined success path
+    router.push(redirectPathOnSuccess);
 
-    if (saveCard && !useSavedCard) {
-      console.log('Card saved for future payments')
-    }
+    setLoading(false);
+  }
 
-    alert(`Payment successful! ${userType === 'employer' ? 'Employer' : 'Student'} account created. Redirecting...`)
+  // Render a loading state while authentication status is being determined
+  if (isAuthLoading) {
+      return (
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+              <p className="text-gray-700">Checking user authentication...</p>
+          </div>
+      );
+  }
 
-    if (type === 'phone') {
-      router.push(`/browse-jobs?revealed=${jobId}`)
-    } else {
-      router.push('/my-account?tab=activity')
-    }
+  // If a redirect happened above (for employer buying student pack), return null to stop rendering
+  // This check is important as it ensures the redirect takes effect before the component renders fully.
+  if (purchaseType === 'pro_pack' && user?.user_type === 'employer') {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Pass user, isLoading, and logout to the Header component */}
       <Header user={user} isLoading={isAuthLoading} logout={logout} />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="flex-grow container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
           <Card>
             <CardHeader>
               <CardTitle>
-                {type === 'phone' ? 'Reveal Phone Number' : 'Apply to Job'}
+                Complete Your Purchase {/* Generic title for payment page */}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-sm font-medium">Payment Summary</p>
-                <p className="text-2xl font-bold text-blue-600">£{amount}</p>
+                <p className="text-2xl font-bold text-blue-600">£{displayAmount}</p> {/* Uses dynamic amount */}
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {type === 'phone' ? 'Phone number reveal' : 'Job application fee'}
+                  {purchaseItemName} {/* Uses dynamic item name */}
                 </p>
                 <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -169,7 +197,7 @@ function PaymentContent() {
                   className="w-full"
                   disabled={loading}
                 >
-                  {loading ? 'Processing...' : `Pay £${amount}`}
+                  {loading ? 'Processing...' : `Pay £${displayAmount}`} {/* Uses dynamic amount */}
                 </Button>
               </form>
             </CardContent>

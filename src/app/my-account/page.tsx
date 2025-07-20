@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,7 +26,7 @@ interface User {
   user_email: string;
   google_id?: string;
   user_type: "employer" | "student";
-  organisation_name?: string; // CHANGED: Consistent British spelling for interface
+  organisation_name?: string; // Consistent British spelling for interface
   contact_phone_number?: string;
   user_first_name?: string;
   user_last_name?: string;
@@ -84,17 +84,34 @@ export default function MyAccountPage() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("profile"); // State to control active tab
 
   // --- NEW STATE FOR EDITABLE PROFILE FIELDS ---
   const [editedFirstName, setEditedFirstName] = useState<string>('');
   const [editedLastName, setEditedLastName] = useState<string>('');
   const [editedContactPhoneNumber, setEditedContactPhoneNumber] = useState<string>('');
   const [editedUniversityCollege, setEditedUniversityCollege] = useState<string>('');
-  const [editedOrganisationName, setEditedOrganisationName] = useState<string>(''); // CHANGED: Local state name to match British spelling
+  const [editedOrganisationName, setEditedOrganisationName] = useState<string>('');
   const [editedEmail, setEditedEmail] = useState<string>('');
-  const [editedUserCity, setEditedUserCity] = useState<string>(''); // Added state for user_city
+  const [editedUserCity, setEditedUserCity] = useState<string>('');
   // --- END NEW STATE ---
+
+  // --- NEW STATE FOR CREDITS (POPULATED WITH SIMULATED STUDENT DATA) ---
+  const [userCredits, setUserCredits] = useState<number>(0);
+  const [creditHistory, setCreditHistory] = useState<Transaction[]>([
+    { id: 101, date: '2025-07-19', type: 'Pro Pack Purchase', description: 'Student Pro Pack (8 Reveals)', amount: 5.00, status: 'Completed', invoiceNumber: 'INV001' },
+    { id: 102, date: '2025-07-20', type: 'Credit Top-up', description: 'Manual Top-up', amount: 10.00, status: 'Pending', invoiceNumber: 'INV002' },
+  ]);
+  // --- END NEW STATE ---
+
+  // --- NEW STATE FOR EMPLOYER BILLING HISTORY ---
+  const [employerBillingHistory, setEmployerBillingHistory] = useState<Transaction[]>([
+    { id: 201, date: '2025-06-01', type: 'Job Post', description: 'Basic Job Post', amount: 1.00, status: 'Completed', invoiceNumber: 'INVEMP001' },
+    { id: 202, date: '2025-06-15', type: 'Job Upgrade', description: 'Sponsored Upgrade for "Retail Assistant"', amount: 4.00, status: 'Completed', invoiceNumber: 'INVEMP002' },
+    { id: 203, date: '2025-07-01', type: 'Job Post', description: 'Basic Job Post', amount: 1.00, status: 'Pending', invoiceNumber: 'INVEMP003' },
+  ]);
+  // --- END NEW STATE ---
+
 
   const [appliedJobs, setAppliedJobs] = useState<AppliedJob[]>([]);
   const [postedJobs, setPostedJobs] = useState<PostedJob[]>([]);
@@ -112,6 +129,7 @@ export default function MyAccountPage() {
   const [showDataDialog, setShowDataDialog] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams(); // Initialize useSearchParams
 
   // Unified useEffect for initial data setup and redirect
   useEffect(() => {
@@ -132,15 +150,25 @@ export default function MyAccountPage() {
       setEditedLastName(user.user_last_name || '');
       setEditedContactPhoneNumber(user.contact_phone_number || '');
       setEditedUniversityCollege(user.university_college || '');
-      setEditedOrganisationName(user.organisation_name || ''); // Accessing user.organisation_name from AuthContext
+      setEditedOrganisationName(user.organisation_name || '');
       setEditedEmail(user.user_email || '');
       setEditedUserCity(user.user_city || '');
+
+      // --- NEW: Set active tab from URL query parameter ---
+      const urlTab = searchParams?.get('tab');
+      if (urlTab) {
+        setActiveTab(urlTab);
+      }
+
+      // --- NEW: Simulate adding credits if redirected from a Pro Pack purchase (for students only) ---
+      if (user.user_type === "student" && urlTab === 'credits' && !localStorage.getItem(`proPackPurchased_${user.user_id}`)) {
+          setUserCredits(prev => prev + 8); // Add 8 reveals for the Pro Pack
+          localStorage.setItem(`proPackPurchased_${user.user_id}`, 'true'); // Mark as handled for this user
+      }
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, searchParams]);
 
 
-  // handleImageUpload now directly sets profileImage preview.
-  // The selectedFile will be used by handleSaveProfile.
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
@@ -161,7 +189,6 @@ export default function MyAccountPage() {
       formData.append('userImage', selectedFile);
     }
 
-    // --- USE EDITED STATES FOR FORM DATA ---
     formData.append('user_username', user.user_username);
     formData.append('user_email', editedEmail);
     formData.append('user_first_name', editedFirstName);
@@ -172,9 +199,8 @@ export default function MyAccountPage() {
     if (user.user_type === "student") {
         formData.append('university_college', editedUniversityCollege);
     } else if (user.user_type === "employer") {
-        formData.append('organisation_name', editedOrganisationName); // Sending to backend with British spelling
+        formData.append('organisation_name', editedOrganisationName);
     }
-    // --- END EDITED STATES ---
 
     try {
       const response = await fetch(`/api/user/${user.user_id}`, {
@@ -208,6 +234,7 @@ export default function MyAccountPage() {
     logout();
   };
 
+  // Re-used for both Billing history and Credit history
   const downloadReceipt = (transaction: Transaction) => {
     const receiptContent = `
 STUDENTJOBS UK - RECEIPT
@@ -339,6 +366,13 @@ Thank you for using StudentJobs UK!
               <Link href={user.user_type === "student" ? "/browse-jobs" : "/post-job"} className="text-sm font-medium hover:underline">
                 {user.user_type === "student" ? "Browse Jobs" : "Post Job"}
               </Link>
+              {/* UPDATED: Pricing Link to dynamically point to pricing#employer or pricing#student */}
+              <Link
+                href={user.user_type === "student" ? "/pricing#student" : "/pricing#employer"}
+                className="text-sm font-medium hover:underline"
+              >
+                Pricing
+              </Link>
               <ContactModal isLoggedIn={!!user}>
                 <button className="text-sm font-medium hover:underline">
                   Contact Us
@@ -365,6 +399,10 @@ Thank you for using StudentJobs UK!
                 {user.user_type === "student" ? "Applied Jobs" : "Posted Jobs"}
               </TabsTrigger>
               <TabsTrigger value="billing" className="w-full text-left" onClick={() => setActiveTab("billing")}>Billing</TabsTrigger>
+              {/* NEW: Credits Tab Trigger - Only for Students */}
+              {user.user_type === "student" && (
+                <TabsTrigger value="credits" className="w-full text-left" onClick={() => setActiveTab("credits")}>Credits</TabsTrigger>
+              )}
               <TabsTrigger value="settings" className="w-full text-left" onClick={() => setActiveTab("settings")}>Settings</TabsTrigger>
             </TabsList>
           </nav>
@@ -875,40 +913,112 @@ Thank you for using StudentJobs UK!
                     </div>
                   </div>
 
-                  <Separator className="my-6" />
-
-                  <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
-                  <div className="space-y-4">
-                    {[] .map((transaction: Transaction) => (
-                      <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <h4 className="font-semibold">{transaction.type}</h4>
-                          <p className="text-sm text-gray-600">{transaction.description}</p>
-                          <p className="text-xs text-gray-500">{transaction.date}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">£{transaction.amount.toFixed(2)}</p>
-                          <Badge
-                            variant="secondary"
-                            className="bg-green-100 text-green-800"
-                          >
-                            {transaction.status}
-                          </Badge>
-                          <div className="mt-2">
-                            <Button size="sm" variant="outline" onClick={() => downloadReceipt(transaction)}>
-                              Download Receipt
-                            </Button>
-                          </div>
-                        </div>
+                  {/* Transaction History for EMPLOYERS ONLY - MOVED here from the general billing section */}
+                  {user.user_type === "employer" && (
+                    <>
+                      <Separator className="my-6" />
+                      <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
+                      <div className="space-y-4">
+                        {employerBillingHistory.length > 0 ? (
+                          employerBillingHistory.map((transaction: Transaction) => (
+                            <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div>
+                                <h4 className="font-semibold">{transaction.type}</h4>
+                                <p className="text-sm text-gray-600">{transaction.description}</p>
+                                <p className="text-xs text-gray-500">{transaction.date}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold">£{transaction.amount.toFixed(2)}</p>
+                                <Badge
+                                  variant="secondary"
+                                  className={transaction.status === "Completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}
+                                >
+                                  {transaction.status}
+                                </Badge>
+                                <div className="mt-2">
+                                  <Button size="sm" variant="outline" onClick={() => downloadReceipt(transaction)}>
+                                    Download Receipt
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-muted-foreground">No transactions found.</p>
+                        )}
                       </div>
-                    ))}
-                    {[] .length === 0 && (
-                      <p className="text-muted-foreground">No transactions found.</p>
-                    )}
-                  </div>
+                    </>
+                  )} {/* End employer-specific transaction history */}
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* NEW: Credits Tab Content - Only for Students */}
+            {user.user_type === "student" && (
+              <TabsContent value="credits">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>My Credits</CardTitle>
+                    <CardDescription>
+                      Manage your available job reveal credits and view transaction history.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h3 className="text-lg font-semibold">Available Job Reveals</h3>
+                      <Badge variant="default" className="text-2xl py-2 px-4 bg-blue-600 text-white">
+                        {userCredits}
+                      </Badge>
+                    </div>
+
+                    <Separator className="my-6" /> {/* Separator after credit balance */}
+
+                    {/* Transaction History for Students (Moved and now uses creditHistory) */}
+                    <h3 className="text-lg font-semibold mb-4">Transaction History</h3> {/* Re-added generic title */}
+                    <div className="space-y-4">
+                      {creditHistory.length > 0 ? (
+                        creditHistory.map((transaction) => (
+                          <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                              <h4 className="font-semibold">{transaction.type}</h4>
+                              <p className="text-sm text-gray-600">{transaction.description}</p>
+                              <p className="text-xs text-gray-500">{transaction.date}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold">£{transaction.amount.toFixed(2)}</p>
+                              <Badge
+                                variant="secondary"
+                                className={transaction.status === "Completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}
+                              >
+                                {transaction.status}
+                              </Badge>
+                              {transaction.status === "Completed" && (
+                                <div className="mt-2">
+                                  <Button size="sm" variant="outline" onClick={() => downloadReceipt(transaction)}>
+                                    Download Receipt
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No transactions found.</p>
+                      )}
+                    </div>
+
+                    {/* Add option to buy more credits */}
+                    <div className="mt-8 text-center">
+                      <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                        <Link href="/pricing#student"> {/* Changed to #student */}
+                          <span>Buy More Credits</span>
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )} {/* End conditional rendering for Credits tab content */}
 
             <TabsContent value="settings">
               <div className="space-y-6">
@@ -931,7 +1041,7 @@ Thank you for using StudentJobs UK!
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Email Notification Preferences</DialogTitle> {/* FIX: Changed </CardTitle> to </DialogTitle> */}
+                            <DialogTitle>Email Notification Preferences</DialogTitle>
                             <DialogDescription>
                               Choose which email notifications you'd like to receive
                             </DialogDescription>
@@ -1092,26 +1202,30 @@ Thank you for using StudentJobs UK!
             <div>
               <h4 className="font-semibold mb-3">For Students</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/browse-jobs" className="text-gray-300 hover:text-white">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-300 hover:text-white">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-300 hover:text-white">Student Guide</Link>
+                <Link href="/browse-jobs" className="text-gray-300 hover:text-white"><span>Browse Jobs</span></Link>
+                <Link href="/how-it-works" className="text-gray-300 hover:text-white"><span>How It Works</span></Link>
+                <Link href="/student-guide" className="text-gray-300 hover:text-white"><span>Student Guide</span></Link>
               </nav>
             </div>
             <div>
               <h4 className="font-semibold mb-3">For Employers</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
-                <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
+                <Link href="/post-job" className="text-gray-300 hover:text-white"><span>Post a Job</span></Link>
+                <Link href="/pricing" className="text-gray-300 hover:text-white"><span>Pricing</span></Link>
+                <Link href="/employer-guide" className="text-gray-300 hover:text-white"><span>Employer Guide</span></Link>
               </nav>
             </div>
             <div>
               <h4 className="font-semibold mb-3">Legal</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
-                <Link href="/about" className="text-gray-300 hover:text-white">About Us</Link>
+                <Link href="/privacy" className="text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer"><span>Privacy Policy</span></Link>
+                <Link href="/terms" className="text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer"><span>Terms & Conditions</span></Link>
+                <Link href="/refund-policy" className="text-gray-300 hover:text-white" target="_blank" rel="noopener noreferrer"><span>Refund Policy</span></Link>
+                <ContactModal>
+                  <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">
+                    <span>Contact Us</span>
+                  </button>
+                </ContactModal>
               </nav>
             </div>
           </div>
