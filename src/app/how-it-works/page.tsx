@@ -1,3 +1,4 @@
+// src/app/how-it-works/page.tsx
 "use client"
 
 import { useState, useMemo } from "react"
@@ -12,11 +13,14 @@ import { useAuth } from '@/app/context/AuthContext';
 export default function HowItWorksPage() {
   const { user, isLoading, logout } = useAuth(); // Destructure user, isLoading, and logout from useAuth
 
+  // Determine the correct pricing href based on user type for the Header and Footer
+  const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      {/* Pass user, isLoading, and logout to the Header component */}
-      <Header user={user} isLoading={isLoading} logout={logout} />
+      {/* Pass user, isLoading, logout, AND the dynamically determined pricingHref to the Header component */}
+      <Header user={user} isLoading={isLoading} logout={logout} pricingHref={pricingHref} />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="text-center mb-12">
@@ -114,7 +118,7 @@ export default function HowItWorksPage() {
                 <p className="text-gray-600 text-sm">
                   Only £1 per application - much cheaper than traditional job boards and recruitment fees.
                 </p>
-              </div> {/* <--- REMOVED THE EXTRA </p> TAG HERE */}
+              </div>
             </div>
 
             <div className="flex items-start gap-4">
@@ -233,7 +237,13 @@ export default function HowItWorksPage() {
               <h4 className="font-semibold mb-3">For Employers</h4>
               <nav className="flex flex-col space-y-2 text-sm">
                 <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
+                {/* Dynamically set pricing link for employers based on user type in the footer */}
+                <Link
+                  href={pricingHref} // Use the same pricingHref calculated above
+                  className="text-gray-300 hover:text-white"
+                >
+                  Pricing
+                </Link>
                 <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
               </nav>
             </div>
@@ -243,9 +253,10 @@ export default function HowItWorksPage() {
                 <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
                 <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
                 <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
-                {/* ADD THE CONTACT MODAL HERE */}
+                {/* ContactModal component correctly placed here */}
+                {/* Ensure the ContactModal's child is a button with appropriate styles */}
                 <ContactModal>
-                    <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
+                    <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">Contact Us</button>
                 </ContactModal>
               </nav>
             </div>
