@@ -26,11 +26,25 @@ interface Job {
   created_at: string; // Added from API, now ISO string
   expires_at: string | null; // Added from API
   job_status: string; // Added from API
+
   // Frontend-only fields (these will be derived or managed client-side)
-  hoursType: string; // Still needed for filtering/display logic
-  applicationCount: number; // Still needed for display, might need API for real count
-  employer: string; // Still needed for display, will be contact_name or derived
-  applicationUrl: string | null; // Still needed, will likely be derived or null
+  hoursType: string;
+  applicationCount: number;
+  employer: string;
+  applicationUrl: string | null;
+  postedDate: string; // <-- FIX APPLIED HERE
+  // The properties below were part of your mapping logic, so I am adding them to the interface
+  // to ensure full type safety, even though some might be redundant with the backend names.
+  id: number;
+  title: string;
+  company: string;
+  location: string;
+  hourlyPay: string;
+  hoursPerWeek: string;
+  description: string;
+  sponsored: boolean;
+  category: string;
+  phoneNumber: string;
 }
 
 // Helper function to format dates as "X days ago", "X weeks ago", etc.
@@ -185,7 +199,7 @@ export default function BrowseJobsPage() {
       // Convert ISO strings to Date objects for reliable comparison
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
-      
+     
       // Handle cases where dates might be invalid (though they should be valid ISO strings from DB)
       // If dateB is invalid, put it after dateA. If dateA is invalid, put it after dateB.
       // If both are invalid, their relative order doesn't matter for date comparison.
