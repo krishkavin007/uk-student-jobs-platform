@@ -1,353 +1,553 @@
-// src/app/student-guide/page.tsx
-"use client"; // <-- ADD THIS LINE AT THE VERY TOP
+"use client";
 
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Header } from "@/components/ui/header"
+import Link from "next/link";
+import { useState, useMemo, useEffect, Fragment } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Header } from "@/components/ui/header";
 import { ContactModal } from "@/components/ui/contact-modal";
-import { useAuth } from "@/app/context/AuthContext"; // Import useAuth hook
+import { useAuth } from "@/app/context/AuthContext";
+import Tilt from "react-parallax-tilt";
+import { motion, AnimatePresence } from "framer-motion";
+
+// Import all necessary Lucide icons for consistency
+import {
+  ArrowRight,
+  Check, // Used for custom list styling
+  UserCheckIcon,
+  BriefcaseBusiness,
+  GraduationCap,
+  Search,
+  Handshake,
+  DollarSign,
+  ShieldCheckIcon,
+  HourglassIcon,
+  Globe,
+  WalletIcon,
+  MessageSquare,
+  Smartphone,
+  RepeatIcon,
+  BadgeCent,
+  Lightbulb,
+  Building2,
+  ListPlus,
+  Rocket,
+  PlaneTakeoff,
+  BookOpen,
+  Laptop,
+} from "lucide-react";
+
+
+// --- Animation Variants ---
+const pageVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+const containerStagger = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+  },
+};
+
+const titleVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: [0.4, 0.0, 0.2, 1] },
+  },
+};
+
+const sectionPop = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 50, damping: 15, mass: 0.5 },
+  },
+};
+
+// Component for custom list items
+const ListItem = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex items-start gap-2 text-base text-gray-300">
+    <Check className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+    <span>{children}</span>
+  </div>
+);
+
 
 export default function StudentGuidePage() {
-  const { user, isLoading: authLoading, logout } = useAuth(); // Now correctly called on the client
+  const { user, isLoading: authLoading, logout } = useAuth();
 
-  // Determine the correct pricing href based on user type for the Header and Footer
   const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      {/* Pass user, isLoading, logout, AND the dynamically determined pricingHref to the Header component */}
-      <Header user={user} isLoading={authLoading} logout={logout} pricingHref={pricingHref} />
+    <div className="min-h-screen bg-gray-950 text-gray-100 font-sans antialiased">
+      <Header
+        user={user}
+        isLoading={authLoading}
+        logout={logout}
+        pricingHref={pricingHref}
+        className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 text-gray-100"
+      />
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Student Guide</h1>
-          <p className="text-xl text-gray-600">Everything you need to know about working while studying in the UK</p>
-        </div>
+      <motion.main
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+        className="pt-24 sm:pt-32 pb-20"
+      >
+        <motion.div
+          variants={containerStagger}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4 py-1 max-w-6xl"
+        >
+          <div className="text-center mb-12">
+            <motion.h1
+              variants={titleVariants}
+              className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 mb-4"
+            >
+              Student Guide
+            </motion.h1>
+            <motion.p
+              variants={titleVariants}
+              className="mt-4 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto"
+            >
+              Everything you need to know about working while studying in the UK
+            </motion.p>
+          </div>
 
-        {/* Legal Requirements */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Legal Requirements & Work Rights</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-3">UK/EU Students</h3>
-              {/* Added list-disc and pl-5 for bullet points */}
-              <ul className="list-disc pl-5 space-y-2 text-base text-gray-700">
-                <li>No restrictions on working hours</li>
-                <li>Can work during term-time and holidays</li>
-                <li>Entitled to minimum wage (£10.42/hour for 18+)</li>
-                <li>Need National Insurance number for employment</li>
-              </ul>
+          {/* Legal Requirements */}
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8 border border-gray-800">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-8 text-center md:text-left">
+              Legal Requirements & Work Rights
+            </h2>
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              <div className="bg-gray-950 rounded-xl p-4 border border-gray-800">
+                <h3 className="text-lg font-semibold mb-3 text-blue-400">UK/EU Students</h3>
+                <div className="space-y-2">
+                  <ListItem>No restrictions on working hours</ListItem>
+                  <ListItem>Can work during term-time and holidays</ListItem>
+                  <ListItem>Entitled to minimum wage (£10.42/hour for 18+)</ListItem>
+                  <ListItem>Need National Insurance number for employment</ListItem>
+                </div>
+              </div>
+
+              <div className="bg-gray-950 rounded-xl p-4 border border-gray-800">
+                <h3 className="text-lg font-semibold mb-3 text-purple-400">International Students (Tier 4/Student Visa)</h3>
+                <div className="space-y-2">
+                  <ListItem>Maximum 20 hours per week during term-time</ListItem>
+                  <ListItem>Can work full-time (40 hours) during official university holidays</ListItem>
+                  <ListItem>Must have &#34;work permitted&#34; stamp in passport or visa</ListItem>
+                  <ListItem>e-Visa Share Code: Required for employers to verify your right to work</ListItem>
+                  <ListItem>Generate your share code at <Link href="https://www.gov.uk/prove-right-to-work" className="text-blue-500 hover:underline">gov.uk/prove-right-to-work</Link></ListItem>
+                  <ListItem>Cannot be self-employed or start a business</ListItem>
+                  <ListItem>Some restrictions on certain job types (entertainers, professional sports)</ListItem>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-3">International Students (Tier 4/Student Visa)</h3>
-              {/* Added list-disc and pl-5 for bullet points */}
-              <ul className="list-disc pl-5 space-y-2 text-base text-gray-700">
-                <li>Maximum 20 hours per week during term-time</li>
-                <li>Can work full-time (40 hours) during official university holidays</li>
-                <li>Must have "work permitted" stamp in passport or visa</li>
-                <li>e-Visa Share Code: Required for employers to verify your right to work</li>
-                <li>Generate your share code at <Link href="https://www.gov.uk/prove-right-to-work" className="text-blue-600 hover:underline">gov.uk/prove-right-to-work</Link></li>
-                <li>Cannot be self-employed or start a business</li>
-                <li>Some restrictions on certain job types (entertainers, professional sports)</li>
-              </ul>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <h4 className="font-semibold text-amber-800 mb-2">Important:</h4>
-              <p className="text-amber-700 text-base">
+            <div className="bg-amber-900/20 border border-amber-700 rounded-xl p-4">
+              <h4 className="font-semibold text-amber-300 mb-2">Important:</h4>
+              <p className="text-amber-200 text-base">
                 Always check your specific visa conditions. Working more than permitted hours can affect your visa status and future applications.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </motion.section>
 
-        {/* Job Search Tips */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Job Search Tips</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+          {/* Job Search Tips */}
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gray-850 rounded-2xl shadow-md p-6 md:p-8 border border-gray-700">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-teal-500 mb-8 text-center md:text-left">
+              Job Search Tips
+            </h2>
+            <div className="grid gap-8 md:grid-cols-2">
               <div>
-                <h3 className="text-lg font-semibold mb-3">Building Your Profile</h3>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 space-y-2 text-base text-gray-700">
-                  <li>Use a professional email address</li>
-                  <li>Include your university and course</li>
-                  <li>Mention your availability clearly</li>
-                  <li>Highlight relevant skills and experience</li>
-                  <li>Be honest about your schedule</li>
-                </ul>
+                <h3 className="text-lg font-semibold mb-3 text-green-400">Building Your Profile</h3>
+                <div className="space-y-2 border-l-2 border-green-500 pl-4"> {/* Subtle left border */}
+                  <ListItem>Use a professional email address</ListItem>
+                  <ListItem>Include your university and course</ListItem>
+                  <ListItem>Mention your availability clearly</ListItem>
+                  <ListItem>Be honest about your schedule</ListItem>
+                  <ListItem>Proofread your application documents carefully</ListItem>
+                </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3">Finding the Right Jobs</h3>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 space-y-2 text-base text-gray-700">
-                  <li>Filter by location to save commute time</li>
-                  <li>Look for "student-friendly" employers</li>
-                  <li>Consider jobs near your university</li>
-                  <li>Check work hours fit your timetable</li>
-                  <li>Read job descriptions carefully</li>
-                </ul>
+                <h3 className="text-lg font-semibold mb-3 text-red-400">Finding the Right Jobs</h3>
+                <div className="space-y-2 border-l-2 border-red-500 pl-4"> {/* Subtle left border */}
+                  <ListItem>Filter by location to save commute time</ListItem>
+                  <ListItem>Look for &#34;student-friendly&#34; employers</ListItem>
+                  <ListItem>Consider jobs near your university</ListItem>
+                  <ListItem>Check work hours fit your timetable</ListItem>
+                  <ListItem>Read job descriptions carefully</ListItem>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </motion.section>
 
-        {/* Popular Student Jobs */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Popular Student Jobs</CardTitle>
-          </CardHeader>
-          <CardContent>
+          {/* Popular Student Jobs */}
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-500 mb-8 text-center md:text-left">
+              Popular Student Jobs
+            </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Hospitality</h3>
-                <p className="text-base text-gray-600 mb-2">Restaurants, cafes, pubs</p>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 text-base text-gray-700 space-y-1">
-                  <li>Flexible evening/weekend shifts</li>
-                  <li>Tips supplement wages</li>
-                  <li>Great for social skills</li>
-                </ul>
-              </div>
+              <Link href="/browse-jobs">
+                <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
+                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
+                    <h3 className="font-semibold mb-2 text-white">Hospitality</h3>
+                    <p className="text-base text-gray-400 mb-2">Restaurants, cafes, pubs</p>
+                    <div className="space-y-1">
+                      <ListItem>Flexible evening/weekend shifts</ListItem>
+                      <ListItem>Tips supplement wages</ListItem>
+                      <ListItem>Great for social skills</ListItem>
+                    </div>
+                  </div>
+                </Tilt>
+              </Link>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Retail</h3>
-                <p className="text-base text-gray-600 mb-2">Shops, supermarkets</p>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 text-base text-gray-700 space-y-1">
-                  <li>Weekend and evening availability</li>
-                  <li>Customer service experience</li>
-                  <li>Often hiring during busy periods</li>
-                </ul>
-              </div>
+              <Link href="/browse-jobs">
+                <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
+                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
+                    <h3 className="font-semibold mb-2 text-white">Retail</h3>
+                    <p className="text-base text-gray-400 mb-2">Shops, supermarkets</p>
+                    <div className="space-y-1">
+                      <ListItem>Weekend and evening availability</ListItem>
+                      <ListItem>Customer service experience</ListItem>
+                      <ListItem>Often hiring during busy periods</ListItem>
+                    </div>
+                  </div>
+                </Tilt>
+              </Link>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Tutoring</h3>
-                <p className="text-base text-gray-600 mb-2">Private or through agencies</p>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 text-base text-gray-700 space-y-1">
-                  <li>Higher hourly rates (£15-25)</li>
-                  <li>Flexible scheduling</li>
-                  <li>Use your academic strengths</li>
-                </ul>
-              </div>
+              <Link href="/browse-jobs">
+                <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
+                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
+                    <h3 className="font-semibold mb-2 text-white">Tutoring</h3>
+                    <p className="text-base text-gray-400 mb-2">Private or through agencies</p>
+                    <div className="space-y-1">
+                      <ListItem>Higher hourly rates (£15-25)</ListItem>
+                      <ListItem>Flexible scheduling</ListItem>
+                      <ListItem>Use your academic strengths</ListItem>
+                    </div>
+                  </div>
+                </Tilt>
+              </Link>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Campus Jobs</h3>
-                <p className="text-base text-gray-600 mb-2">University employment</p>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 text-base text-gray-700 space-y-1">
-                  <li>No commute required</li>
-                  <li>Understanding of student needs</li>
-                  <li>Academic support roles</li>
-                </ul>
-              </div>
+              <Link href="/browse-jobs">
+                <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
+                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
+                    <h3 className="font-semibold mb-2 text-white">Campus Jobs</h3>
+                    <p className="text-base text-gray-400 mb-2">University employment</p>
+                    <div className="space-y-1">
+                      <ListItem>No commute required</ListItem>
+                      <ListItem>Understanding of student needs</ListItem>
+                      <ListItem>Academic support roles</ListItem>
+                    </div>
+                  </div>
+                </Tilt>
+              </Link>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Delivery Work</h3>
-                <p className="text-base text-gray-600 mb-2">Food delivery, couriers</p>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 text-base text-gray-700 space-y-1">
-                  <li>Flexible hours</li>
-                  <li>Exercise while working</li>
-                  <li>Peak time bonuses</li>
-                </ul>
-              </div>
+              <Link href="/browse-jobs">
+                <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
+                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
+                    <h3 className="font-semibold mb-2 text-white">Delivery Work</h3>
+                    <p className="text-base text-gray-400 mb-2">Food delivery, couriers</p>
+                    <div className="space-y-1">
+                      <ListItem>Flexible hours</ListItem>
+                      <ListItem>Exercise while working</ListItem>
+                      <ListItem>Peak time bonuses</ListItem>
+                    </div>
+                  </div>
+                </Tilt>
+              </Link>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Admin Support</h3>
-                <p className="text-base text-gray-600 mb-2">Office assistance</p>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 text-base text-gray-700 space-y-1">
-                  <li>Professional environment</li>
-                  <li>Transferable skills</li>
-                  <li>Often part-time friendly</li>
-                </ul>
-              </div>
+              <Link href="/browse-jobs">
+                <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
+                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
+                    <h3 className="font-semibold mb-2 text-white">Admin Support</h3>
+                    <p className="text-base text-gray-400 mb-2">Office assistance</p>
+                    <div className="space-y-1">
+                      <ListItem>Professional environment</ListItem>
+                      <ListItem>Transferable skills</ListItem>
+                      <ListItem>Often part-time friendly</ListItem>
+                    </div>
+                  </div>
+                </Tilt>
+              </Link>
             </div>
-          </CardContent>
-        </Card>
+          </motion.section>
 
-        {/* Money Management */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Money Management & Tax</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Understanding Your Pay</h3>
-              {/* Added list-disc and pl-5 for bullet points */}
-              <ul className="list-disc pl-5 space-y-2 text-base text-gray-700">
-                <li>Minimum Wage: £10.42/hour (18-20), £11.44/hour (21+)</li>
-                <li>National Insurance: Paid automatically if earning over £12,570/year</li>
-                <li>Income Tax: Only pay if earning over £12,570/year</li>
-                <li>Emergency Tax: May apply initially - claim back if overpaid</li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Tax Tips for Students</h3>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 space-y-2 text-base text-green-800">
-                  <li>Get a National Insurance number before starting work</li>
-                  <li>Keep payslips for tax records</li>
-                  <li>You can claim back overpaid tax at year-end</li>
-                  <li>Part-time earnings rarely exceed tax threshold</li>
-                  <li>Use HMRC's income tax calculator to estimate take-home pay</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Balancing Work and Studies */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Balancing Work and Studies</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+          {/* Money Management */}
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gray-900 rounded-3xl shadow-2xl p-6 md:p-8 border-t-4 border-indigo-600 border-l border-r border-b border-gray-800">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500 mb-8 text-center md:text-left">
+              Money Management & Tax
+            </h2>
+            <div className="space-y-8">
               <div>
-                <h3 className="text-lg font-semibold mb-3">Time Management</h3>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 space-y-2 text-base text-gray-700">
-                  <li>Plan your schedule in advance</li>
-                  <li>Block out study time and stick to it</li>
-                  <li>Use breaks between lectures for work</li>
-                  <li>Communicate your availability clearly</li>
-                  <li>Don't overcommit - start with fewer hours</li>
-                </ul>
+                <h3 className="text-lg font-semibold mb-3 text-orange-400">Understanding Your Pay</h3>
+                <div className="space-y-2">
+                  <ListItem>Minimum Wage: £10.42/hour (18-20), £11.44/hour (21+)</ListItem>
+                  <ListItem>National Insurance: Paid automatically if earning over £12,570/year</ListItem>
+                  <ListItem>Income Tax: Only pay if earning over £12,570/year</ListItem>
+                  <ListItem>Emergency Tax: May apply initially - claim back if overpaid</ListItem>
+                </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3">Academic Priorities</h3>
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 space-y-2 text-base text-gray-700">
-                  <li>Studies should always come first</li>
-                  <li>Reduce work hours during exams</li>
-                  <li>Find understanding employers</li>
-                  <li>Use work to develop transferable skills</li>
-                  <li>Consider how work complements your studies</li>
-                </ul>
+                <h3 className="text-lg font-semibold mb-3 text-teal-400">Tax Tips for Students</h3>
+                <div className="bg-green-900/20 border border-green-700 rounded-xl p-4 space-y-2">
+                  <ListItem>Get a National Insurance number before starting work</ListItem>
+                  <ListItem>Keep payslips for tax records</ListItem>
+                  <ListItem>You can claim back overpaid tax at year-end</ListItem>
+                  <ListItem>Part-time earnings rarely exceed tax threshold</ListItem>
+                  <ListItem>Use HMRC&#39;s income tax calculator to estimate take-home pay</ListItem>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Balancing Work and Studies */}
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gradient-to-br from-gray-900 to-gray-950 rounded-2xl p-6 md:p-8 shadow-inner border border-gray-800">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 mb-8 text-center md:text-left">
+              Balancing Work and Studies
+            </h2>
+            <div className="grid gap-8 md:grid-cols-2">
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-cyan-400">Time Management</h3>
+                <div className="space-y-2">
+                  <ListItem>Plan your schedule in advance</ListItem>
+                  <ListItem>Block out study time and stick to it</ListItem>
+                  <ListItem>Use breaks between lectures for work</ListItem>
+                  <ListItem>Communicate your availability clearly</ListItem>
+                  <ListItem>Don&#39;t overcommit - start with fewer hours</ListItem>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-pink-400">Academic Priorities</h3>
+                <div className="space-y-2">
+                  <ListItem>Studies should always come first</ListItem>
+                  <ListItem>Reduce work hours during exams</ListItem>
+                  <ListItem>Find understanding employers</ListItem>
+                  <ListItem>Use work to develop transferable skills</ListItem>
+                  <ListItem>Consider how work complements your studies</ListItem>
+                </div>
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-800 mb-2">Recommended Schedule:</h4>
-              <p className="text-base text-blue-700">
+            <div className="mt-8 bg-blue-900/20 border border-blue-700 rounded-xl p-4">
+              <h4 className="font-semibold text-blue-300 mb-2">Recommended Schedule:</h4>
+              <p className="text-base text-blue-200">
                 Most students find 10-15 hours per week during term-time manageable. This allows for study time,
                 social activities, and rest while earning useful income.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </motion.section>
 
-        {/* Safety and Rights */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl">Workplace Rights & Safety</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+          {/* Safety and Rights */}
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gray-850 rounded-lg shadow-lg p-6 md:p-8 border border-gray-750">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-500 mb-8 text-center md:text-left">
+              Workplace Rights & Safety
+            </h2>
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-indigo-400">Your Rights as a Worker</h3>
+                <div className="space-y-2">
+                  <ListItem>Right to minimum wage</ListItem>
+                  <ListItem>Rest breaks (20 minutes if working 6+ hours)</ListItem>
+                  <ListItem>Safe working environment</ListItem>
+                  <ListItem>Protection from discrimination</ListItem>
+                  <ListItem>Paid holiday entitlement (pro-rata)</ListItem>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-red-400">Red Flags to Avoid</h3>
+                <div className="bg-red-900/20 border border-red-700 rounded-xl p-4 space-y-2">
+                  <ListItem>Jobs requiring upfront payments</ListItem>
+                  <ListItem>Employers asking for bank details before job offer</ListItem>
+                  <ListItem>&#34;Too good to be true&#34; high pay for easy work</ListItem>
+                  <ListItem>Pressure to work excessive hours</ListItem>
+                  <ListItem>No proper employment contract</ListItem>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+
+
+          {/* CTA */}
+          <section className="bg-gray-900 rounded-2xl shadow-lg border border-gray-800 py-16 px-4 text-center mt-20">
+            <motion.div
+              variants={containerStagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              <motion.h2
+                variants={titleVariants}
+                className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4"
+              >
+                Ready to Start Working?
+              </motion.h2>
+              <motion.p
+                variants={titleVariants}
+                className="text-gray-300 text-lg mb-10 max-w-2xl mx-auto"
+              >
+                Find student-friendly employers who understand your schedule
+              </motion.p>
+              <motion.div
+                variants={titleVariants}
+                className="flex flex-col sm:flex-row gap-4 justify-center"
+              >
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full sm:w-auto h-14 px-8 text-base bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full shadow-lg transform hover:scale-105 transition-transform"
+                >
+                  <Link href="/browse-jobs" className="flex items-center justify-center">
+                    <span>Browse Jobs</span> <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto h-14 px-8 text-base border-2 border-indigo-600 text-indigo-400 bg-transparent hover:bg-indigo-900/50 hover:text-white font-bold rounded-full shadow-lg transform hover:scale-105 transition-transform"
+                >
+                  <Link href="/signup">Create Account</Link>
+                </Button>
+              </motion.div>
+            </motion.div>
+          </section>
+        </motion.div>
+      </motion.main>
+
+      {/* Footer */}
+      <footer className="w-full bg-gray-900 text-gray-300 py-10 mt-1 border-t border-gray-800">
+        <div className="w-full px-4 md:px-6 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
+            <div className="col-span-full md:col-span-1 flex flex-col items-center md:items-start mb-6 md:mb-0">
+              <Link
+                href="/"
+                className="flex items-center justify-center md:justify-start space-x-2 mb-4"
+              >
+                <span className="text-2xl font-extrabold text-white">
+                  StudentJobs UK
+                </span>
+              </Link>
+              <p className="text-gray-400 text-sm max-w-xs text-center md:text-left">
+                Connecting UK students with flexible part-time opportunities.
+              </p>
+            </div>
+
             <div>
-              <h3 className="text-lg font-semibold mb-3">Your Rights as a Worker</h3>
-              {/* Added list-disc and pl-5 for bullet points */}
-              <ul className="list-disc pl-5 space-y-2 text-base text-gray-700">
-                <li>Right to minimum wage</li>
-                <li>Rest breaks (20 minutes if working 6+ hours)</li>
-                <li>Safe working environment</li>
-                <li>Protection from discrimination</li>
-                <li>Paid holiday entitlement (pro-rata)</li>
+              <h3 className="font-bold text-sm mb-3 text-indigo-400 uppercase tracking-wider">
+                For Students
+              </h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link
+                    href="/browse-jobs"
+                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
+                  >
+                    Browse Jobs
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/how-it-works"
+                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
+                  >
+                    How It Works
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/student-guide"
+                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
+                  >
+                    Student Guide
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-3">Red Flags to Avoid</h3>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                {/* Added list-disc and pl-5 for bullet points */}
-                <ul className="list-disc pl-5 space-y-2 text-base text-red-700">
-                  <li>Jobs requiring upfront payments</li>
-                  <li>Employers asking for bank details before job offer</li>
-                  <li>"Too good to be true" high pay for easy work</li>
-                  <li>Pressure to work excessive hours</li>
-                  <li>No proper employment contract</li>
-                </ul>
-              </div>
+              <h3 className="font-bold text-base mb-3 text-indigo-300">
+                For Employers
+              </h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link
+                    href="/post-job"
+                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
+                  >
+                    Post a Job
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href={pricingHref}
+                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
+                  >
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/employer-guide"
+                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
+                  >
+                    Employer Guide
+                  </Link>
+                </li>
+              </ul>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* CTA */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Ready to Start Working?</h2>
-          <p className="text-base text-gray-600 mb-6">Find student-friendly employers who understand your schedule</p>
-          <div className="flex gap-4 justify-center">
-            <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700">
-              <Link href="/browse-jobs">Browse Jobs</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/signup">Create Account</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="w-full py-6 bg-gray-900 text-white mt-16">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-8 lg:grid-cols-4">
             <div>
-              <h3 className="font-bold text-lg mb-4">StudentJobs UK</h3>
-              <p className="text-gray-300 text-base">
-                Connecting UK students with flexible part-time opportunities.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">For Students</h4>
-              <nav className="flex flex-col space-y-2 text-base">
-                <Link href="/browse-jobs" className="text-gray-300 hover:text-white">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-300 hover:text-white">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-300 hover:text-white">Student Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">For Employers</h4>
-              <nav className="flex flex-col space-y-2 text-base">
-                <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                {/* Dynamically set pricing link for employers based on user type in the footer */}
-                <Link
-                  href={pricingHref} // Use the same pricingHref calculated above
-                  className="text-gray-300 hover:text-white"
-                >
-                  Pricing
-                </Link>
-                <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">Legal</h4>
-              <nav className="flex flex-col space-y-2 text-base">
-                <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
-                {/* ContactModal component correctly placed here */}
-                {/* Re-added asChild prop for ContactModal */}
-                <ContactModal asChild>
-                    <button className="text-gray-300 hover:text-white text-base text-left w-full pl-0">Contact Us</button>
-                </ContactModal>
-              </nav>
+              <h3 className="font-bold text-base mb-3 text-purple-300">Legal</h3>
+              <ul className="space-y-1.5 text-sm">
+                <li>
+                  <Link
+                    href="/privacy"
+                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
+                  >
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/terms"
+                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
+                  >
+                    Terms & Conditions
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/refund-policy"
+                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
+                  >
+                    Refund Policy
+                  </Link>
+                </li>
+                <li>
+                  <ContactModal>
+                    <button className="text-gray-400 hover:text-purple-200 transition-colors duration-200 text-left text-sm">
+                      Contact Us
+                    </button>
+                  </ContactModal>
+                </li>
+              </ul>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-base text-gray-300">
-            © 2025 StudentJobs UK. All rights reserved.
+
+          <div className="border-t border-gray-800 mt-10 pt-6 text-center text-xs text-gray-500">
+            © {new Date().getFullYear()} StudentJobs UK. All rights reserved.
           </div>
         </div>
       </footer>
