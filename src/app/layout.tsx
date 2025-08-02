@@ -8,6 +8,7 @@ import { CookieConsent } from "../components/ui/cookie-consent";
 
 // --- ADD THIS IMPORT ---
 import { AuthProvider } from './context/AuthContext';
+import { Toaster } from '@/components/ui/toaster'; // <--- ADD THIS IMPORT
 // --- END ADDITION ---
 
 const geistSans = Geist({
@@ -48,6 +49,7 @@ export default function RootLayout({
         {/* --- END WRAP --- */}
 
         <CookieConsent />
+        <Toaster /> {/* <--- ADD THIS LINE */}
       </body>
     </html>
   );

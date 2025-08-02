@@ -1,7 +1,7 @@
 // app/login/page.tsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,19 +12,38 @@ import { Separator } from "@/components/ui/separator"
 import { Header } from "@/components/ui/header"
 import { ContactModal } from "@/components/ui/contact-modal";
 import { useAuth } from "@/app/context/AuthContext";
+import { Eye, EyeOff } from "lucide-react"; // Import Eye and EyeOff icons
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [rememberMe, setRememberMe] = useState(false); // New state for "Remember me"
+  const [showPassword, setShowPassword] = useState(false); // New state for password visibility
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null);
   const router = useRouter()
   const { login: authLogin, user } = useAuth();
 
-  // Optional: Redirect if already logged in (similar to signup page)
+  // Handle redirection if already logged in using useEffect
+  useEffect(() => {
+    if (user) {
+      router.replace('/my-account');
+    }
+  }, [user, router]); // Dependencies: user and router
+
+  // Effect to handle "Remember me" functionality on component mount
+  useEffect(() => {
+    // Check if an email was remembered
+    const rememberedUserEmail = localStorage.getItem("rememberedUserEmail");
+    if (rememberedUserEmail) {
+      setEmail(rememberedUserEmail);
+      setRememberMe(true); // Set rememberMe to true if email was found
+    }
+  }, []); // Empty dependency array means this runs once on mount
+
+  // If user is already logged in, return null to prevent rendering the login form while redirecting
   if (user) {
-    router.replace('/my-account');
-    return null; // Or a loading spinner, or some message
+    return null;
   }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -33,12 +52,21 @@ export default function LoginPage() {
     setError(null); // Clear previous errors
 
     try {
-      const response = await fetch('/api/login', { // <-- ASSUMING YOUR LOGIN API IS AT /api/login
+      // Save or remove email based on rememberMe state
+      if (rememberMe) {
+        localStorage.setItem("rememberedUserEmail", email);
+      } else {
+        localStorage.removeItem("rememberedUserEmail");
+      }
+
+      // MODIFIED: Changed the API endpoint from '/api/login' to '/api/auth/login'
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        // Include the rememberMe flag in the request body
+        body: JSON.stringify({ email, password, rememberMe }), // Assuming backend expects 'username' or 'email' for login
       });
 
       if (!response.ok) {
@@ -47,10 +75,10 @@ export default function LoginPage() {
       }
 
       const userData = await response.json();
-      console.log("LoginPage: API Response User Data:", userData); // <-- ADDED LOG
+      console.log("LoginPage: API Response User Data:", userData);
       
       authLogin(userData);
-      console.log("LoginPage: authLogin called, navigating to /my-account."); // <-- ADDED LOG
+      console.log("LoginPage: authLogin called, navigating to /my-account.");
 
       router.push('/my-account');
 
@@ -68,34 +96,38 @@ export default function LoginPage() {
   }
 
   const handleGoogleLogin = () => {
-    // In real app, integrate with Google OAuth
     console.log("Google login clicked")
-    // You would typically redirect to your backend's Google OAuth initiation endpoint here
+    // IMPORTANT: In a real application, you should replace alert() with a custom modal or toast notification.
+    alert("Google login is not yet implemented. Please use email registration.");
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Assuming Header uses AuthContext internally to show correct state */}
-      <Header />
+    <div className="min-h-screen bg-gray-950 relative">
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#4a007f] to-[#004a7f] opacity-40 blur-[100px]" style={{ transform: 'translate(-40%, -40%)' }}></div>
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-gradient-to-tl from-[#007f4a] to-[#4a7f00] opacity-35 blur-[90px]" style={{ transform: 'translate(40%, 40%)' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-[#7f4a00] to-[#7f004a] opacity-5 blur-[80px]" style={{ transform: 'translate(-50%, -50%)' }}></div>
+      </div>
 
-      <div className="flex items-center justify-center p-4 min-h-screen">
-        <Card className="w-full max-w-md">
+      <Header user={user} isLoading={isLoading} logout={() => {}} className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
+
+      <div className="relative z-10 flex-grow flex items-center justify-center p-4 pt-[120px]">
+        <Card className="w-full max-w-md bg-gray-900 border border-gray-800 text-gray-100">
           <CardHeader className="space-y-1">
             <div className="text-center mb-4">
-              <Link href="/" className="font-bold text-2xl text-gray-900">
+              <Link href="/" className="font-bold text-2xl text-gray-100">
                 StudentJobs UK
               </Link>
             </div>
-            <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-            <CardDescription className="text-center">
+            <CardTitle className="text-2xl font-bold text-center text-gray-100">Welcome back</CardTitle>
+            <CardDescription className="text-center text-gray-300">
               Sign in to your StudentJobs UK account
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Google Sign In */}
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full bg-gray-800 border-gray-700 text-gray-100 hover:bg-gray-700 hover:text-gray-50"
               onClick={handleGoogleLogin}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -121,17 +153,16 @@ export default function LoginPage() {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
+                <Separator className="w-full bg-gray-700" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+                <span className="bg-gray-900 px-2 text-gray-400">Or continue with email</span>
               </div>
             </div>
 
-            {/* Email Login Form */}
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-gray-200">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -139,22 +170,52 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <Label htmlFor="password" className="text-gray-200">Password</Label>
+                {/* Password input with toggle icon */}
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"} // Toggle type based on state
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500 pr-10" // Add padding-right for icon
+                  />
+                  <button
+                    type="button" // Important: Prevent form submission
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Display error message if any */}
+              {/* Remember me checkbox */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                />
+                <Label htmlFor="rememberMe" className="text-gray-300 cursor-pointer">
+                  Remember me
+                </Label>
+              </div>
+
               {error && (
-                <p className="text-red-500 text-sm text-center">{error}</p>
+                <p className="text-red-400 text-sm text-center">{error}</p>
               )}
 
               <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
@@ -163,12 +224,12 @@ export default function LoginPage() {
             </form>
 
             <div className="text-center space-y-2">
-              <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+              <Link href="/forgot-password" className="text-blue-400 hover:underline">
                 Forgot your password?
               </Link>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-400">
                 Don't have an account?{" "}
-                <Link href="/signup" className="text-blue-600 hover:underline">
+                <Link href="/signup" className="text-blue-400 hover:underline">
                   Sign up
                 </Link>
               </div>
@@ -177,45 +238,44 @@ export default function LoginPage() {
         </Card>
       </div>
 
-      {/* Footer */}
-      <footer className="w-full py-6 bg-gray-900 text-white">
+      <footer className="w-full py-6 bg-gray-900 text-gray-300 mt-16 relative">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="grid gap-8 lg:grid-cols-4">
             <div>
-              <h3 className="font-bold text-lg mb-4">StudentJobs UK</h3>
-              <p className="text-gray-300 text-sm">
+              <h3 className="font-bold text-lg mb-4 text-white">StudentJobs UK</h3>
+              <p className="text-gray-400 text-sm">
                 Connecting UK students with flexible part-time opportunities.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">For Students</h4>
+              <h4 className="font-semibold mb-3 text-indigo-400">For Students</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/browse-jobs" className="text-gray-300 hover:text-white">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-300 hover:text-white">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-300 hover:text-white">Student Guide</Link>
+                <Link href="/browse-jobs" className="text-gray-400 hover:text-indigo-300">Browse Jobs</Link>
+                <Link href="/how-it-works" className="text-gray-400 hover:text-indigo-300">How It Works</Link>
+                <Link href="/student-guide" className="text-gray-400 hover:text-indigo-300">Student Guide</Link>
               </nav>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">For Employers</h4>
+              <h4 className="font-semibold mb-3 text-indigo-300">For Employers</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
-                <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
+                <Link href="/post-job" className="text-gray-400 hover:text-indigo-200">Post a Job</Link>
+                <Link href="/pricing" className="text-gray-400 hover:text-indigo-200">Pricing</Link>
+                <Link href="/employer-guide" className="text-gray-400 hover:text-indigo-200">Employer Guide</Link>
               </nav>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">Legal</h4>
+              <h4 className="font-semibold mb-3 text-purple-300">Legal</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
+                <Link href="/privacy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
+                <Link href="/terms" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>
+                <Link href="/refund-policy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Refund Policy</Link>
                 <ContactModal>
-                    <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
+                    <button className="text-gray-400 hover:text-purple-200 text-left px-0 py-0 text-sm font-medium">Contact Us</button>
                 </ContactModal>
               </nav>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-300">
+          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
             © 2025 StudentJobs UK. All rights reserved.
           </div>
         </div>

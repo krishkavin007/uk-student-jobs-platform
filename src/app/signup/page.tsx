@@ -60,8 +60,7 @@ export default function SignupPage() {
   }, [user, authLoading, router]);
 
   // UPDATED: Phone number validation regex for common UK formats.
-  const UK_PHONE_REGEX = /^(?:(?:\+44\s?|0)\d{10}|(?:\+44\s?|0)1\d{9}|(?:\+44\s?|0)2\d{9}|(?:\+44\s?|0)3\d{9}|(?:\+44\s?|0)7\d{9})$/;
-
+const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?\d{3}$/;
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
@@ -137,7 +136,10 @@ export default function SignupPage() {
 
         router.replace('/my-account');
       } else {
-        setError(data.error || 'Failed to create account. Please try again.');
+        // --- FIX APPLIED HERE ---
+        // Ensure that error state is always set to a string.
+        // Backend's 'data.error' might be a string or an object like { message: "..." }
+        setError(data.error?.message || data.error || 'Failed to create account. Please try again.');
       }
     } catch (err) {
       console.error("Frontend signup error:", err);
@@ -152,44 +154,73 @@ export default function SignupPage() {
     alert("Google signup is not yet implemented. Please use email registration.");
   }
 
+  // MODIFIED: Loading state div background
   if (authLoading || user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <p className="text-gray-700">Loading user state...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <p className="text-gray-300">Loading user state...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
-      <Header user={user} isLoading={authLoading} logout={logout} />
+    // MODIFIED: Outer container for the entire page, providing the main background color and relative positioning
+    <div className="min-h-screen bg-gray-950 relative">
+      {/* ADDED: Fixed background for blobs */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        {/* Subtle glowing shapes for professional colorful aesthetic */}
+        {/* Blob 1: Top-left, deep purple to deep blue */}
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#4a007f] to-[#004a7f] opacity-40 blur-[100px]" style={{ transform: 'translate(-40%, -40%)' }}></div>
+        {/* Blob 2: Bottom-right, deep green to deep lime-green */}
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-gradient-to-tl from-[#007f4a] to-[#4a7f00] opacity-35 blur-[90px]" style={{ transform: 'translate(40%, 40%)' }}></div>
+        {/* Blob 3: Center-ish, deep orange to deep red-magenta */}
+        <div className="absolute top-1/2 left-1/2 w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-[#7f4a00] to-[#7f004a] opacity-5 blur-[80px]" style={{ transform: 'translate(-50%, -50%)' }}></div>
+      </div>
 
-      <div className="flex-grow flex items-center justify-center p-4">
-        <Card className="w-full max-w-lg">
+      {/* FIXED HEADER (on top of everything) */}
+      <Header user={user} isLoading={authLoading} logout={logout} className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
+
+      {/* MODIFIED: Main content area, needs to be above the blobs */}
+      <div className="relative z-10 flex-grow flex items-center justify-center p-4 pt-[120px]"> {/* Added pt-[120px] to push content below fixed header */}
+        {/* MODIFIED: Card styles */}
+        <Card className="w-full max-w-lg bg-gray-900 border border-gray-800 text-gray-100">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Join StudentJobs UK</CardTitle>
-            <CardDescription className="text-center">
+            <CardTitle className="text-2xl font-bold text-center text-gray-100">Join StudentJobs UK</CardTitle>
+            <CardDescription className="text-center text-gray-300">
               Create your account to get started
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* MODIFIED: TabsList and TabsTrigger styles */}
             <Tabs value={userType} onValueChange={(value) => setUserType(value as "student" | "employer")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="student">
-                  I'm a Student
-                  <Badge variant="secondary" className="ml-2">Job Seeker</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="employer">
-                  I'm an Employer
-                  <Badge variant="secondary" className="ml-2">Job Poster</Badge>
+              <TabsList className="grid w-full grid-cols-2 bg-gray-800 border-gray-700">
+              <TabsTrigger value="student" className="data-[state=active]:bg-gray-700 data-[state=active]:text-gray-50 text-gray-300 hover:text-gray-50">
+  I'm a Student
+  <Badge 
+    variant="secondary" 
+    className="ml-2 bg-blue-900/50 text-blue-300 border border-blue-700 hidden sm:inline-block"
+  >
+    Job Seeker
+  </Badge>
+</TabsTrigger>
+
+<TabsTrigger value="employer" className="data-[state=active]:bg-gray-700 data-[state=active]:text-gray-50 text-gray-300 hover:text-gray-50">
+  I'm an Employer
+  <Badge 
+    variant="secondary" 
+    className="ml-2 bg-green-900/50 text-green-300 border border-green-700 hidden sm:inline-block"
+  >
+    Job Poster
+  </Badge>
                 </TabsTrigger>
               </TabsList>
 
               <div className="mt-6">
                 {/* Google Sign Up */}
+                {/* MODIFIED: Google signup button styles */}
                 <Button
                   variant="outline"
-                  className="w-full mb-4"
+                  className="w-full mb-4 bg-gray-800 border-gray-700 text-gray-100 hover:bg-gray-700 hover:text-gray-50"
                   onClick={handleGoogleSignup}
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -215,65 +246,73 @@ export default function SignupPage() {
 
                 <div className="relative mb-4">
                   <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
+                    {/* MODIFIED: Separator color */}
+                    <Separator className="w-full bg-gray-700" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+                    {/* MODIFIED: Separator text color and background */}
+                    <span className="bg-gray-900 px-2 text-gray-400">Or continue with email</span>
                   </div>
                 </div>
 
                 {/* Display messages for success or error */}
-                {message && <p style={{ color: 'green', textAlign: 'center', marginBottom: '10px' }}>{message}</p>}
-                {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '10px' }}>{error}</p>}
+                {/* MODIFIED: Message colors */}
+                {message && <p className="text-green-400 text-center mb-2">{message}</p>}
+                {error && <p className="text-red-400 text-center mb-2">{error}</p>}
 
                 <TabsContent value="student" className="mt-0">
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Student Form Order: First Name, Last Name, University/College, City, Email, Phone Number, Password, Confirm Password */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
+                        {/* MODIFIED: Label and Input styles */}
+                        <Label htmlFor="firstName" className="text-gray-200">First Name</Label>
                         <Input
                           id="firstName"
                           value={formData.firstName}
                           onChange={(e) => handleInputChange("firstName", e.target.value)}
                           required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
+                        <Label htmlFor="lastName" className="text-gray-200">Last Name</Label>
                         <Input
                           id="lastName"
                           value={formData.lastName}
                           onChange={(e) => handleInputChange("lastName", e.target.value)}
                           required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="university">University/College</Label>
+                      <Label htmlFor="university" className="text-gray-200">University/College</Label>
                       <Input
                         id="university"
                         placeholder="e.g., University of Manchester"
                         value={formData.university}
                         onChange={(e) => handleInputChange("university", e.target.value)}
                         required
+                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="city">City</Label> {/* ADDED City input for Student */}
+                      <Label htmlFor="city" className="text-gray-200">City</Label> {/* ADDED City input for Student */}
                       <Input
                         id="city"
                         placeholder="e.g., Manchester"
                         value={formData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         required
+                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Student Email</Label>
+                      <Label htmlFor="email" className="text-gray-200">Student Email</Label>
                       <Input
                         id="email"
                         type="email"
@@ -281,12 +320,13 @@ export default function SignupPage() {
                         value={formData.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
                         required
+                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                       />
-                      <p className="text-xs text-gray-500">Use your university email for verification</p>
+                      <p className="text-xs text-gray-400">Use your university email for verification</p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="phone" className="text-gray-200">Phone Number</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -295,46 +335,52 @@ export default function SignupPage() {
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
                         required
+                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                       />
-                      <p className="text-xs text-gray-500">Required for verification</p>
+                      <p className="text-xs text-gray-400">Required for verification</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password" className="text-gray-200">Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={formData.password}
                           onChange={(e) => handleInputChange("password", e.target.value)}
                           required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Label htmlFor="confirmPassword" className="text-gray-200">Confirm Password</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={formData.confirmPassword}
                           onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                           required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
                       </div>
                     </div>
 
                     <div className="flex items-center space-x-2">
+                      {/* MODIFIED: Checkbox and Label styles */}
                       <Checkbox
                         id="terms"
                         checked={formData.agreeToTerms}
                         onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
+                        className="border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
                       />
-                      <label htmlFor="terms" className="text-sm">
+                      <label htmlFor="terms" className="text-sm text-gray-300">
                         I agree to the{" "}
-                        <Link href="/terms" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                        {/* MODIFIED: Link colors */}
+                        <Link href="/terms" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
                           Terms & Conditions
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                        <Link href="/privacy" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
                           Privacy Policy
                         </Link>
                       </label>
@@ -355,49 +401,53 @@ export default function SignupPage() {
                     {/* Employer Form Order: First Name, Last Name, Business/Organisation Name, City, Email, Phone Number, Password, Confirm Password */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
+                        <Label htmlFor="firstName" className="text-gray-200">First Name</Label>
                         <Input
                           id="firstName"
                           value={formData.firstName}
                           onChange={(e) => handleInputChange("firstName", e.target.value)}
                           required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
+                        <Label htmlFor="lastName" className="text-gray-200">Last Name</Label>
                         <Input
                           id="lastName"
                           value={formData.lastName}
                           onChange={(e) => handleInputChange("lastName", e.target.value)}
                           required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="businessName">Business/Organisation Name</Label>
+                      <Label htmlFor="businessName" className="text-gray-200">Business/Organisation Name</Label>
                       <Input
                         id="businessName"
                         placeholder="e.g., Local Coffee Shop Ltd"
                         value={formData.businessName}
                         onChange={(e) => handleInputChange("businessName", e.target.value)}
                         required
+                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="city">City</Label> {/* ADDED City input for Employer */}
+                      <Label htmlFor="city" className="text-gray-200">City</Label> {/* ADDED City input for Employer */}
                       <Input
                         id="city"
                         placeholder="e.g., London"
                         value={formData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         required
+                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Business Email</Label>
+                      <Label htmlFor="email" className="text-gray-200">Business Email</Label>
                       <Input
                         id="email"
                         type="email"
@@ -405,11 +455,12 @@ export default function SignupPage() {
                         value={formData.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
                         required
+                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="phone" className="text-gray-200">Phone Number</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -418,29 +469,32 @@ export default function SignupPage() {
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
                         required
+                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                       />
-                      <p className="text-xs text-gray-500">Required for verification</p>
+                      <p className="text-xs text-gray-400">Required for verification</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password" className="text-gray-200">Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={formData.password}
                           onChange={(e) => handleInputChange("password", e.target.value)}
                           required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Label htmlFor="confirmPassword" className="text-gray-200">Confirm Password</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={formData.confirmPassword}
                           onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                           required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
                       </div>
                     </div>
@@ -450,14 +504,15 @@ export default function SignupPage() {
                         id="terms"
                         checked={formData.agreeToTerms}
                         onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
+                        className="border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
                       />
-                      <label htmlFor="terms" className="text-sm">
+                      <label htmlFor="terms" className="text-sm text-gray-300">
                         I agree to the{" "}
-                        <Link href="/terms" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                        <Link href="/terms" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
                           Terms & Conditions
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                        <Link href="/privacy" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
                           Privacy Policy
                         </Link>
                       </label>
@@ -474,9 +529,9 @@ export default function SignupPage() {
                 </TabsContent>
 
                 <div className="text-center mt-4">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-400"> {/* MODIFIED: Text color */}
                     Already have an account?{" "}
-                    <Link href="/login" className="text-blue-600 hover:underline">
+                    <Link href="/login" className="text-blue-400 hover:underline"> {/* MODIFIED: Link color */}
                       Sign in
                     </Link>
                   </div>
@@ -487,44 +542,45 @@ export default function SignupPage() {
         </Card>
       </div>
 
-      <footer className="w-full py-6 bg-gray-900 text-white mt-16">
+      {/* MODIFIED: Footer styles */}
+      <footer className="w-full py-6 bg-gray-900 text-gray-300 mt-16 relative">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="grid gap-8 lg:grid-cols-4">
             <div>
-              <h3 className="font-bold text-lg mb-4">StudentJobs UK</h3>
-              <p className="text-gray-300 text-sm">
+              <h3 className="font-bold text-lg mb-4 text-white">StudentJobs UK</h3>
+              <p className="text-gray-400 text-sm">
                 Connecting UK students with flexible part-time opportunities.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">For Students</h4>
+              <h4 className="font-semibold mb-3 text-indigo-400">For Students</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/browse-jobs" className="text-gray-300 hover:text-white">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-300 hover:text-white">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-300 hover:text-white">Student Guide</Link>
+                <Link href="/browse-jobs" className="text-gray-400 hover:text-indigo-300">Browse Jobs</Link>
+                <Link href="/how-it-works" className="text-gray-400 hover:text-indigo-300">How It Works</Link>
+                <Link href="/student-guide" className="text-gray-400 hover:text-indigo-300">Student Guide</Link>
               </nav>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">For Employers</h4>
+              <h4 className="font-semibold mb-3 text-indigo-300">For Employers</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white">Pricing</Link>
-                <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
+                <Link href="/post-job" className="text-gray-400 hover:text-indigo-200">Post a Job</Link>
+                <Link href="/pricing" className="text-gray-400 hover:text-indigo-200">Pricing</Link>
+                <Link href="/employer-guide" className="text-gray-400 hover:text-indigo-200">Employer Guide</Link>
               </nav>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">Legal</h4>
+              <h4 className="font-semibold mb-3 text-purple-300">Legal</h4>
               <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-300 hover:underline">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-300 hover:underline">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-300 hover:underline">Refund Policy</Link>
+                <Link href="/privacy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
+                <Link href="/terms" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>
+                <Link href="/refund-policy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Refund Policy</Link>
                 <ContactModal>
-                    <button className="text-gray-300 hover:text-white text-left px-0 py-0 text-sm font-medium">Contact Us</button>
+                    <button className="text-gray-400 hover:text-purple-200 text-left px-0 py-0 text-sm font-medium">Contact Us</button>
                 </ContactModal>
               </nav>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-300">
+          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
             © 2025 StudentJobs UK. All rights reserved.
           </div>
         </div>
