@@ -34,10 +34,13 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      {/* MODIFIED: DialogContent to match the Card styling from the login page */}
+      <DialogContent className="sm:max-w-md bg-gray-900 border border-gray-800 text-gray-100">
         <DialogHeader>
-          <DialogTitle>Contact Us</DialogTitle>
-          <DialogDescription>
+          {/* MODIFIED: DialogTitle to match CardTitle */}
+          <DialogTitle className="text-gray-100">Contact Us</DialogTitle>
+          {/* MODIFIED: DialogDescription to match CardDescription */}
+          <DialogDescription className="text-gray-300">
             {isLoggedIn
               ? "Send us your question or feedback"
               : "Get in touch with our support team"
@@ -49,53 +52,72 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
           {!isLoggedIn && (
             <>
               <div>
-                <Label htmlFor="name">Name</Label>
+                {/* MODIFIED: Label to match login page labels */}
+                <Label htmlFor="name" className="text-gray-200">Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   required
+                  // MODIFIED: Input to match login page inputs
+                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                {/* MODIFIED: Label to match login page labels */}
+                <Label htmlFor="email" className="text-gray-200">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   required
+                  // MODIFIED: Input to match login page inputs
+                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                 />
               </div>
             </>
           )}
 
           <div>
-            <Label htmlFor="subject">Subject</Label>
+            {/* MODIFIED: Label to match login page labels */}
+            <Label htmlFor="subject" className="text-gray-200">Subject</Label>
             <Input
               id="subject"
               value={formData.subject}
               onChange={(e) => setFormData({...formData, subject: e.target.value})}
               required
+              // MODIFIED: Input to match login page inputs
+              className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
             />
           </div>
 
           <div>
-            <Label htmlFor="message">Message</Label>
+            {/* MODIFIED: Label to match login page labels */}
+            <Label htmlFor="message" className="text-gray-200">Message</Label>
             <Textarea
               id="message"
               rows={4}
               value={formData.message}
               onChange={(e) => setFormData({...formData, message: e.target.value})}
               required
+              // MODIFIED: Textarea to match login page inputs
+              className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
             />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            {/* MODIFIED: Cancel Button to match secondary button style */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="bg-gray-800 border-gray-700 text-gray-100 hover:bg-gray-700 hover:text-gray-50"
+            >
               Cancel
             </Button>
-            <Button type="submit">Send Message</Button>
+            {/* MODIFIED: Send Message Button to match primary button style */}
+            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Send Message</Button>
           </DialogFooter>
         </form>
       </DialogContent>

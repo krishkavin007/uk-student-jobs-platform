@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "build/types/**/*.ts"
-  ],
+, "src/lib/data-utils"  ],
   "exclude": ["node_modules"]
 }

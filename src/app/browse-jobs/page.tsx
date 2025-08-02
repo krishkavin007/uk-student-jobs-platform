@@ -1,40 +1,38 @@
 // src/app/browse-jobs/page.tsx
 "use client"
 
-import { useState, useMemo, useEffect, Suspense } from "react"
+import { useState, useMemo, useEffect, Suspense, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/ui/header"
 import { ContactModal } from "@/components/ui/contact-modal"
-import { useAuth } from "@/app/context/AuthContext" // Import the useAuth hook
 
-// UPDATED: Job interface to match backend API response
+import { useAuth } from "@/app/context/AuthContext"
+
 interface Job {
-  job_id: number; // Changed from 'id'
-  job_title: string; // Changed from 'title'
-  job_description: string; // Changed from 'description'
-  job_category: string; // Changed from 'category'
-  job_location: string; // Changed from 'location'
-  hourly_pay: string; // Changed from 'hourlyPay', now string as per API example
-  hours_per_week: string; // Changed from 'hoursPerWeek'
-  contact_name: string; // Added from API
-  contact_phone: string; // Added from API
-  contact_email: string; // Added from API
-  is_sponsored: boolean; // Changed from 'sponsored'
-  posted_by_user_id: number; // Added from API
-  created_at: string; // Added from API, now ISO string
-  expires_at: string | null; // Added from API
-  job_status: string; // Added from API
+  job_id: number;
+  job_title: string;
+  job_description: string;
+  job_category: string;
+  job_location: string;
+  hourly_pay: string;
+  hours_per_week: string;
+  contact_name: string;
+  contact_phone: string;
+  contact_email: string;
+  is_sponsored: boolean;
+  posted_by_user_id: number;
+  created_at: string;
+  expires_at: string | null;
+  job_status: string;
 
   // Frontend-only fields (these will be derived or managed client-side)
   hoursType: string;
   applicationCount: number;
   employer: string;
   applicationUrl: string | null;
-  postedDate: string; // <-- FIX APPLIED HERE
-  // The properties below were part of your mapping logic, so I am adding them to the interface
-  // to ensure full type safety, even though some might be redundant with the backend names.
+  postedDate: string;
   id: number;
   title: string;
   company: string;
@@ -47,7 +45,6 @@ interface Job {
   phoneNumber: string;
 }
 
-// Helper function to format dates as "X days ago", "X weeks ago", etc.
 const formatDateAgo = (isoDateString: string): string => {
   const date = new Date(isoDateString);
   const now = new Date();
@@ -61,7 +58,7 @@ const formatDateAgo = (isoDateString: string): string => {
   if (interval > 1) {
     return Math.floor(interval) + " months ago";
   }
-  interval = seconds / 604800; // seconds in a week
+  interval = seconds / 604800;
   if (interval > 1) {
     return Math.floor(interval) + " weeks ago";
   }
@@ -80,30 +77,266 @@ const formatDateAgo = (isoDateString: string): string => {
   return "just now";
 };
 
+const JOBS_PER_PAGE = 15;
 
-const JOBS_PER_PAGE = 15
+// --- Loading Skeleton Component ---
+const LoadingSkeleton = () => (
+  <div className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 animate-pulse">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
+      <div className="flex-grow">
+        <div className="h-7 bg-gray-700 rounded w-4/5 mb-3"></div>
+        <div className="h-5 bg-gray-700 rounded w-3/5 mb-3"></div>
+        <div className="flex gap-2 mt-2">
+          <div className="h-6 bg-gray-700 rounded-full w-24"></div>
+          <div className="h-6 bg-gray-700 rounded-full w-28"></div>
+        </div>
+      </div>
+      <div className="text-right mt-4 sm:mt-0">
+        <div className="h-7 bg-gray-700 rounded w-28 ml-auto"></div>
+        <div className="h-5 bg-gray-700 rounded w-24 ml-auto mt-1"></div>
+      </div>
+    </div>
+    <div className="flex flex-wrap gap-3 mt-4">
+      <div className="h-11 bg-gray-700 rounded-lg w-36"></div>
+      <div className="h-11 bg-gray-700 rounded-lg w-32"></div>
+      <div className="h-11 bg-gray-700 rounded-lg w-44"></div>
+      <div className="h-11 bg-gray-700 rounded-lg w-28"></div>
+    </div>
+  </div>
+);
 
+// --- Job Details Modal Component ---
+interface JobDetailsModalProps {
+  job: Job | null;
+  onClose: () => void;
+  onApply: (job: Job) => void;
+  onRevealPhone: (jobId: number) => void;
+  revealedPhones: Set<number>;
+  appliedJobs: Set<number>;
+  user: any;
+  isMobile: boolean; // Keep this prop, but the component itself won't be rendered on mobile
+}
+
+const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply, onRevealPhone, revealedPhones, appliedJobs, user }) => {
+  const modalContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalContentRef.current && !modalContentRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
+
+  if (!job) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[999] transition-opacity duration-300">
+      <div ref={modalContentRef} className="bg-gray-900 p-8 rounded-3xl shadow-3xl max-w-4xl w-full mx-4 my-8 relative flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300 transform scale-100 opacity-100">
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 p-2 rounded-full bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors duration-200 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 active:scale-90"
+          aria-label="Close job details"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="mb-6 pb-6 border-b border-gray-700 pr-12">
+          <div className="flex items-center flex-wrap gap-2 mb-3">
+            <h2 className="text-3xl font-extrabold text-white leading-tight">
+              {job.job_title}
+            </h2>
+            {job.is_sponsored && (
+              <span className="px-3 py-1 text-xs font-semibold bg-blue-600 text-white rounded-full flex items-center gap-1 shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                  <path fillRule="evenodd" d="M10 1c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9ZM9.375 6a.75.75 0 0 0-1.5 0v4.25c0 .414.336.75.75.75h4.25a.75.75 0 0 0 0-1.5h-3.5V6Z" clipRule="evenodd" />
+                </svg>
+                SPONSORED
+              </span>
+            )}
+            <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+              job.hoursType === 'holiday'
+                ? 'bg-purple-900 text-purple-300'
+                : 'bg-gray-700 text-gray-200'
+            } shadow-sm`}>
+              {job.hoursType === 'holiday' ? 'Holiday Work' : 'Term-Time'}
+            </span>
+          </div>
+          <p className="text-lg text-gray-300 mb-2 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-400">
+              <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM12 18.75a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-.75h-.75a.75.75 0 0 1-.75-.75v-.75Zm-5.495-2.261A9.752 9.752 0 0 0 6 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H12a7.5 7.5 0 0 0-7.5 7.5c0 1.574.341 3.085.992 4.475C6.425 18.17 7.72 18.75 9 18.75h.75a.75.75 0 0 1 0 1.5H9c-1.802 0-3.52-.693-4.821-1.994A10.455 10.455 0 0 1 2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75a9.752 9.752 0 0 0-.992 4.475 7.472 7.472 0 0 1-1.282 1.832 7.5 7.5 0 0 0-6.177 1.62.75.75 0 0 1-.954-.937Z" clipRule="evenodd" />
+            </svg>
+            {job.contact_name} <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-400">
+              <path fillRule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a8.75 8.75 0 0 0 4.721-6.786c1.294-4.507-1.697-9.078-6.75-9.078s-8.044 4.571-6.75 9.078a8.75 8.75 0 0 0 4.72 6.786ZM12 12.75a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clipRule="evenodd" />
+            </svg>
+            {job.job_location}
+          </p>
+          <div className="text-lg font-bold text-green-400 mb-2">£{job.hourly_pay}<span className="text-base font-medium">/hr</span></div>
+          <div className="text-md text-gray-300 mb-4">{job.hours_per_week} hours/week</div>
+          <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
+            <span className="px-3 py-1 text-sm bg-blue-900 text-blue-300 rounded-full font-medium shadow-sm">
+              {job.job_category}
+            </span>
+            <span className="text-sm text-gray-400 flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-400">
+                <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 .174.45l3.5 4.499a.75.75 0 0 0 1.14-.948L13.5 12.579V6Z" clipRule="evenodd" />
+              </svg>
+              Posted {job.postedDate}
+            </span>
+            <div className="flex items-center px-3 py-1 bg-gray-700 rounded-full text-sm text-gray-300 font-medium shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mr-2 text-gray-400">
+                <path d="M4.5 6.375a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.75 8.25a.75.75 0 0 0-1.5 0v.75H16.5a.75.75 0 0 0 0 1.5h.75v.75a.75.75 0 0 0 1.5 0v-.75h.75a.75.75 0 0 0 0-1.5h-.75V8.25ZM9 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H15A7.5 7.5 0 0 0 7.5 12v3.75m-9.303 0a.75.75 0 0 0-.256-.574A14.24 14.24 0 0 1 5.305 15h.695Z" />
+              </svg>
+              {job.applicationCount} applications
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+          <h3 className="font-bold text-xl text-white mb-3">Full Job Description</h3>
+          <div className="text-gray-300 leading-relaxed text-base prose dark:prose-invert">
+            <p dangerouslySetInnerHTML={{ __html: job.job_description.replace(/\n/g, '<br />') }} />
+          </div>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-700 flex flex-wrap gap-4 justify-center sm:justify-start">
+          <button
+            onClick={() => onApply(job)}
+            className={`px-6 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-md text-lg font-semibold ${
+              user && appliedJobs.has(job.job_id)
+                ? 'bg-green-700 text-white hover:bg-green-800 cursor-not-allowed opacity-90'
+                : 'bg-blue-700 text-white hover:bg-blue-800'
+            }`}
+            disabled={!!user && appliedJobs.has(job.job_id)}
+          >
+            {user && appliedJobs.has(job.job_id) ? 'Applied ✓' : 'Apply Now'}
+          </button>
+
+          <button
+            onClick={() => onRevealPhone(job.job_id)}
+            className={`px-6 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-sm ${
+              revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
+                ? 'border-green-600 bg-green-900 text-green-300 cursor-not-allowed opacity-90'
+                : 'border-gray-600 hover:bg-gray-800 text-gray-200'
+            }`}
+            disabled={revealedPhones.has(job.job_id) || (!!user && appliedJobs.has(job.job_id))}
+          >
+            {revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
+              ? `📞 ${job.contact_phone}`
+              : '📞 Reveal Phone (£1)'
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// --- Main BrowseJobsPage Component ---
 export default function BrowseJobsPage() {
   const router = useRouter()
-  const { user, isLoading: isAuthLoading, logout } = useAuth(); // Renamed isLoading to isAuthLoading to avoid conflict
+  const { user, isLoading: isAuthLoading, logout } = useAuth();
+  
+  // Ensure the 'dark' class is present on the html element for global Tailwind dark mode awareness
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    // No cleanup needed as we want it to stay dark
+  }, []);
 
-  const [jobs, setJobs] = useState<Job[]>([]); // Changed from mockJobs
-  const [jobsLoading, setJobsLoading] = useState(true); // New loading state for jobs
-  const [jobsError, setJobsError] = useState<string | null>(null); // New error state for jobs
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError, setJobsError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("")
   const [locationFilter, setLocationFilter] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("")
   const [hoursTypeFilter, setHoursTypeFilter] = useState("")
   const [dateFilter, setDateFilter] = useState("")
-  const [selectedJobId, setSelectedJobId] = useState<number | null>(null)
+  // New state for applied jobs filter
+  const [appliedFilter, setAppliedFilter] = useState<"all" | "applied" | "not-applied">("all");
+  
+  const [selectedJobForModal, setSelectedJobForModal] = useState<Job | null>(null);
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+
+  // New state for mobile job description expansion
+  const [expandedJobIds, setExpandedJobIds] = useState<Set<number>>(new Set<number>()); // Initialize as empty set directly
+
   const [currentPage, setCurrentPage] = useState(1)
-  const [revealedPhones, setRevealedPhones] = useState<Set<number>>(new Set())
+  
+  // Using sessionStorage for state persistence across soft navigations (like redirect to /pay and back)
+  const [revealedPhones, setRevealedPhones] = useState<Set<number>>(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      const savedRevealed = sessionStorage.getItem('revealedPhones');
+      return savedRevealed ? new Set(JSON.parse(savedRevealed)) : new Set();
+    }
+    return new Set();
+  });
 
-  // Mock applied jobs for logged in user - KEEPING THIS AS IS FOR NOW
-  const [appliedJobs] = useState<Set<number>>(new Set([1, 3])) // User has applied to jobs 1 and 3
+  const [appliedJobs, setAppliedJobs] = useState<Set<number>>(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      const savedApplied = sessionStorage.getItem('appliedJobs');
+      // If nothing in sessionStorage, fall back to initial mock data.
+      return savedApplied ? new Set(JSON.parse(savedApplied)) : new Set([1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49]);
+    }
+    return new Set([1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49]);
+  });
 
-  // NEW: Fetch jobs from the backend API
+  // Effect to save to sessionStorage whenever the sets change
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('revealedPhones', JSON.stringify(Array.from(revealedPhones)));
+    }
+  }, [revealedPhones]);
+
+  useEffect(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('appliedJobs', JSON.stringify(Array.from(appliedJobs)));
+    }
+  }, [appliedJobs]);
+
+
+  const [isMobile, setIsMobile] = useState<boolean>(false); 
+
+  useEffect(() => {
+    const checkMobile = () => window.innerWidth < 768;
+    setIsMobile(checkMobile());
+
+    const handleResize = () => {
+      setIsMobile(checkMobile());
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+
+  }, []);
+
+  useEffect(() => {
+    if (showJobDetailsModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showJobDetailsModal]); 
+
   useEffect(() => {
     const fetchJobs = async () => {
       setJobsLoading(true);
@@ -115,25 +348,23 @@ export default function BrowseJobsPage() {
         }
         const data: Job[] = await response.json();
 
-        // Map API data to fit existing Job interface expectations for frontend display/logic
         const mappedJobs: Job[] = data.map(job => ({
           ...job,
-          id: job.job_id, // Map job_id to id for existing frontend logic
+          id: job.job_id,
           title: job.job_title,
-          company: job.contact_name, // Using contact_name as company for display
+          company: job.contact_name,
           location: job.job_location,
           hourlyPay: job.hourly_pay,
           hoursPerWeek: job.hours_per_week,
           description: job.job_description,
           sponsored: job.is_sponsored,
           category: job.job_category,
-          // UPDATED LOGIC: Determine hoursType based on hours_per_week using parseFloat
-          hoursType: parseFloat(job.hours_per_week) > 20 ? "holiday" : "term-time", // If > 20, it's holiday work
-          postedDate: formatDateAgo(job.created_at), // Format the date
-          applicationUrl: job.contact_email ? `mailto:${job.contact_email}` : null, // Assuming contact_email for application URL
+          hoursType: parseFloat(job.hours_per_week) > 20 ? "holiday" : "term-time",
+          postedDate: formatDateAgo(job.created_at),
+          applicationUrl: job.contact_email ? `mailto:${job.contact_email}` : null,
           phoneNumber: job.contact_phone,
-          applicationCount: Math.floor(Math.random() * 20) + 1, // Still mock for now, until API provides it
-          employer: job.contact_name, // Using contact_name as employer
+          applicationCount: Math.floor(Math.random() * 20) + 1,
+          employer: job.contact_name,
         }));
         setJobs(mappedJobs);
       } catch (err) {
@@ -145,80 +376,97 @@ export default function BrowseJobsPage() {
     };
 
     fetchJobs();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   const filteredJobs = useMemo(() => {
-    return jobs.filter(job => { // Filter the 'jobs' state
+    return jobs.filter(job => {
       let matchesDate = true
       if (dateFilter === 'today') {
-        // For 'today', check if postedDate is "just now" or "X hours ago" (less than 24 hours)
         const date = new Date(job.created_at);
         const now = new Date();
         const diffHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
         matchesDate = diffHours < 24;
       } else if (dateFilter === 'week') {
-        // For 'this week', check if postedDate is within the last 7 days
         const date = new Date(job.created_at);
         const now = new Date();
         const diffDays = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
         matchesDate = diffDays <= 7;
       } else if (dateFilter === 'month') {
-        // For 'this month', check if postedDate is within the last 30 days
         const date = new Date(job.created_at);
         const now = new Date();
         const diffDays = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
         matchesDate = diffDays <= 30;
       }
 
+      // Filter logic for applied jobs (this remains correct)
+      let matchesApplied = true;
+      if (appliedFilter === 'applied') {
+        matchesApplied = appliedJobs.has(job.job_id);
+      } else if (appliedFilter === 'not-applied') {
+        matchesApplied = !appliedJobs.has(job.job_id);
+      }
+
       return (
-        (searchTerm === "" || job.job_title.toLowerCase().includes(searchTerm.toLowerCase()) || // Use job_title
-         job.contact_name.toLowerCase().includes(searchTerm.toLowerCase())) && // Use contact_name
-        (locationFilter === "" || job.job_location.toLowerCase().includes(locationFilter.toLowerCase())) && // Use job_location
-        (categoryFilter === "" || job.job_category === categoryFilter) && // Use job_category
+        (searchTerm === "" || job.job_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         job.contact_name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        (locationFilter === "" || job.job_location.toLowerCase().includes(locationFilter.toLowerCase())) &&
+        (categoryFilter === "" || job.job_category === categoryFilter) &&
         (hoursTypeFilter === "" || job.hoursType === hoursTypeFilter) &&
-        matchesDate
+        matchesDate &&
+        matchesApplied // Include applied status in filter
       )
     })
-  }, [jobs, searchTerm, locationFilter, categoryFilter, hoursTypeFilter, dateFilter]) // Add 'jobs' to dependencies
+  }, [jobs, searchTerm, locationFilter, categoryFilter, hoursTypeFilter, dateFilter, appliedFilter, appliedJobs])
 
-  // NEW ROBUST SORTING LOGIC: Sponsored first, then by latest created_at
   const sortedJobs = useMemo(() => {
-    // Create a shallow copy to avoid mutating the original array, which can cause issues with React's memoization
     const jobsCopy = [...filteredJobs]; 
 
     return jobsCopy.sort((a, b) => {
-      // Primary sort: Sponsored jobs come first (true comes before false)
-      const sponsoredA = a.is_sponsored ? 0 : 1; // Give sponsored a lower "score" (0)
+      const sponsoredA = a.is_sponsored ? 0 : 1;
       const sponsoredB = b.is_sponsored ? 0 : 1;
 
       if (sponsoredA !== sponsoredB) {
         return sponsoredA - sponsoredB;
       }
 
-      // Secondary sort: If sponsored status is the same, sort by created_at (latest first)
-      // Convert ISO strings to Date objects for reliable comparison
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
      
-      // Handle cases where dates might be invalid (though they should be valid ISO strings from DB)
-      // If dateB is invalid, put it after dateA. If dateA is invalid, put it after dateB.
-      // If both are invalid, their relative order doesn't matter for date comparison.
-      if (isNaN(dateB) && !isNaN(dateA)) return -1; // b is invalid, a is valid: a comes first
-      if (isNaN(dateA) && !isNaN(dateB)) return 1;  // a is invalid, b is valid: b comes first
-      if (isNaN(dateA) && isNaN(dateB)) return 0;   // both invalid, maintain relative order
+      if (isNaN(dateB) && !isNaN(dateA)) return -1;
+      if (isNaN(dateA) && !isNaN(dateB)) return 1;
+      if (isNaN(dateA) && isNaN(dateB)) return 0;
 
-      return dateB - dateA; // Descending order: newer date (larger timestamp) comes first
+      return dateB - dateA;
     });
-  }, [filteredJobs]); // Dependency on filteredJobs to re-sort when filters change
+  }, [filteredJobs]);
 
-  // Pagination calculations
   const totalPages = Math.ceil(sortedJobs.length / JOBS_PER_PAGE)
   const startIndex = (currentPage - 1) * JOBS_PER_PAGE
   const endIndex = startIndex + JOBS_PER_PAGE
   const currentJobs = sortedJobs.slice(startIndex, endIndex)
 
-  const handleJobDescriptionClick = (jobId: number) => {
-    setSelectedJobId(selectedJobId === jobId ? null : jobId)
+  const handleJobDescriptionClick = (job: Job) => {
+    if (isMobile) {
+      // Toggle description expansion on mobile
+      setExpandedJobIds(prev => {
+        const newState = new Set(prev);
+        if (newState.has(job.job_id)) {
+          newState.delete(job.job_id); // Collapse
+        } else {
+          newState.add(job.job_id);    // Expand
+        }
+        return newState;
+      });
+    } else {
+      // Show modal on desktop
+      setSelectedJobForModal(job);
+      setShowJobDetailsModal(true);
+    }
+  }
+
+  const handleCloseJobDetailsModal = () => {
+    setSelectedJobForModal(null);
+    setShowJobDetailsModal(false);
   }
 
   const clearFilters = () => {
@@ -227,99 +475,122 @@ export default function BrowseJobsPage() {
     setCategoryFilter("")
     setHoursTypeFilter("")
     setDateFilter("")
+    setAppliedFilter("all");
+    setExpandedJobIds(new Set()); // Clear expanded descriptions
+    handleCloseJobDetailsModal();
+  }
+
+  const handleFilterChange = (filterSetter: (value: any) => void, value: string) => {
+    filterSetter(value)
     setCurrentPage(1)
+    setExpandedJobIds(new Set()); // Clear expanded descriptions on filter change
+    handleCloseJobDetailsModal();
+  }
+
+  // MODIFIED: handleRevealPhone to update local state AND sessionStorage
+  const handleRevealPhone = (jobId: number) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    // Update the local state to mark this phone number as revealed
+    setRevealedPhones(prev => {
+      const newState = new Set(prev).add(jobId);
+      // sessionStorage will be updated via the useEffect hook
+      return newState;
+    }); // Fixed: Added closing curly brace
+    
+    router.push(`/pay?jobId=${jobId}&type=phone`); 
+  }
+
+  // MODIFIED: handleApply to update local state AND sessionStorage
+  const handleApply = (job: Job) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    // Update the local state to mark this job as applied
+    setAppliedJobs(prev => {
+      const newState = new Set(prev).add(job.job_id);
+      // sessionStorage will be updated via the useEffect hook
+      return newState;
+    }); // Fixed: Added closing curly brace
+    
+    router.push(`/pay?jobId=${job.job_id}&type=apply`); 
   }
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    setSelectedJobId(null) // Close any open job descriptions
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top on page change
+  };
 
-  // Reset to page 1 when filters change
-  const handleFilterChange = (filterSetter: (value: string) => void, value: string) => {
-    filterSetter(value)
-    setCurrentPage(1)
-  }
 
-  const handleRevealPhone = (jobId: number) => {
-    router.push(`/pay?jobId=${jobId}&type=phone`)
-  }
-
-  const handleApply = (job: Job) => {
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    router.push(`/pay?jobId=${job.job_id}&type=apply`) // Use job.job_id
-  }
-
-  // Determine the correct pricing href based on user type for the Header and Footer
   const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
 
   return (
-    // Added overflow-x-hidden to the main container to prevent horizontal scroll
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
-      {/* Pass the dynamically determined pricingHref to the Header component */}
-      <Header user={user} logout={logout} isLoading={isAuthLoading} pricingHref={pricingHref} />
+    // IMPORTANT: Wrap your main content and apply padding-top
+    // to account for the fixed header's height.
+    // Assuming your header's height is around 80px based on common designs.
+    // Changed bg-gray-950 to bg-[rgb(7,8,21)] for the main page background.
+    <div className="pt-[80px] min-h-screen bg-[rgb(7,8,21)] text-white font-sans antialiased overflow-x-hidden relative">
+      <Header
+        user={user}
+        logout={logout}
+        isLoading={isAuthLoading}
+        pricingHref={pricingHref}
+        // Apply the same explicit styling as app/page.tsx Header
+        className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0"
+        // The isDarkMode prop is not needed for the Header's background anymore based on its internal styling
+      />
 
+      {/* Your existing page content will go here within this div.
+          For example, the browse-jobs content: */}
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Part-Time Jobs</h1>
-          <p className="text-gray-600">Find flexible opportunities that fit around your studies</p>
-
-          {/* Student Work Hours Info */}
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="font-semibold text-blue-900 mb-2">Student Work Hour Limits</h3>
-            <div className="text-sm text-blue-800 space-y-1">
-              <p><strong>During term-time:</strong> Up to 20 hours per week while studying</p>
-              <p><strong>During holidays/semester breaks:</strong> Up to 40 hours per week (full-time)</p>
-            </div>
-          </div>
+        <div className="mb-12 text-center pt-4">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight tracking-tight">
+            Your Next <span className="text-blue-400">Part-Time Opportunity</span> Awaits!
+          </h1>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white p-6 rounded-lg border mb-6">
-          <h2 className="text-lg font-semibold mb-4">Search & Filter Jobs</h2>
-          <div className="grid gap-4 md:grid-cols-6">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700"> {/* Removed mb-2 */}
+        {/* Filter Section */}
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700 mb-10 transition-all duration-300">
+          <h2 className="text-2xl font-bold text-white mb-6">Refine Your Job Search</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+            <div className="flex flex-col">
+              <label htmlFor="search" className="block text-sm font-medium text-gray-300 mb-2">
                 Search Jobs
               </label>
-              {/* Added mt-4 to align inputs/selects with the "Clear Filters" button */}
               <input
                 id="search"
                 type="text"
-                placeholder="Job title or company..."
+                placeholder="e.g., barista, retail assistant..."
                 value={searchTerm}
                 onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400 transition-all duration-200"
               />
             </div>
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700"> {/* Removed mb-2 */}
+            <div className="flex flex-col">
+              <label htmlFor="location" className="block text-sm font-medium text-gray-300 mb-2">
                 Location
               </label>
-              {/* Added mt-4 to align inputs/selects with the "Clear Filters" button */}
               <input
                 id="location"
                 type="text"
-                placeholder="City or area..."
+                placeholder="e.g., London, Manchester..."
                 value={locationFilter}
                 onChange={(e) => handleFilterChange(setLocationFilter, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400 transition-all duration-200"
               />
             </div>
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700"> {/* Removed mb-2 */}
+            <div className="flex flex-col">
+              <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-2">
                 Category
               </label>
-              {/* Added mt-4 to align inputs/selects with the "Clear Filters" button */}
               <select
                 id="category"
                 value={categoryFilter}
                 onChange={(e) => handleFilterChange(setCategoryFilter, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white appearance-none pr-8 transition-all duration-200"
               >
                 <option value="">All categories</option>
                 <option value="Hospitality">Hospitality</option>
@@ -331,32 +602,30 @@ export default function BrowseJobsPage() {
                 <option value="Other">Other</option>
               </select>
             </div>
-            <div>
-              <label htmlFor="hoursType" className="block text-sm font-medium text-gray-700"> {/* Removed mb-2 */}
+            <div className="flex flex-col">
+              <label htmlFor="hoursType" className="block text-sm font-medium text-gray-300 mb-2">
                 Work Period
               </label>
-              {/* Added mt-4 to align inputs/selects with the "Clear Filters" button */}
               <select
                 id="hoursType"
                 value={hoursTypeFilter}
                 onChange={(e) => handleFilterChange(setHoursTypeFilter, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white appearance-none pr-8 transition-all duration-200"
               >
                 <option value="">All periods</option>
                 <option value="term-time">Term-time (up to 20hrs)</option>
                 <option value="holiday">Holidays (up to 40hrs)</option>
               </select>
             </div>
-            <div>
-              <label htmlFor="dateFilter" className="block text-sm font-medium text-gray-700"> {/* Removed mb-2 */}
+            <div className="flex flex-col">
+              <label htmlFor="dateFilter" className="block text-sm font-medium text-gray-300 mb-2">
                 Posted Date
               </label>
-              {/* Added mt-4 to align inputs/selects with the "Clear Filters" button */}
               <select
                 id="dateFilter"
                 value={dateFilter}
                 onChange={(e) => handleFilterChange(setDateFilter, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white appearance-none pr-8 transition-all duration-200"
               >
                 <option value="">All dates</option>
                 <option value="today">Today</option>
@@ -364,13 +633,28 @@ export default function BrowseJobsPage() {
                 <option value="month">This month</option>
               </select>
             </div>
-            {/* CORRECTED ALIGNMENT AND STYLING FOR CLEAR FILTERS BUTTON */}
-            <div className="flex items-end">
+            {/* New Applied Jobs Filter */}
+            <div className="flex flex-col">
+              <label htmlFor="appliedFilter" className="block text-sm font-medium text-gray-300 mb-2">
+                Application Status
+              </label>
+              <select
+                id="appliedFilter"
+                value={appliedFilter}
+                onChange={(e) => handleFilterChange(setAppliedFilter, e.target.value as "all" | "applied" | "not-applied")}
+                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white appearance-none pr-8 transition-all duration-200"
+              >
+                <option value="all">All Jobs</option>
+                <option value="applied">Applied Jobs</option>
+                <option value="not-applied">Not Applied Jobs</option>
+              </select>
+            </div>
+            {/* End New Applied Jobs Filter */}
+            {/* Clear Filters Button - Centered */}
+            <div className="flex items-end justify-center col-span-full mt-4 md:mt-0">
               <button
                 onClick={clearFilters}
-                // Tailwind classes for styling that matches primary color, but lighter for a secondary action.
-                // Good contrast for accessibility (AA or AAA depending on exact blue shade).
-                className="w-full px-4 py-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-8 py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg transition-all duration-200 active:scale-95 text-lg font-semibold"
               >
                 Clear Filters
               </button>
@@ -379,15 +663,15 @@ export default function BrowseJobsPage() {
         </div>
 
         {/* Results Count */}
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-gray-600">
-            {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''} found
+        <div className="mb-6 flex items-center justify-between text-gray-300">
+          <p className="text-lg font-medium">
+            <span className="text-blue-400 font-bold">{sortedJobs.length}</span> job{sortedJobs.length !== 1 ? 's' : ''} found
             {totalPages > 1 && (
-              <span className="text-gray-500"> • Page {currentPage} of {totalPages}</span>
+              <span className="text-gray-400 ml-2"> • Page {currentPage} of {totalPages}</span>
             )}
           </p>
           {totalPages > 1 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-400">
               Showing {startIndex + 1}-{Math.min(endIndex, sortedJobs.length)} of {sortedJobs.length} jobs
             </p>
           )}
@@ -395,143 +679,187 @@ export default function BrowseJobsPage() {
 
         {/* Job Loading/Error States */}
         {jobsLoading && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading jobs...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: JOBS_PER_PAGE }).map((_, i) => (
+              <LoadingSkeleton key={i} />
+            ))}
           </div>
         )}
 
         {jobsError && (
-          <div className="text-center py-8 text-red-600">
-            <p>{jobsError}</p>
-            <Button onClick={() => window.location.reload()} className="mt-4">Retry</Button>
+          <div className="text-center py-12 bg-red-950 rounded-2xl border border-red-700 text-red-400 shadow-lg">
+            <p className="text-xl font-semibold mb-4">Oops! Something went wrong.</p>
+            <p className="mb-6">{jobsError}</p>
+            <Button onClick={() => window.location.reload()} className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-200">
+              Retry Loading Jobs
+            </Button>
           </div>
         )}
 
-        {/* Job Listings (only show if not loading and no error) */}
+        {/* Job Listings */}
         {!jobsLoading && !jobsError && sortedJobs.length > 0 && (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentJobs.map((job) => (
-              <div key={job.job_id} className={`bg-white p-4 sm:p-6 rounded-lg border break-words ${job.is_sponsored ? 'border-blue-200 bg-blue-50/50' : ''}`}>
+              // START OF TOTALLY NEW JOB CARD BLOCK DESIGN
+              <div key={job.job_id} className={`
+                bg-gray-800
+                p-6 rounded-xl shadow-lg transition-all duration-300 flex flex-col justify-between
+                hover:shadow-2xl hover:scale-[1.01]
+                ${job.is_sponsored
+                  ? 'border-4 border-blue-400 bg-gradient-to-br from-blue-900 to-gray-850 transform -translate-y-1' // More prominent sponsored style
+                  : 'border border-gray-700'
+                }
+              `}>
+                {/* Job Info Header - Flex container for Title, Company/Location & Price */}
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-start gap-2 mb-1">
-                      <h3 className="text-lg font-semibold break-words leading-tight">{job.job_title}</h3>
-                      {job.is_sponsored && (
-                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                          Sponsored
-                        </span>
-                      )}
-                      {user && appliedJobs.has(job.job_id) && ( // Use job.job_id
-                        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                          Applied
-                        </span>
-                      )}
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        job.hoursType === 'holiday'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {job.hoursType === 'holiday' ? 'Holiday work' : 'Term-time'}
+                  <div className="flex-grow pr-4">
+                    {/* Job Title */}
+                    <h3 className="text-xl md:text-2xl font-extrabold text-white leading-tight mb-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                      {job.job_title}
+                    </h3>
+                    {/* Employer Name & Location */}
+                    <p className="text-sm text-gray-300 flex flex-col overflow-hidden">
+                      <span className="flex items-center gap-1 overflow-hidden whitespace-nowrap mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-400 flex-shrink-0">
+                          <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM12 18.75a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-.75h-.75a.75.75 0 0 1-.75-.75v-.75Zm-5.495-2.261A9.752 9.752 0 0 0 6 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H12a7.5 7.5 0 0 0-7.5 7.5c0 1.574.341 3.085.992 4.475C6.425 18.17 7.72 18.75 9 18.75h.75a.75.75 0 0 1 0 1.5H9c-1.802 0-3.52-.693-4.821-1.994A10.455 10.455 0 0 1 2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75a9.752 9.752 0 0 0-.992 4.475 7.472 7.472 0 0 1-1.282 1.832 7.5 7.5 0 0 0-6.177 1.62.75.75 0 0 1-.954-.937Z" clipRule="evenodd" />
+                        </svg>
+                        <span className="flex-grow truncate">{job.contact_name}</span>
                       </span>
-                    </div>
-                    <p className="text-gray-600 mb-2">{job.contact_name} • {job.job_location}</p>
-                    <div className="flex items-center gap-4">
-                      <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
-                        {job.job_category}
+                      <span className="flex items-center gap-1 overflow-hidden whitespace-nowrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-400 flex-shrink-0">
+                          <path fillRule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a8.75 8.75 0 0 0 4.721-6.786c1.294-4.507-1.697-9.078-6.75-9.078s-8.044 4.571-6.75 9.078a8.75 8.75 0 0 0 4.72 6.786ZM12 12.75a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clipRule="evenodd" />
+                        </svg>
+                        <span className="flex-shrink-0 truncate">{job.job_location}</span>
                       </span>
-                      <span className="text-sm text-gray-500">Posted {job.postedDate}</span>
-                    </div>
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-green-600">£{job.hourly_pay}/hour</div>
-                    <div className="text-sm text-gray-500">{job.hours_per_week} hours/week</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      {job.hoursType === 'holiday' ? 'Holiday work' : 'Term-time work'}
+                  {/* Hourly Pay / Hours Per Week */}
+                  <div className="text-right flex-shrink-0 mt-1">
+                    <div className="text-xl font-bold text-green-400 leading-tight">
+                      £{job.hourly_pay}<span className="text-base font-medium">/hr</span>
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {job.hours_per_week} hrs/wk
                     </div>
                   </div>
                 </div>
 
-                {/* Job Description (expandable) */}
-                {selectedJobId === job.job_id && ( // Use job.job_id
-                  <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold mb-2">Job Description</h4>
-                    {/* UPDATED: Render description with line breaks */}
-                    <p className="text-gray-700" dangerouslySetInnerHTML={{ __html: job.job_description.replace(/\n/g, '<br />') }} />
+                {/* Tags & Meta Info Section */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  {/* Work Period Tag */}
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                    job.hoursType === 'holiday'
+                      ? 'bg-purple-900 text-purple-300'
+                      : 'bg-gray-700 text-gray-200'
+                  }`}>
+                    {job.hoursType === 'holiday' ? 'Holiday' : 'Term-Time'}
+                  </span>
+                  {/* Category Tag */}
+                  <span className="px-2 py-0.5 text-xs bg-blue-900 text-blue-300 rounded-full font-medium">
+                    {job.job_category}
+                  </span>
+                  {/* Posted Date */}
+                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0">
+                      <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 .174.45l3.5 4.499a.75.75 0 0 0 1.14-.948L13.5 12.579V6Z" clipRule="evenodd" />
+                    </svg>
+                    {job.postedDate}
+                  </span>
+                  {/* Application Count Badge */}
+                  <span className="inline-flex items-center px-2 py-0.5 bg-gray-700 rounded-full text-xs text-gray-300 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 mr-1 text-gray-400">
+                      <path d="M4.5 6.375a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.75 8.25a.75.75 0 0 0-1.5 0v.75H16.5a.75.75 0 0 0 0 1.5h.75v.75a.75.75 0 0 0 1.5 0v-.75h.75a.75.75 0 0 0 0-1.5h-.75V8.25ZM9 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H15A7.5 7.5 0 0 0 7.5 12v3.75m-9.303 0a.75.75 0 0 0-.256-.574A14.24 14.24 0 0 1 5.305 15h.695Z" />
+                    </svg>
+                    {job.applicationCount} applications
+                  </span>
+                   {/* Sponsored Badge (internal, if desired) */}
+                  {job.is_sponsored && (
+                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold bg-blue-600 text-white rounded-full gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+                        <path fillRule="evenodd" d="M10 1c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9ZM9.375 6a.75.75 0 0 0-1.5 0v4.25c0 .414.336.75.75.75h4.25a.75.75 0 0 0 0-1.5h-3.5V6Z" clipRule="evenodd" />
+                      </svg>
+                      SPONSORED
+                    </span>
+                  )}
+                </div>
+
+                {/* Job Description (expandable) - separate block */}
+                {isMobile && expandedJobIds.has(job.job_id) && ( // Show only on mobile and if expanded
+                  <div className="p-4 bg-gray-700 rounded-lg mt-4 text-sm leading-relaxed">
+                    <h4 className="font-semibold text-white mb-2">Full Job Description</h4>
+                    <p dangerouslySetInnerHTML={{ __html: job.job_description.replace(/\n/g, '<br />') }} />
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
+                {/* Action Buttons - aligned to bottom, full width container */}
+                <div className="mt-auto pt-4 border-t border-gray-700 flex flex-wrap gap-3 items-center justify-center sm:justify-start">
                   <button
-                    onClick={() => handleJobDescriptionClick(job.job_id)} // Use job.job_id
-                    className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onClick={() => handleJobDescriptionClick(job)}
+                    className="px-5 py-2 border border-gray-600 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
                   >
-                    {selectedJobId === job.job_id ? 'Hide Details' : 'Job Description'}
+                    {isMobile && expandedJobIds.has(job.job_id) ? 'Hide Description' : 'View Description'}
                   </button>
 
-                  {/* Apply Button */}
                   <button
                     onClick={() => handleApply(job)}
-                    className={`px-6 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      user && appliedJobs.has(job.job_id) // Use job.job_id
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    className={`px-6 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-md ${
+                      user && appliedJobs.has(job.job_id)
+                        ? 'bg-green-700 text-white hover:bg-green-800 cursor-not-allowed opacity-90'
+                        : 'bg-blue-700 text-white hover:bg-blue-800'
                     }`}
                     disabled={!!user && appliedJobs.has(job.job_id)}
                   >
                     {user && appliedJobs.has(job.job_id) ? 'Applied ✓' : 'Apply Now'}
                   </button>
 
-                  {/* Reveal Phone Number Button */}
                   <button
-                    onClick={() => handleRevealPhone(job.job_id)} // Use job.job_id
-                    className={`px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id)) // Use job.job_id
-                        ? 'border-green-300 bg-green-50 text-green-700'
-                        : 'border-gray-300 hover:bg-gray-50'
+                    onClick={() => handleRevealPhone(job.job_id)}
+                    className={`px-5 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-sm ${
+                      revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
+                        ? 'border-green-600 bg-green-900 text-green-300 cursor-not-allowed opacity-90'
+                        : 'border-gray-600 hover:bg-gray-700 text-gray-200'
                     }`}
                     disabled={revealedPhones.has(job.job_id) || (!!user && appliedJobs.has(job.job_id))}
                   >
-                    {revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id)) // Use job.job_id
-                      ? `📞 ${job.contact_phone}` // Use job.contact_phone
+                    {revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
+                      ? `📞 ${job.contact_phone}`
                       : '📞 Reveal Phone (£1)'
                     }
                   </button>
-
-                  {/* Application Count */}
-                  <div className="flex items-center px-3 py-2 bg-gray-100 rounded-md text-sm text-gray-600">
-                    👥 {job.applicationCount} applications
-                  </div>
                 </div>
               </div>
+              // END OF TOTALLY NEW JOB CARD BLOCK DESIGN
             ))}
           </div>
         )}
 
         {/* No Results (only show if not loading, no error, and filteredJobs is empty) */}
         {!jobsLoading && !jobsError && sortedJobs.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg border">
-            <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
-            <p className="text-gray-600 mb-4">
-              Try adjusting your search criteria or check back later for new opportunities.
+          <div className="text-center py-12 bg-gray-800 rounded-2xl border border-gray-700 shadow-lg">
+            <h3 className="text-xl font-semibold mb-2 text-white">No jobs found matching your criteria!</h3>
+            <p className="text-gray-300 mb-6">
+              Try broadening your search or check back later as new opportunities are posted frequently.
             </p>
-            <Link href="/" className="inline-block px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
-              Back to Home
+            <Link href="/" className="inline-block px-6 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 text-gray-200 transition-all duration-200 active:scale-98 shadow-sm">
+              Explore Other Sections
             </Link>
           </div>
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && !jobsLoading && !jobsError && ( // Only show pagination if data is loaded
-          <div className="mt-8 flex items-center justify-center">
+        {totalPages > 1 && !jobsLoading && !jobsError && (
+          <div className="mt-12 flex items-center justify-center">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
               >
-                Previous
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M11.72 9.47a.75.75 0 0 1 0 1.06L7.47 15.72a.75.75 0 0 1-1.06 0L2.22 11.47a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25Z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M16.72 9.47a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25Z" clipRule="evenodd" />
+                </svg>
+                <span className="sr-only">Previous Page</span>
               </button>
 
               <div className="flex items-center gap-1">
@@ -542,7 +870,7 @@ export default function BrowseJobsPage() {
 
                   if (!showPage) {
                     if (page === currentPage - 3 || page === currentPage + 3) {
-                      return <span key={page} className="px-2 text-gray-500">...</span>
+                      return <span key={page} className="px-2 py-2 text-gray-400">...</span>
                     }
                     return null
                   }
@@ -551,10 +879,10 @@ export default function BrowseJobsPage() {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`px-3 py-2 border rounded-md ${
+                      className={`px-4 py-2 border rounded-lg transition-all duration-200 active:scale-98 shadow-sm ${
                         currentPage === page
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'border-gray-300 hover:bg-gray-50'
+                          ? 'bg-blue-700 text-white border-blue-700'
+                          : 'border-gray-600 hover:bg-gray-700 text-gray-200'
                       }`}
                     >
                       {page}
@@ -566,63 +894,94 @@ export default function BrowseJobsPage() {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
               >
-                Next
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M8.28 9.47a.75.75 0 0 1 0 1.06l4.25 4.25a.75.75 0 0 1-1.06 0L7.22 10.53a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l-4.25 4.25Z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M3.28 9.47a.75.75 0 0 1 0 1.06l4.25 4.25a.75.75 0 0 1-1.06 0L2.22 10.53a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l-4.25 4.25Z" clipRule="evenodd" />
+                </svg>
+                <span className="sr-only">Next Page</span>
               </button>
             </div>
           </div>
         )}
+
+        {/* Important Work Hour Limits Block - Moved Here and re-centered */}
+        <div className="mt-12 p-6 bg-blue-950 border border-blue-700 rounded-2xl shadow-xl max-w-2xl w-full mx-auto text-center transform transition-transform duration-300 hover:scale-[1.01] hover:shadow-2xl">
+          <h3 className="font-bold text-blue-200 mb-3 flex items-center justify-center gap-3 text-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-blue-400">
+              <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 .174.45l3.5 4.499a.75.75 0 0 0 1.14-.948L13.5 12.579V6Z" clipRule="evenodd" />
+            </svg>
+            Important: Understand Student Work Hour Limits
+          </h3>
+          <div className="text-base text-blue-300 space-y-2 text-left">
+            <p><strong>During term-time:</strong> Up to <span className="font-semibold text-blue-100">20 hours</span> per week while studying.</p>
+            <p><strong>During holidays/semester breaks:</strong> Up to <span className="font-semibold text-blue-100">40 hours</span> per week (full-time).</p>
+          </div>
+        </div>
       </div>
 
-      {/* Footer */}
-      <footer className="w-full py-6 bg-gray-900 text-white mt-16">
+      {/* The JobDetailsModal is only rendered for desktop view */}
+      {!isMobile && showJobDetailsModal && (
+        <JobDetailsModal
+          job={selectedJobForModal}
+          onClose={handleCloseJobDetailsModal}
+          onApply={handleApply}
+          onRevealPhone={handleRevealPhone}
+          revealedPhones={revealedPhones}
+          appliedJobs={appliedJobs}
+          user={user}
+          isMobile={isMobile}
+        />
+      )}
+
+      {/* Reduced mt-20 to mt-10 for less space */}
+      <footer className="bg-gray-900 text-white py-10">
         <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-8 lg:grid-cols-4">
+          <div className="grid gap-10 lg:grid-cols-4 md:grid-cols-2">
             <div>
-              <h3 className="font-bold text-lg mb-4">StudentJobs UK</h3>
-              <p className="text-gray-300 text-sm">
+              <h3 className="font-bold text-xl mb-4">StudentJobs UK</h3>
+              <p className="text-gray-300 text-sm leading-relaxed">
                 Connecting UK students with flexible part-time opportunities.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">For Students</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/browse-jobs" className="text-gray-300 hover:text-white">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-300 hover:text-white">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-300 hover:text-white">Student Guide</Link>
-              </nav>
+              <h4 className="font-bold text-base mb-3 text-blue-300">For Students</h4>
+             <ul className="space-y-1.5 text-sm">
+                  <li><Link href="/browse-jobs" className="text-gray-400 hover:text-blue-200 transition-colors duration-200">Browse Jobs</Link></li>
+                  <li><Link href="/how-it-works" className="text-gray-400 hover:text-blue-200 transition-colors duration-200">How It Works</Link></li>
+                  <li><Link href="/student-guide" className="text-gray-400 hover:text-blue-200 transition-colors duration-200">Student Guide</Link></li>
+                </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">For Employers</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                {/* Dynamically set pricing link for employers based on user type in the footer */}
-                <Link
-                  href={pricingHref} // Use the same pricingHref calculated above
-                  className="text-gray-300 hover:text-white"
-                >
-                  Pricing
-                </Link>
-                <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
-              </nav>
+               <h4 className="font-bold text-base mb-3 text-indigo-300">For Employers</h4>
+                <ul className="space-y-1.5 text-sm">
+                  <li><Link href="/post-job" className="text-gray-400 hover:text-indigo-200 transition-colors duration-200">Post a Job</Link></li>
+                  <li>
+                    <Link
+                      href={pricingHref}
+                      className="text-gray-400 hover:text-indigo-200 transition-colors duration-200"
+                    >
+                      Pricing
+                    </Link>
+                  </li>
+                  <li><Link href="/employer-guide" className="text-gray-400 hover:text-indigo-200 transition-colors duration-200">Employer Guide</Link></li>
+                </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-3">Legal</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
-                {/* ContactModal component correctly placed here */}
-                {/* Ensure the ContactModal's child is a button with appropriate styles */}
-                <ContactModal>
-                    <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">Contact Us</button>
-                </ContactModal>
+              <h4 className="font-bold text-base mb-3 text-purple-300">Legal</h4>
+              <nav className="flex flex-col space-y-3 text-sm">
+                  <Link href="/privacy" className="text-gray-400 hover:text-purple-200 transition-colors duration-200">Privacy Policy</Link>
+                  <Link href="/terms" className="text-gray-400 hover:text-purple-200 transition-colors duration-200">Terms & Conditions</Link>
+                  <Link href="/refund-policy" className="text-gray-400 hover:text-purple-200 transition-colors duration-200">Refund Policy</Link>
+                 <ContactModal>
+                        <button className="text-gray-400 hover:text-purple-200 transition-colors duration-200 text-left text-sm">Contact Us</button>
+                      </ContactModal>
               </nav>
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-300">
-            © 2025 StudentJobs UK. All rights reserved.
+          <div className="mt-10 pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
+            © {new Date().getFullYear()} StudentJobs UK. All rights reserved.
           </div>
         </div>
       </footer>

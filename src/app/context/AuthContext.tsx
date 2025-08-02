@@ -4,7 +4,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Define the shape of your User object
 interface User {
     user_id: string;
     user_username: string;
@@ -18,26 +17,23 @@ interface User {
     university_college?: string;
     created_at: string;
     user_image?: string;
-    user_city?: string; // ADDED THIS LINE
+    user_city?: string;
 }
 
-// --- NEW: Define a type for the data passed to the login function ---
-// This allows for either the full API response or just the user object
+// LoginData type handles cases where the login response might directly be User
+// or wrapped in an object like { user: User }
 type LoginData = User | { user: User; [key: string]: unknown };
 
-// Define the shape of the AuthContext value
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (data: LoginData) => void; // <-- CORRECTED TYPE
+    login: (data: LoginData) => void;
     logout: () => void;
     refreshUser: () => Promise<void>;
 }
 
-// Create the context with a default undefined value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// AuthProvider component to wrap your application
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -47,9 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(true);
         console.log("AuthContext fetchUser (called via useCallback): Attempting to fetch user from /api/auth/me...");
         try {
-            const response = await fetch('/api/auth/me');
+            const response = await fetch('/api/auth/me', {
+                credentials: 'include' // Ensures session cookies are sent
+            });
+
             if (response.ok) {
-                const userData: User = await response.json();
+                // --- MODIFIED CODE START ---
+                // The API response is { user: User }, so we need to destructure it
+                const responseData: { user: User } = await response.json();
+                const userData: User = responseData.user;
+                // --- MODIFIED CODE END ---
+
                 setUser(userData);
                 console.log("AuthContext fetchUser: User data received and set:", userData);
             } else {
@@ -69,19 +73,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchUser();
     }, [fetchUser]);
 
-    const login = (data: LoginData) => { // <-- CORRECTED TYPE
-        // Use a type guard to check if 'user' property exists
+   const login = async (data: LoginData) => {
+        // Handle cases where 'data' might be just the User object or wrapped in { user: User }
         const userData: User = 'user' in data && data.user ? data.user : data as User;
-
         console.log("AuthContext: login function processed and SETTING user state:", userData);
         setUser(userData);
         setIsLoading(false);
+        // Immediately fetch user data from the server to confirm session and get full details
+        await fetchUser();
     };
 
     const logout = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('/api/logout', { method: 'POST' });
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
             if (!response.ok) {
                 console.error('AuthContext: Backend logout failed:', response.statusText);
             }
@@ -107,7 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 }
 
-// Custom hook to easily consume the AuthContext
 export function useAuth() {
     const context = useContext(AuthContext);
     if (context === undefined) {
