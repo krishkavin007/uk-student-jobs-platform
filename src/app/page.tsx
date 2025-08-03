@@ -489,7 +489,7 @@ export default function HomePage() {
               { icon: ShieldCheckIcon, title: "Assured Reliability", description: "Our verification process ensures you connect with dependable individuals committed to their roles and responsibilities.", color: "green" },
               { icon: BookOpenTextIcon, title: "Seamless Integration", description: "Students are quick learners and adapt rapidly to new environments, ensuring a smooth onboarding process.", color: "red" },
               { icon: Building2Icon, title: "Support for All Business Sizes", description: "Whether you're a startup or a large corporation, our platform scales to meet your unique hiring demands.", color: "yellow" },
-              { icon: GlobeIcon, title: "Widespread UK Coverage", description: "Find local talent or remote support from any university city across England, Scotland, Wales, and Northern Ireland.", color: "purple" },
+              { icon: GlobeIcon, title: "Widespread UK Coverage", description: "Find local talent or remote support from any city across England, Scotland, Wales and Northern Ireland.", color: "purple" },
             ].map((feature, index) => (
               <motion.div
                 key={index}
