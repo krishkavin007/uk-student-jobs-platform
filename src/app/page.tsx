@@ -178,8 +178,8 @@ export default function HomePage() {
   {[
     { icon: GraduationCapIcon, title: "Academic Synergy", text: "Find part-time roles that fit seamlessly into your university timetable, ensuring no conflict with your studies. Your education comes first.", color: "blue" },
     { icon: CheckCircleIcon, title: "Verified & Secure", text: "Every job listing is rigorously vetted to guarantee legitimate, safe, and transparent employment experiences. Your security is paramount.", color: "green" },
-    { icon: DollarSignIcon, title: "Competitive Earnings", text: "Access high-value part-time jobs offering competitive wages, empowering you to manage living costs and achieve financial independence.", color: "yellow" },
-    { icon: TrendingUpIcon, title: "Career Acceleration", text: "Develop real-world professional skills, enhance your CV, and significantly boost your career prospects upon graduation. Start building your future now.", color: "purple" },
+    { icon: DollarSignIcon, title: "Competitive Earnings", text: "Access part-time jobs offering competitive wages, empowering you to manage living costs and achieve financial independence.", color: "yellow" },
+    { icon: TrendingUpIcon, title: "Career Acceleration", text: "Develop real-world professional skills and significantly boost your career prospects upon graduation. Start building your future now.", color: "purple" },
   ].map((feature, index) => (
     <motion.div key={index} variants={cardSpringPop} className="group">
       <Tilt
