@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ContactModal } from "@/components/ui/contact-modal"
 import { useAuth } from '@/app/context/AuthContext'
+// Removed: import Image from 'next/image' // No longer needed if no images are used
 
 function PaymentContent() {
   const searchParams = useSearchParams()
@@ -24,192 +25,383 @@ function PaymentContent() {
     { id: 2, last4: "1234", brand: "Mastercard", expiryMonth: 8, expiryYear: 2027 }
   ])
 
+  // State for multi-stage form
+  const [currentStage, setCurrentStage] = useState(1); // 1 for billing, 2 for payment options
+
+  // State for billing details
+  const [billingName, setBillingName] = useState('');
+  const [addressLine1, setAddressLine1] = useState('');
+  const [addressLine2, setAddressLine2] = useState('');
+  const [city, setCity] = useState('');
+  const [postcode, setPostcode] = useState('');
+  const [country] = useState('United Kingdom'); // Fixed to UK as per prompt
+  const [saveBillingAddress, setSaveBillingAddress] = useState(false);
+
+
   // Get authentication state from useAuth hook
   const { user, isLoading: isAuthLoading, logout } = useAuth();
 
   const jobId = searchParams?.get('jobId')
-  const purchaseType = searchParams?.get('type'); // This will now correctly capture 'pro_pack'
+  const purchaseType = searchParams?.get('type');
 
   let displayAmount = '0.00';
   let purchaseItemName = 'Purchase';
-  let redirectPathOnSuccess = '/my-account'; // Default redirect path
+  let redirectPathOnSuccess = '/my-account';
 
-  // --- Logic to determine payment details based on 'type' query parameter ---
+  useEffect(() => {
+    // Ensure the 'dark' class is present on the html element
+    document.documentElement.classList.add('dark');
+  }, []);
+
   if (purchaseType === 'pro_pack') {
-    // IMPORTANT: Check if a logged-in employer is trying to buy a student pack
     if (!isAuthLoading && user && user.user_type === 'employer') {
-      // Removed alert, now directly redirects
-      router.replace('/post-job'); // Redirect employer to post job page
-      return null; // Stop rendering this page for employers trying to buy student pack
+      router.replace('/post-job');
+      return null;
     }
-    displayAmount = '5.00'; // Fixed amount for Pro Pack
+    displayAmount = '5.00';
     purchaseItemName = 'Student Pro Pack';
-    redirectPathOnSuccess = '/my-account?tab=credits'; // Redirect to a specific tab for credits
-  } else if (purchaseType === 'phone') { // Existing 'phone' reveal flow
-    displayAmount = '1.00'; // Fixed amount for phone reveal
+    redirectPathOnSuccess = '/my-account?tab=credits';
+  } else if (purchaseType === 'phone') {
+    displayAmount = '1.00';
     purchaseItemName = `Phone Number Reveal for Job ID: ${jobId || 'N/A'}`;
     redirectPathOnSuccess = `/browse-jobs?revealed=${jobId}`;
   } else {
-    // Fallback for any other type or if 'type' is missing
-    displayAmount = searchParams?.get('amount') || '1.00'; // Use 'amount' param if present, or default
+    displayAmount = searchParams?.get('amount') || '1.00';
     purchaseItemName = `Service Fee for: ${purchaseType || 'Unknown Item'}`;
-    // Default redirectPathOnSuccess remains '/my-account'
   }
-  // --- END OF KEY LOGIC ---
 
+  const simulatePaymentSuccess = async (method: string) => {
+    setLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing time
 
-  const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    // --- In a real application, this is where actual payment gateway integration would happen ---
-    // Example: Stripe.js tokenization, then sending token to your backend.
-    // await stripe.confirmCardPayment(clientSecret, { payment_method: { card: cardElement } });
-    // ---
-
-    // Simulate payment processing for demonstration purposes
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    // After simulated payment success:
-    console.log(`Payment successful for ${purchaseItemName}.`);
-    console.log(`User: ${user?.user_email || 'Logged Out User (just signed up)'}`); // User info from AuthContext
+    console.log(`Payment successful via ${method} for ${purchaseItemName}.`);
+    console.log(`User: ${user?.user_email || 'Logged Out User (just signed up)'}`);
     console.log(`Amount: £${displayAmount}`);
-    console.log(`Saved card: ${saveCard}, Used saved card: ${useSavedCard}`);
+    console.log(`Billing Address:`, { billingName, addressLine1, addressLine2, city, postcode, country });
+    if (method === 'Card') {
+      console.log(`Saved card: ${saveCard}, Used saved card: ${useSavedCard}`);
+    }
+    console.log(`Save Billing Address: ${saveBillingAddress}`);
 
-    alert(`Payment successful for ${purchaseItemName}! Redirecting...`);
 
-    // Redirect to the determined success path
+    alert(`Payment successful via ${method} for ${purchaseItemName}! Redirecting...`);
+
     router.push(redirectPathOnSuccess);
-
     setLoading(false);
-  }
+  };
 
-  // Render a loading state while authentication status is being determined
+  const handleNextStage = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real app, you might validate billing fields here
+    setCurrentStage(2);
+  };
+
+  const handleApplePay = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Here you would typically initiate Apple Pay SDK
+    simulatePaymentSuccess('Apple Pay');
+  };
+
+  const handleGooglePay = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Here you would typically initiate Google Pay SDK
+    simulatePaymentSuccess('Google Pay');
+  };
+
+  const handleCardPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simulate card payment processing
+    simulatePaymentSuccess('Card');
+  };
+
+
   if (isAuthLoading) {
       return (
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <p className="text-gray-700">Checking user authentication...</p>
+          <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+              <p className="text-gray-300">Checking user authentication...</p>
           </div>
       );
   }
 
-  // If a redirect happened above (for employer buying student pack), return null to stop rendering
-  // This check is important as it ensures the redirect takes effect before the component renders fully.
   if (purchaseType === 'pro_pack' && user?.user_type === 'employer') {
     return null;
   }
 
-  // Determine the correct pricing href based on user type for the Header and Footer
   const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      {/* Pass user, isLoading, and logout to the Header component */}
-      <Header user={user} isLoading={isAuthLoading} logout={logout} pricingHref={pricingHref} />
+    <div className="min-h-screen bg-[rgb(7,8,21)] text-white flex flex-col pt-[80px]">
+      <Header
+        user={user}
+        isLoading={isAuthLoading}
+        logout={logout}
+        pricingHref={pricingHref}
+        className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0"
+      />
 
       <div className="flex-grow container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Complete Your Purchase {/* Generic title for payment page */}
+          <Card className="bg-gray-800 border border-gray-700 shadow-xl rounded-2xl text-white">
+            <CardHeader className="border-b border-gray-700 pb-4">
+              <CardTitle className="text-2xl font-bold text-white">
+                {currentStage === 1 ? 'Billing Details' : 'Payment Method'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-sm font-medium">Payment Summary</p>
-                <p className="text-2xl font-bold text-blue-600">£{displayAmount}</p> {/* Uses dynamic amount */}
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {purchaseItemName} {/* Uses dynamic item name */}
+            <CardContent className="pt-6">
+              <div className="mb-6 p-4 bg-blue-900/20 rounded-lg border border-blue-700">
+                <p className="text-sm font-medium text-blue-300">Payment Summary</p>
+                <p className="text-2xl font-bold text-blue-400">£{displayAmount}</p>
+                <p className="text-sm text-gray-400">
+                  {purchaseItemName}
                 </p>
-                <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="mt-2 pt-2 border-t border-blue-700">
+                  <p className="text-xs text-gray-400">
                     No additional fees: What you see is what you pay.
                     Includes secure payment processing and instant access.
                   </p>
                 </div>
               </div>
 
-              {savedCards.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Checkbox
-                      id="useSavedCard"
-                      checked={useSavedCard}
-                      onCheckedChange={(checked) => setUseSavedCard(!!checked)}
+              {/* Stage 1: Billing Information */}
+              {currentStage === 1 && (
+                <form onSubmit={handleNextStage} className="space-y-4">
+                  <div>
+                    <Label htmlFor="billingName" className="text-gray-300">Full Name</Label>
+                    <Input
+                      id="billingName"
+                      placeholder="John Smith"
+                      required
+                      value={billingName}
+                      onChange={(e) => setBillingName(e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
                     />
-                    <Label htmlFor="useSavedCard">Use saved payment method</Label>
+                  </div>
+                  <div>
+                    <Label htmlFor="addressLine1" className="text-gray-300">Address Line 1</Label>
+                    <Input
+                      id="addressLine1"
+                      placeholder="123 Example Street"
+                      required
+                      value={addressLine1}
+                      onChange={(e) => setAddressLine1(e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="addressLine2" className="text-gray-300">Address Line 2 (Optional)</Label>
+                    <Input
+                      id="addressLine2"
+                      placeholder="Apt, Suite, Building"
+                      value={addressLine2}
+                      onChange={(e) => setAddressLine2(e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="city" className="text-gray-300">City</Label>
+                      <Input
+                        id="city"
+                        placeholder="London"
+                        required
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="postcode" className="text-gray-300">Postcode</Label>
+                      <Input
+                        id="postcode"
+                        placeholder="SW1A 0AA"
+                        required
+                        value={postcode}
+                        onChange={(e) => setPostcode(e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="country" className="text-gray-300">Country</Label>
+                    <Input
+                      id="country"
+                      placeholder="United Kingdom"
+                      required
+                      value={country}
+                      readOnly
+                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500 cursor-not-allowed"
+                    />
                   </div>
 
-                  {useSavedCard && (
-                    <div className="space-y-2">
-                      {savedCards.map((card) => (
-                        <div key={card.id} className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <input type="radio" name="savedCard" defaultChecked={card.id === 1} />
-                              <div>
-                                <p className="font-medium">{card.brand} {card.last4}</p>
-                                <p className="text-sm text-gray-500">Expires {card.expiryMonth}/{card.expiryYear}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                      id="saveBillingAddress"
+                      checked={saveBillingAddress}
+                      onCheckedChange={(checked) => setSaveBillingAddress(!!checked)}
+                      className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                    />
+                    <Label htmlFor="saveBillingAddress" className="text-sm text-gray-300">Save this billing address for future payments</Label>
+                  </div>
+
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      type="submit"
+                      className="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </form>
               )}
 
-              <form onSubmit={handlePayment} className="space-y-4">
-                {!useSavedCard && (
-                  <>
-                    <div>
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input id="cardNumber" placeholder="1234 5678 9012 3456" required />
-                    </div>
+              {/* Stage 2: Payment Method Selection */}
+              {currentStage === 2 && (
+                <div className="space-y-6">
+                  {/* Apple Pay Button (text only) */}
+                  <Button
+                    onClick={handleApplePay}
+                    className="w-full bg-black text-white py-3 px-6 rounded-lg flex items-center justify-center gap-2 font-semibold transition-colors duration-200 shadow-md hover:bg-gray-900"
+                    disabled={loading}
+                  >
+                    Pay with Apple Pay
+                  </Button>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="expiry">Expiry</Label>
-                        <Input id="expiry" placeholder="MM/YY" required />
+                  {/* Google Pay Button (text only) */}
+                  <Button
+                    onClick={handleGooglePay}
+                    className="w-full bg-gray-200 text-gray-900 py-3 px-6 rounded-lg flex items-center justify-center gap-2 font-semibold transition-colors duration-200 shadow-md hover:bg-gray-300"
+                    disabled={loading}
+                  >
+                    Pay with Google Pay
+                  </Button>
+
+                  {/* Separator */}
+                  <div className="relative flex items-center py-5">
+                    <div className="flex-grow border-t border-gray-700"></div>
+                    <span className="flex-shrink mx-4 text-gray-500 text-sm">Or pay by card</span>
+                    <div className="flex-grow border-t border-gray-700"></div>
+                  </div>
+
+                  {/* Card Payment Form */}
+                  <form onSubmit={handleCardPayment} className="space-y-4">
+                    {savedCards.length > 0 && (
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Checkbox
+                            id="useSavedCard"
+                            checked={useSavedCard}
+                            onCheckedChange={(checked) => setUseSavedCard(!!checked)}
+                            className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                          />
+                          <Label htmlFor="useSavedCard" className="text-gray-300">Use saved payment method</Label>
+                        </div>
+
+                        {useSavedCard && (
+                          <div className="space-y-2">
+                            {savedCards.map((card) => (
+                              <div key={card.id} className="border border-gray-700 rounded-lg p-3 cursor-pointer bg-gray-700 hover:bg-gray-600 transition-colors">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    <input
+                                      type="radio"
+                                      name="savedCard"
+                                      defaultChecked={card.id === 1}
+                                      className="form-radio h-4 w-4 text-blue-600 bg-gray-600 border-gray-500 focus:ring-blue-500"
+                                    />
+                                    <div>
+                                      <p className="font-medium text-white">{card.brand} {card.last4}</p>
+                                      <p className="text-sm text-gray-400">Expires {card.expiryMonth}/{card.expiryYear}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input id="cvv" placeholder="123" required />
-                      </div>
-                    </div>
+                    )}
 
-                    <div>
-                      <Label htmlFor="name">Name on Card</Label>
-                      <Input id="name" placeholder="John Smith" required />
-                    </div>
+                    {!useSavedCard && (
+                      <>
+                        <div>
+                          <Label htmlFor="name" className="text-gray-300">Name on Card</Label>
+                          <Input
+                            id="name"
+                            placeholder="John Smith"
+                            required
+                            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                          />
+                        </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="saveCard"
-                        checked={saveCard}
-                        onCheckedChange={(checked) => setSaveCard(!!checked)}
-                      />
-                      <Label htmlFor="saveCard" className="text-sm">Save this card for future payments</Label>
-                    </div>
-                  </>
-                )}
+                        <div>
+                          <Label htmlFor="cardNumber" className="text-gray-300">Card Number</Label>
+                          <Input
+                            id="cardNumber"
+                            placeholder="1234 5678 9012 3456"
+                            required
+                            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                          />
+                        </div>
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? 'Processing...' : `Pay £${displayAmount}`} {/* Uses dynamic amount */}
-                </Button>
-              </form>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="expiry" className="text-gray-300">Expiry</Label>
+                            <Input
+                              id="expiry"
+                              placeholder="MM/YY"
+                              required
+                              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="cvv" className="text-gray-300">CVV</Label>
+                            <Input
+                              id="cvv"
+                              placeholder="123"
+                              required
+                              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="saveCard"
+                            checked={saveCard}
+                            onCheckedChange={(checked) => setSaveCard(!!checked)}
+                            className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                          />
+                          <Label htmlFor="saveCard" className="text-sm text-gray-300">Save this card for future payments</Label>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex justify-between items-center pt-4">
+                      <Button
+                        type="button"
+                        onClick={() => setCurrentStage(1)}
+                        variant="outline"
+                        className="border-gray-600 hover:bg-gray-700 text-gray-300 py-3 px-6 rounded-lg transition-colors duration-200"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md"
+                        disabled={loading}
+                      >
+                        {loading ? 'Processing...' : `Pay £${displayAmount}`}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer - already dark, no changes needed */}
       <footer className="w-full py-6 bg-gray-900 text-white mt-16">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="grid gap-8 lg:grid-cols-4">
@@ -261,10 +453,10 @@ function PaymentContent() {
 
 export default function PaymentPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <Suspense fallback={<div className="min-h-screen bg-gray-950 flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-2 text-gray-600">Loading payment form...</p>
+        <p className="mt-2 text-gray-300">Loading payment form...</p>
       </div>
     </div>}>
       <PaymentContent />
