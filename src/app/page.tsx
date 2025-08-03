@@ -176,11 +176,11 @@ export default function HomePage() {
   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6"
 >
   {[
-    { icon: GraduationCapIcon, title: "Academic Synergy", text: "Find part-time roles that fit seamlessly into your university timetable, ensuring no conflict with your studies. Your education comes first.", color: "blue" },
+       { icon: GraduationCapIcon, title: "Academic Synergy", text: "Find part-time roles that fit seamlessly into your university timetable, ensuring no conflict with your studies. Your education comes first.", color: "blue" },
     { icon: CheckCircleIcon, title: "Verified & Secure", text: "Every job listing is rigorously vetted to guarantee legitimate, safe, and transparent employment experiences. Your security is paramount.", color: "green" },
-    { icon: DollarSignIcon, title: "Competitive Earnings", text: "Access high-value part-time jobs offering competitive wages, empowering you to manage living costs and achieve financial independence.", color: "yellow" },
-    { icon: TrendingUpIcon, title: "Career Acceleration", text: "Develop real-world professional skills, enhance your CV, and significantly boost your career prospects upon graduation. Start building your future now.", color: "purple" },
-  ].map((feature, index) => (
+    { icon: DollarSignIcon, title: "Competitive Earnings", text: "Access part-time jobs offering competitive wages, empowering you to manage living costs and achieve financial independence.", color: "yellow" },
+    { icon: TrendingUpIcon, title: "Career Acceleration", text: "Develop real-world professional skills and significantly boost your career prospects upon graduation. Start building your future now.", color: "purple" },
+ ].map((feature, index) => (
     <motion.div key={index} variants={cardSpringPop} className="group">
       <Tilt
         className="bg-gray-800 p-5 rounded-xl shadow-md border border-gray-700 transition-all duration-300 cursor-pointer hover:shadow-lg transform hover:-translate-y-0.5 relative overflow-hidden"
@@ -263,7 +263,7 @@ export default function HomePage() {
             {[
               { name: "Hospitality", icon: BriefcaseIcon, description: "Flexible shifts in hotels, restaurants, and cafes.", link: "/browse-jobs?category=hospitality", color: "blue" },
               { name: "Retail", icon: DollarSignIcon, description: "Customer service and sales roles in various stores.", link: "/browse-jobs?category=retail", color: "green" },
-              { name: "Tutoring", icon: GraduationCapIcon, description: "Help others learn in academic subjects.", link: "/browse-jobs?category=education", color: "yellow" },
+              { name: "Tutoring", icon: GraduationCapIcon, description: "Help others learn effectively in academic subjects.", link: "/browse-jobs?category=education", color: "yellow" },
               { name: "Admin Support", icon: LayoutDashboardIcon, description: "Office tasks, data entry, and administrative duties.", link: "/browse-jobs?category=admin", color: "pink" },
               { name: "Tech Support", icon: CodeIcon, description: "Entry-level IT support and tech-related tasks.", link: "/browse-jobs?category=tech", color: "red" },
               { name: "Marketing", icon: LightbulbIcon, description: "Social media, content creation, and promotional roles.", link: "/browse-jobs?category=creative", color: "indigo" },
@@ -489,8 +489,8 @@ export default function HomePage() {
               { icon: ShieldCheckIcon, title: "Assured Reliability", description: "Our verification process ensures you connect with dependable individuals committed to their roles and responsibilities.", color: "green" },
               { icon: BookOpenTextIcon, title: "Seamless Integration", description: "Students are quick learners and adapt rapidly to new environments, ensuring a smooth onboarding process.", color: "red" },
               { icon: Building2Icon, title: "Support for All Business Sizes", description: "Whether you're a startup or a large corporation, our platform scales to meet your unique hiring demands.", color: "yellow" },
-              { icon: GlobeIcon, title: "Widespread UK Coverage", description: "Find local talent or remote support from any university city across England, Scotland, Wales, and Northern Ireland.", color: "purple" },
-            ].map((feature, index) => (
+              { icon: GlobeIcon, title: "Widespread UK Coverage", description: "Find local talent or remote support from any city across England, Scotland, Wales and Northern Ireland.", color: "purple" },
+      ].map((feature, index) => (
               <motion.div
                 key={index}
                 variants={cardSpringPop}
