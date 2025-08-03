@@ -263,7 +263,7 @@ export default function HomePage() {
             {[
               { name: "Hospitality", icon: BriefcaseIcon, description: "Flexible shifts in hotels, restaurants, and cafes.", link: "/browse-jobs?category=hospitality", color: "blue" },
               { name: "Retail", icon: DollarSignIcon, description: "Customer service and sales roles in various stores.", link: "/browse-jobs?category=retail", color: "green" },
-              { name: "Tutoring", icon: GraduationCapIcon, description: "Help others learn in academic subjects.", link: "/browse-jobs?category=education", color: "yellow" },
+              { name: "Tutoring", icon: GraduationCapIcon, description: "Help others learn effectively in academic subjects.", link: "/browse-jobs?category=education", color: "yellow" },
               { name: "Admin Support", icon: LayoutDashboardIcon, description: "Office tasks, data entry, and administrative duties.", link: "/browse-jobs?category=admin", color: "pink" },
               { name: "Tech Support", icon: CodeIcon, description: "Entry-level IT support and tech-related tasks.", link: "/browse-jobs?category=tech", color: "red" },
               { name: "Marketing", icon: LightbulbIcon, description: "Social media, content creation, and promotional roles.", link: "/browse-jobs?category=creative", color: "indigo" },
