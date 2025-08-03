@@ -657,9 +657,6 @@ function PostJobContent() {
                     </div>
 
                     <div className="space-y-3 text-sm text-gray-400 mt-4">
-                      <div>✓ Visible for 30 days</div>
-                      <div>✓ Student applications via phone</div>
-                      <div>✓ Edit or delete anytime</div>
                       {formData.sponsored && (
                         <>
                           <div className="text-yellow-400">⭐ Top of search results</div>
