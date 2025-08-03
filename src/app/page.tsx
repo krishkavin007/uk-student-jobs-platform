@@ -187,7 +187,6 @@ export default function HomePage() {
         perspective={1000}
         glareEnable={true}
         glareMaxOpacity={0.1}
-        style={{ width: 280, height: 265 }}
       >
         <div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
