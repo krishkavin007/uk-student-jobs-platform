@@ -415,7 +415,7 @@ export default function HomePage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6"
           >
             {[
-              { icon: UserCheckIcon, title: "Qualified Applicants", desc: "Connect directly with students possessing relevant skills and academic backgrounds for your roles.", color: "indigo" },
+              { icon: UserCheckIcon, title: "Qualified Applicants", desc: "Connect directly and quickly with students possessing relevant skills and academic backgrounds for your roles.", color: "indigo" },
               { icon: RocketIcon, title: "Accelerated Hiring", desc: "Our intuitive platform streamlines the posting and application process, significantly reducing your time-to-hire.", color: "orange" },
               { icon: HandshakeIcon, title: "Flexible Workforce", desc: "Gain access to a dynamic pool of talent perfect for seasonal peaks, project-based work, or consistent part-time support.", color: "purple" },
               { icon: LineChartIcon, title: "Growth & Innovation", desc: "Inject fresh perspectives and up-to-date knowledge from the next generation of professionals into your team.", color: "teal" },
