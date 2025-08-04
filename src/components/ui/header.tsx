@@ -33,11 +33,13 @@ interface HeaderProps {
   className?: string;
   // NEW PROP: To enable admin dashboard specific header behavior
   adminDashboardMode?: boolean;
+  // NEW PROP: To track current page for conditional navigation
+  currentPage?: string;
 }
 
 // Updated Header function to accept showAuth with a default value of true
 // MODIFIED: Destructure pricingHref with a default value, accept className, and add adminDashboardMode
-export function Header({ user, logout, isLoading, showAuth = true, pricingHref = "/pricing#employer", className, adminDashboardMode = false }: HeaderProps) {
+export function Header({ user, logout, isLoading, showAuth = true, pricingHref = "/pricing#employer", className, adminDashboardMode = false, currentPage }: HeaderProps) {
   return (
     // MODIFIED: Apply the incoming className prop using twMerge to the outermost <header> element
     <header className={twMerge("bg-white dark:bg-gray-900 border-b dark:border-gray-700", className)}>
@@ -91,12 +93,12 @@ export function Header({ user, logout, isLoading, showAuth = true, pricingHref =
                           Admin
                         </Link>
                       )}
-                      {user.user_type === 'student' && (
+                      {user.user_type === 'student' && currentPage !== 'browse-jobs' && (
                         <Link href="/browse-jobs" className="text-sm font-medium hover:underline dark:text-gray-300">
                           Browse Jobs
                         </Link>
                       )}
-                      {user.user_type === 'employer' && (
+                      {user.user_type === 'employer' && currentPage !== 'post-job' && (
                         <Link href="/post-job" className="text-sm font-medium hover:underline dark:text-gray-300">
                           Post Job
                         </Link>

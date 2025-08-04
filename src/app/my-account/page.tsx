@@ -860,9 +860,16 @@ Thank you for using StudentJobs UK!
             <span className="sr-only">StudentJobs UK</span>
           </Link>
           <nav className="flex flex-wrap justify-center items-center gap-4 sm:gap-6">
-            <Link href={user.user_type === "student" ? "/browse-jobs" : "/post-job"} className="text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
-              {user.user_type === "student" ? "Browse Jobs" : "Post Job"}
-            </Link>
+            {user.user_type === "student" && (
+              <Link href="/browse-jobs" className="text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
+                Browse Jobs
+              </Link>
+            )}
+            {user.user_type === "employer" && (
+              <Link href="/post-job" className="text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
+                Post Job
+              </Link>
+            )}
             <Link
               href={user.user_type === "student" ? "/pricing#student" : "/pricing#employer"}
               className="text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors"

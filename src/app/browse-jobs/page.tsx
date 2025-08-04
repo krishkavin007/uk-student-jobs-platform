@@ -682,6 +682,7 @@ export default function BrowseJobsPage() {
         logout={logout}
         isLoading={isAuthLoading}
         pricingHref={pricingHref}
+        currentPage="browse-jobs"
         // Apply the same explicit styling as app/page.tsx Header
         className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0"
         // The isDarkMode prop is not needed for the Header's background anymore based on its internal styling

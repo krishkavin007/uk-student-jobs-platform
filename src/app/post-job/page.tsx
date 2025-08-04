@@ -337,6 +337,7 @@ function PostJobContent() {
           user={user}
           isLoading={isAuthLoading}
           logout={logout}
+          currentPage="post-job"
           className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0"
         />
 

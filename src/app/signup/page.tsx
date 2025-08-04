@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -51,6 +51,8 @@ export default function SignupPage() {
   // Destructure 'login' from useAuth
   const { user, isLoading: authLoading, logout, login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams?.get('next');
 
   // Effect to redirect if user is already logged in
   useEffect(() => {
@@ -134,7 +136,12 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
           login(data.user);
         }
 
-        router.replace('/my-account');
+        // Redirect to next URL if provided, otherwise to my-account
+        if (nextUrl) {
+          router.replace(nextUrl);
+        } else {
+          router.replace('/my-account');
+        }
       } else {
         // --- FIX APPLIED HERE ---
         // Ensure that error state is always set to a string.
@@ -178,7 +185,7 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
       </div>
 
       {/* FIXED HEADER (on top of everything) */}
-      <Header user={user} isLoading={authLoading} logout={logout} className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
+      <Header user={user} isLoading={authLoading} logout={logout} currentPage="signup" className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
 
       {/* MODIFIED: Main content area, needs to be above the blobs */}
       <div className="relative z-10 flex-grow flex items-center justify-center p-4 pt-[120px]"> {/* Added pt-[120px] to push content below fixed header */}

@@ -129,7 +129,7 @@ export default function LoginPage() {
         <div className="absolute top-1/2 left-1/2 w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-[#7f4a00] to-[#7f004a] opacity-5 blur-[80px]" style={{ transform: 'translate(-50%, -50%)' }}></div>
       </div>
 
-      <Header user={user} isLoading={isLoading} logout={() => {}} className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
+      <Header user={user} isLoading={isLoading} logout={() => {}} currentPage="login" className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
 
       <div className="relative z-10 flex-grow flex items-center justify-center p-4 pt-[120px]">
         <Card className="w-full max-w-md bg-gray-900 border border-gray-800 text-gray-100">

@@ -255,6 +255,7 @@ function PaymentContent() {
         isLoading={isAuthLoading}
         logout={logout}
         pricingHref={pricingHref}
+        currentPage="pay"
         className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0"
       />
 
