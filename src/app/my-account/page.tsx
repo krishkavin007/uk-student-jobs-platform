@@ -223,14 +223,14 @@ function MyAccountContent() {
                 }
                 
                 return {
-                  id: job.job_id,
-                  title: job.job_title,
-                  description: job.job_description,
-                  postedDate: new Date(job.created_at).toLocaleDateString(),
-                  expiryDate: job.expires_at ? new Date(job.expires_at).toLocaleDateString() : 'No expiry',
+              id: job.job_id,
+              title: job.job_title,
+              description: job.job_description,
+              postedDate: new Date(job.created_at).toLocaleDateString(),
+              expiryDate: job.expires_at ? new Date(job.expires_at).toLocaleDateString() : 'No expiry',
                   applications: applicationCount,
-                  sponsored: job.is_sponsored || false,
-                  status: job.job_status || 'Active',
+              sponsored: job.is_sponsored || false,
+              status: job.job_status || 'Active',
                   applicants: applications
                 };
               })
@@ -252,48 +252,55 @@ function MyAccountContent() {
   }, [user]);
 
   // Fetch applied jobs for students
-  useEffect(() => {
-    const fetchAppliedJobs = async () => {
-      if (user && user.user_type === "student") {
-        setIsLoadingAppliedJobs(true);
-        try {
-          const response = await fetch(`/api/job/student/applications/${user.user_id}`, {
-            credentials: 'include'
-          });
+  const fetchAppliedJobs = async () => {
+    if (user && user.user_type === "student") {
+      setIsLoadingAppliedJobs(true);
+      try {
+        const response = await fetch(`/api/job/student/applications/${user.user_id}`, {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const applicationsData = await response.json();
           
-          if (response.ok) {
-            const applicationsData = await response.json();
-            
-                        // Transform the database applications to match the AppliedJob interface
-            const transformedApplications: AppliedJob[] = applicationsData.map((app: any) => ({
-              id: app.application_id,
-              title: app.job_title,
-              company: app.contact_name,
-              appliedDate: new Date(app.applied_at).toLocaleDateString(),
-              status: app.application_status === 'pending' ? 'Pending' : 
-                     app.application_status === 'contacted' ? 'Contacted' : 
-                     app.application_status === 'rejected' ? 'Declined' : 
-                     app.application_status === 'withdrawn' ? 'Withdrawn' : 'Pending',
-              studentOutcome: app.student_outcome || 'pending',
-              employerPhone: app.employer_phone || 'Not provided',
-              employerEmail: app.employer_email || 'Not provided',
-              isContactInfoRevealed: true, // Since they applied, they have access to contact info
-              jobId: app.job_id
-            }));
-            
-            setAppliedJobs(transformedApplications);
-          } else {
-            console.error('Failed to fetch applied jobs:', response.status);
-          }
-        } catch (error) {
-          console.error('Error fetching applied jobs:', error);
-        } finally {
-          setIsLoadingAppliedJobs(false);
+          // Transform the database applications to match the AppliedJob interface
+          const transformedApplications: AppliedJob[] = applicationsData.map((app: any) => ({
+            id: app.application_id,
+            title: app.job_title,
+            company: app.contact_name,
+            appliedDate: new Date(app.applied_at).toLocaleDateString(),
+            status: app.application_status === 'pending' ? 'Pending' : 
+                   app.application_status === 'contacted' ? 'Contacted' : 
+                   app.application_status === 'rejected' ? 'Declined' : 
+                   app.application_status === 'cancelled' ? 'Cancelled' : 'Pending',
+            studentOutcome: app.student_outcome || 'pending',
+            employerPhone: app.employer_phone || 'Not provided',
+            employerEmail: app.employer_email || 'Not provided',
+            isContactInfoRevealed: true, // Since they applied, they have access to contact info
+            jobId: app.job_id
+          }));
+          
+          setAppliedJobs(transformedApplications);
+        } else {
+          console.error('Failed to fetch applied jobs:', response.status);
         }
+      } catch (error) {
+        console.error('Error fetching applied jobs:', error);
+      } finally {
+        setIsLoadingAppliedJobs(false);
       }
-    };
+    }
+  };
 
+  // Initial fetch and auto-refresh for students
+  useEffect(() => {
     fetchAppliedJobs();
+    
+    // Auto-refresh every 30 seconds for students to see status updates
+    if (user && user.user_type === "student") {
+      const interval = setInterval(fetchAppliedJobs, 30000); // 30 seconds
+      return () => clearInterval(interval);
+    }
   }, [user]);
 
 
@@ -375,7 +382,7 @@ function MyAccountContent() {
 
       if (response.ok) {
         alert('Your account has been permanently deleted. Thank you for using StudentJobs UK.');
-        logout();
+    logout();
         router.push('/');
       } else {
         const errorData = await response.json();
@@ -438,7 +445,7 @@ Thank you for using StudentJobs UK!
     setRemovingJobId(jobId);
 
     try {
-      if (reason === "filled") {
+    if (reason === "filled") {
         // Call the new API endpoint to mark job as filled
         const response = await fetch(`/api/job/${jobId}/fill`, {
           method: 'PUT',
@@ -449,11 +456,11 @@ Thank you for using StudentJobs UK!
         });
 
         if (response.ok) {
-          setPostedJobs(prevJobs => prevJobs.map(job =>
+      setPostedJobs(prevJobs => prevJobs.map(job =>
             job.id === jobId ? { ...job, status: "filled" } : job
-          ));
+      ));
           alert('Job marked as filled and moved to post history. Congratulations on finding your employee!');
-        } else {
+    } else {
           const errorData = await response.json();
           alert(`Failed to mark job as filled: ${errorData.message || 'Unknown error'}`);
         }
@@ -646,6 +653,18 @@ Thank you for using StudentJobs UK!
         throw new Error('Failed to contact applicant');
       }
 
+      // Update local state immediately
+      setPostedJobs(prevJobs => 
+        prevJobs.map(job => ({
+          ...job,
+          applicants: job.applicants.map(applicant => 
+            applicant.id === applicationId 
+              ? { ...applicant, status: 'contacted' }
+              : applicant
+          )
+        }))
+      );
+
       console.log(`Applicant ${applicationId} contacted successfully`);
       alert('Applicant contacted successfully!');
     } catch (error) {
@@ -667,6 +686,18 @@ Thank you for using StudentJobs UK!
       if (!response.ok) {
         throw new Error('Failed to reject applicant');
       }
+
+      // Update local state immediately
+      setPostedJobs(prevJobs => 
+        prevJobs.map(job => ({
+          ...job,
+          applicants: job.applicants.map(applicant => 
+            applicant.id === applicationId 
+              ? { ...applicant, status: 'rejected' }
+              : applicant
+          )
+        }))
+      );
 
       console.log(`Applicant ${applicationId} rejected successfully`);
       alert('Applicant rejected successfully!');
@@ -880,7 +911,7 @@ Thank you for using StudentJobs UK!
                   </Card>
                   <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
                     <h3 className="text-2xl font-bold text-white mb-2">Your Applications</h3>
-                    <p className="text-5xl font-extrabold text-purple-500 mb-4">{appliedJobs.filter(job => job.studentOutcome === 'pending' && job.status !== 'Declined').length}</p>
+                                            <p className="text-5xl font-extrabold text-purple-500 mb-4">{appliedJobs.filter(job => job.studentOutcome === 'pending').length}</p>
                     <p className="text-gray-400 mb-4">Active applications.</p>
                     <Button onClick={() => setActiveView("activity")} className="bg-purple-600 hover:bg-purple-500 text-white">
                       View Applications
@@ -1098,19 +1129,37 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                       ) : appliedJobs.length > 0 ? (
                         <>
                           {/* Active Applications Section */}
-                          <div>
+                              <div>
                             <div className="flex items-center justify-between mb-4">
                               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                 Active Applications
                                 <Badge className="ml-2 bg-blue-900 text-blue-300">
-                                  {appliedJobs.filter(job => job.studentOutcome === 'pending' && job.status !== 'Declined').length}
+                                  {appliedJobs.filter(job => job.studentOutcome === 'pending').length}
                                 </Badge>
                               </h3>
+                                                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={fetchAppliedJobs}
+                                disabled={isLoadingAppliedJobs}
+                                className="text-gray-300 border-gray-600 bg-gray-900/20 hover:bg-gray-900 h-8 px-3"
+                              >
+                                {isLoadingAppliedJobs ? (
+                                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                ) : (
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                )}
+                              </Button>
                             </div>
                             <div className="grid gap-3">
-                              {appliedJobs.filter(job => job.studentOutcome === 'pending' && job.status !== 'Declined').length > 0 ? (
-                                appliedJobs.filter(job => job.studentOutcome === 'pending' && job.status !== 'Declined').map((job) => (
+                              {appliedJobs.filter(job => job.studentOutcome === 'pending').length > 0 ? (
+                                appliedJobs.filter(job => job.studentOutcome === 'pending').map((job) => (
                                   <Card key={job.id} className="bg-gray-900 border-gray-700 hover:bg-gray-850 transition-colors">
                                     <CardContent className="p-4">
                                       {/* Header Row */}
@@ -1126,10 +1175,10 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                           <p className="text-xs text-gray-500">Applied: {job.appliedDate}</p>
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="text-blue-400 border-blue-700 hover:bg-blue-900 h-8 px-3"
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                            className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900 h-8 px-3"
                                             onClick={() => handleViewJob(job.jobId)}
                                           >
                                             View
@@ -1138,7 +1187,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                       </div>
 
                                       {/* Contact Info Section */}
-                                      {job.studentOutcome !== 'withdrawn' && job.isContactInfoRevealed && (
+                                      {job.studentOutcome !== 'cancelled' && job.isContactInfoRevealed && (
                                         <div className="bg-gray-800 rounded-lg p-3 mb-3">
                                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
                                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -1149,7 +1198,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="text-green-400 border-green-700 hover:bg-green-900 h-7 px-2 text-xs"
+                                                className="text-green-400 border-green-700 bg-green-900/20 hover:bg-green-900 h-7 px-2 text-xs"
                                                 onClick={() => window.open(`tel:${job.employerPhone}`, '_self')}
                                               >
                                                 Call
@@ -1157,7 +1206,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="text-blue-400 border-blue-700 hover:bg-blue-900 h-7 px-2 text-xs"
+                                                className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900 h-7 px-2 text-xs"
                                                 onClick={() => window.open(`mailto:${job.employerEmail}`, '_self')}
                                               >
                                                 Email
@@ -1168,23 +1217,23 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                       )}
 
                                       {/* Action Buttons */}
-                                      {job.studentOutcome !== 'withdrawn' && (
+                                      {job.studentOutcome !== 'cancelled' && (
                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                           {!job.isContactInfoRevealed ? (
                                             <Button
                                               size="sm"
                                               variant="outline"
-                                              className="text-blue-400 border-blue-700 hover:bg-blue-900"
-                                              onClick={() => handleRevealContactInfo(job.id)}
-                                            >
+                                              className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900"
+                                    onClick={() => handleRevealContactInfo(job.id)}
+                                  >
                                               Reveal Contact (1 Credit)
-                                            </Button>
+                                  </Button>
                                           ) : (
                                             <div className="flex flex-wrap gap-2">
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="text-green-400 border-green-700 hover:bg-green-900"
+                                                className="text-green-400 border-green-700 bg-green-900/20 hover:bg-green-900"
                                                 onClick={() => handleUpdateApplicationOutcome(job.id, 'got_job')}
                                               >
                                                 Got Job
@@ -1192,7 +1241,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="text-red-400 border-red-700 hover:bg-red-900"
+                                                className="text-red-400 border-red-700 bg-red-900/20 hover:bg-red-900"
                                                 onClick={() => handleUpdateApplicationOutcome(job.id, 'not_got_job')}
                                               >
                                                 Not Got Job
@@ -1200,14 +1249,14 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="text-yellow-400 border-yellow-700 hover:bg-yellow-900"
-                                                onClick={() => handleUpdateApplicationOutcome(job.id, 'withdrawn')}
+                                                className="text-yellow-400 border-yellow-700 bg-yellow-900/20 hover:bg-yellow-900"
+                                                onClick={() => handleUpdateApplicationOutcome(job.id, 'cancelled')}
                                               >
-                                                Withdraw
+                                                Cancel
                                               </Button>
                                             </div>
-                                          )}
-                                        </div>
+                                )}
+                              </div>
                                       )}
                                     </CardContent>
                                   </Card>
@@ -1227,13 +1276,13 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                 <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                                 Application History
                                 <Badge className="ml-2 bg-gray-700 text-gray-300">
-                                  {appliedJobs.filter(job => job.studentOutcome !== 'pending' || job.status === 'Declined').length}
+                                  {appliedJobs.filter(job => job.studentOutcome !== 'pending').length}
                                 </Badge>
                               </h3>
-                            </div>
+                              </div>
                             <div className="grid gap-3">
-                              {appliedJobs.filter(job => job.studentOutcome !== 'pending' || job.status === 'Declined').length > 0 ? (
-                                appliedJobs.filter(job => job.studentOutcome !== 'pending' || job.status === 'Declined').map((job) => (
+                              {appliedJobs.filter(job => job.studentOutcome !== 'pending').length > 0 ? (
+                                appliedJobs.filter(job => job.studentOutcome !== 'pending').map((job) => (
                                   <Card key={job.id} className="bg-gray-900 border-gray-700 hover:bg-gray-850 transition-colors">
                                     <CardContent className="p-4">
                                       {/* Header Row */}
@@ -1242,25 +1291,27 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                           <div className="flex items-center gap-2 mb-1">
                                             <h4 className="font-semibold text-white truncate">{job.title}</h4>
                                             <Badge className={`flex-shrink-0 text-xs ${
+                                              job.status === 'Contacted' ? 'bg-blue-900 text-blue-300' :
+                                              job.status === 'Declined' ? 'bg-red-900 text-red-300' :
                                               job.studentOutcome === 'got_job' ? 'bg-green-900 text-green-300' :
-                                              job.studentOutcome === 'not_got_job' ? 'bg-red-900 text-red-300' :
-                                              job.studentOutcome === 'withdrawn' ? 'bg-yellow-900 text-yellow-300' :
+                                              job.studentOutcome === 'cancelled' ? 'bg-yellow-900 text-yellow-300' :
                                               'bg-gray-700 text-gray-300'
                                             }`}>
-                                              {job.studentOutcome === 'got_job' ? 'Got Job' :
-                                               job.studentOutcome === 'not_got_job' ? 'Not Got Job' :
-                                               job.studentOutcome === 'withdrawn' ? 'Withdrawn' :
+                                              {job.status === 'Contacted' ? 'Contacted' :
+                                               job.status === 'Declined' ? 'Declined' :
+                                               job.studentOutcome === 'got_job' ? 'Got Job' :
+                                               job.studentOutcome === 'cancelled' ? 'Cancelled' :
                                                job.studentOutcome}
                                             </Badge>
-                                          </div>
+                            </div>
                                           <p className="text-sm text-gray-400">{job.company}</p>
                                           <p className="text-xs text-gray-500">Applied: {job.appliedDate}</p>
-                                        </div>
+                          </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                           <Button
                                             size="sm"
                                             variant="outline"
-                                            className="text-blue-400 border-blue-700 hover:bg-blue-900 h-8 px-3"
+                                            className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900 h-8 px-3"
                                             onClick={() => handleViewJob(job.jobId)}
                                           >
                                             View
@@ -1268,8 +1319,8 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                         </div>
                                       </div>
 
-                                      {/* Contact Info Section - Only for non-withdrawn */}
-                                      {job.studentOutcome !== 'withdrawn' && job.isContactInfoRevealed && (
+                                      {/* Contact Info Section - Only for non-cancelled */}
+                                      {job.studentOutcome !== 'cancelled' && job.isContactInfoRevealed && (
                                         <div className="bg-gray-800 rounded-lg p-3">
                                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
                                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -1280,7 +1331,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="text-green-400 border-green-700 hover:bg-green-900 h-7 px-2 text-xs"
+                                                className="text-green-400 border-green-700 bg-green-900/20 hover:bg-green-900 h-7 px-2 text-xs"
                                                 onClick={() => window.open(`tel:${job.employerPhone}`, '_self')}
                                               >
                                                 Call
@@ -1288,7 +1339,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                               <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="text-blue-400 border-blue-700 hover:bg-blue-900 h-7 px-2 text-xs"
+                                                className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900 h-7 px-2 text-xs"
                                                 onClick={() => window.open(`mailto:${job.employerEmail}`, '_self')}
                                               >
                                                 Email
@@ -1334,94 +1385,94 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                              <div className="space-y-4">
                                {postedJobs.filter(job => job.status === "active").length > 0 ? (
                                  postedJobs.filter(job => job.status === "active").map((job) => (
-                                <Card key={job.id} className="shadow-sm hover:shadow-md transition-shadow duration-200 bg-gray-900 border-gray-700">
-                                  <CardContent className="p-5">
-                                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
-                                      <div className="flex-1">
+                          <Card key={job.id} className="shadow-sm hover:shadow-md transition-shadow duration-200 bg-gray-900 border-gray-700">
+                            <CardContent className="p-5">
+                              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+                                <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
-                                          <h4 className="font-semibold text-xl text-white">{job.title}</h4>
+                                  <h4 className="font-semibold text-xl text-white">{job.title}</h4>
                                           {job.sponsored && (
                                             <Badge className="bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full text-xs">
                                               Sponsored
                                             </Badge>
                                           )}
                                         </div>
-                                        <p className="text-sm text-gray-400">
-                                          Posted: {job.postedDate} • Expires: {job.expiryDate}
-                                        </p>
-                                        <p className="text-sm text-blue-400 font-medium mt-1">{job.applications} applications received</p>
-                                      </div>
-                                      <div className="flex flex-wrap gap-2 lg:justify-end">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => handleEditJob(job)}
-                                          className="text-gray-300 border-gray-600 hover:bg-gray-700 transition-colors"
-                                        >
-                                          Edit
-                                        </Button>
+                                  <p className="text-sm text-gray-400">
+                                    Posted: {job.postedDate} • Expires: {job.expiryDate}
+                                  </p>
+                                  <p className="text-sm text-blue-400 font-medium mt-1">{job.applications} applications received</p>
+                                </div>
+                                <div className="flex flex-wrap gap-2 lg:justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEditJob(job)}
+                                    className="text-gray-300 border-gray-600 bg-gray-700/20 hover:bg-gray-700 transition-colors"
+                                  >
+                                    Edit
+                                  </Button>
 
-                                        <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="text-green-400 border-green-700 hover:bg-green-900 transition-colors"
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-green-400 border-green-700 bg-green-900/20 hover:bg-green-900 transition-colors"
                                               disabled={removingJobId === job.id}
-                                            >
+                                      >
                                               {removingJobId === job.id ? "Marking..." : "Mark as Filled"}
-                                            </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent className="bg-gray-800 border-gray-700 text-gray-100">
-                                            <AlertDialogHeader>
-                                              <AlertDialogTitle className="text-white">Mark Position as Filled</AlertDialogTitle>
-                                              <AlertDialogDescription className="text-gray-400">
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-gray-800 border-gray-700 text-gray-100">
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle className="text-white">Mark Position as Filled</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-gray-400">
                                                 Congratulations! This will move your job to post history since you've found an employee. The job will no longer be visible to students.
-                                              </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                              <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">Cancel</AlertDialogCancel>
-                                              <AlertDialogAction
-                                                onClick={() => handleRemoveJob(job.id, "filled")}
-                                                className="bg-green-600 hover:bg-green-500 text-white"
-                                              >
-                                                Mark as Filled
-                                              </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                        </AlertDialog>
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleRemoveJob(job.id, "filled")}
+                                          className="bg-green-600 hover:bg-green-500 text-white"
+                                        >
+                                          Mark as Filled
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
 
-                                        <AlertDialog>
-                                          <AlertDialogTrigger asChild>
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="text-red-400 border-red-700 hover:bg-red-900 transition-colors"
-                                              disabled={removingJobId === job.id}
-                                            >
-                                              {removingJobId === job.id ? "Removing..." : "Remove Job"}
-                                            </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent className="bg-gray-800 border-gray-700 text-gray-100">
-                                            <AlertDialogHeader>
-                                              <AlertDialogTitle className="text-white">Remove Job Posting</AlertDialogTitle>
-                                              <AlertDialogDescription className="text-gray-400">
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-400 border-red-700 bg-red-900/20 hover:bg-red-900 transition-colors"
+                                        disabled={removingJobId === job.id}
+                                      >
+                                        {removingJobId === job.id ? "Removing..." : "Remove Job"}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-gray-800 border-gray-700 text-gray-100">
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle className="text-white">Remove Job Posting</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-gray-400">
                                                 Are you sure you want to permanently remove this job posting? This action cannot be undone.
-                                              </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                              <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">Cancel</AlertDialogCancel>
-                                              <AlertDialogAction
-                                                onClick={() => handleRemoveJob(job.id, "removed")}
-                                                className="bg-red-600 hover:bg-red-500 text-white"
-                                              >
-                                                Remove Job
-                                              </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                        </AlertDialog>
-                                      </div>
-                                                                         </div>
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleRemoveJob(job.id, "removed")}
+                                          className="bg-red-600 hover:bg-red-500 text-white"
+                                        >
+                                          Remove Job
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </div>
 
                               <Separator className="my-4 bg-gray-700" />
 
@@ -1462,16 +1513,16 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                                   <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="text-green-400 border-green-700 hover:bg-green-900 transition-colors"
+                                                    className="text-green-400 border-green-700 bg-green-900/20 hover:bg-green-900 transition-colors"
                                                     onClick={() => window.open(`tel:${applicant.phone}`, '_self')}
                                                   >
                                                     Call
-                                                  </Button>
+                                                </Button>
                                                 )}
                                                 <Button
                                                   size="sm"
                                                   variant="outline"
-                                                  className="text-blue-400 border-blue-700 hover:bg-blue-900 transition-colors"
+                                                  className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900 transition-colors"
                                                   onClick={() => window.open(`mailto:${applicant.email}`, '_self')}
                                                 >
                                                   Email
@@ -1479,7 +1530,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                                 <Button 
                                                   size="sm" 
                                                   variant="outline" 
-                                                  className="text-red-400 border-red-700 hover:bg-red-900"
+                                                  className="text-red-400 border-red-700 bg-red-900/20 hover:bg-red-900"
                                                   onClick={() => handleRejectApplicant(applicant.id)}
                                                 >
                                                   Reject
@@ -1492,7 +1543,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                                   <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="text-green-400 border-green-700 hover:bg-green-900 transition-colors"
+                                                    className="text-green-400 border-green-700 bg-green-900/20 hover:bg-green-900 transition-colors"
                                                     onClick={() => window.open(`tel:${applicant.phone}`, '_self')}
                                                   >
                                                     Call
@@ -1501,13 +1552,10 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                                 <Button
                                                   size="sm"
                                                   variant="outline"
-                                                  className="text-blue-400 border-blue-700 hover:bg-blue-900 transition-colors"
+                                                  className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900 transition-colors"
                                                   onClick={() => window.open(`mailto:${applicant.email}`, '_self')}
                                                 >
                                                   Email
-                                                </Button>
-                                                <Button size="sm" variant="outline" disabled className="text-gray-500 border-gray-700">
-                                                  ✓ Contacted
                                                 </Button>
                                               </>
                                             )}
@@ -1517,7 +1565,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                                   <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="text-green-400 border-green-700 hover:bg-green-900 transition-colors"
+                                                    className="text-green-400 border-green-700 bg-green-900/20 hover:bg-green-900 transition-colors"
                                                     onClick={() => window.open(`tel:${applicant.phone}`, '_self')}
                                                   >
                                                     Call
@@ -1526,13 +1574,10 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                                 <Button
                                                   size="sm"
                                                   variant="outline"
-                                                  className="text-blue-400 border-blue-700 hover:bg-blue-900 transition-colors"
+                                                  className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900 transition-colors"
                                                   onClick={() => window.open(`mailto:${applicant.email}`, '_self')}
                                                 >
                                                   Email
-                                                </Button>
-                                                <Button size="sm" variant="outline" disabled className="text-gray-500 border-gray-700">
-                                                  ✗ Rejected
                                                 </Button>
                                               </>
                                             )}
@@ -1555,7 +1600,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                               </div>
                             </CardContent>
                           </Card>
-                                 ))
+                        ))
                                ) : (
                                  <div className="p-6 text-center bg-gray-900 rounded-lg border border-dashed border-gray-700">
                                    <p className="text-md text-gray-400">No active job postings.</p>
@@ -1595,7 +1640,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                              size="sm"
                                              variant="outline"
                                              onClick={() => handleReactivateJob(job.id)}
-                                             className="text-blue-400 border-blue-700 hover:bg-blue-900 transition-colors"
+                                             className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-900 transition-colors"
                                              disabled={removingJobId === job.id}
                                            >
                                              {removingJobId === job.id ? "Reactivating..." : "Reactivate Job"}

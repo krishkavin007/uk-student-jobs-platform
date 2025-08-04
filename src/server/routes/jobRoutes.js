@@ -33,10 +33,20 @@ const uploadJobLogo = multer({ storage: jobLogoStorage });
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT * FROM job_applications 
-            WHERE job_status = 'active' 
-            AND (expires_at IS NULL OR expires_at > NOW())
-            ORDER BY is_sponsored DESC, created_at DESC
+            SELECT 
+                ja.*,
+                COALESCE(application_counts.count, 0) as application_count
+            FROM job_applications ja
+            LEFT JOIN (
+                SELECT 
+                    job_id,
+                    COUNT(*) as count
+                FROM student_applications
+                GROUP BY job_id
+            ) application_counts ON ja.job_id = application_counts.job_id
+            WHERE ja.job_status = 'active' 
+            AND (ja.expires_at IS NULL OR ja.expires_at > NOW())
+            ORDER BY ja.is_sponsored DESC, ja.created_at DESC
         `);
         res.json(result.rows);
     } catch (err) {
@@ -45,7 +55,23 @@ router.get('/', async (req, res) => {
     }
 });
 
-// POST - Student applies to a job (MUST come before /:id route)
+// GET job by ID (MUST come before /apply route)
+router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM job_applications WHERE job_id = $1', [id]);
+        if (result.rows.length === 0) {
+            console.log(`--- DEBUG: Job ID ${id} not found.`);
+            return res.status(404).json({ message: 'Job not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('--- ERROR: Error fetching job by ID:', err.stack);
+        res.status(500).json({ error: 'Failed to fetch job' });
+    }
+});
+
+// POST - Student applies to a job
 router.post('/apply', authenticateUser, async (req, res) => {
     const { job_id, application_message } = req.body;
     const student_id = req.session.userId;
@@ -121,10 +147,10 @@ router.put('/applications/:applicationId/contact', authenticateUser, async (req,
             return res.status(403).json({ error: 'Forbidden: You can only contact applicants for jobs you posted unless you are an admin.' });
         }
 
-        // Update the application status to contacted
+        // Update the application status to contacted and student outcome to pending (still in process)
         const result = await pool.query(
-            'UPDATE student_applications SET application_status = $1 WHERE application_id = $2 RETURNING application_id, application_status',
-            ['contacted', applicationId]
+            'UPDATE student_applications SET application_status = $1, student_outcome = $2 WHERE application_id = $3 RETURNING application_id, application_status, student_outcome',
+            ['contacted', 'pending', applicationId]
         );
 
         console.log(`--- DEBUG: Application ${applicationId} marked as contacted by user ${userIdFromSession}. ---`);
@@ -163,10 +189,10 @@ router.put('/applications/:applicationId/reject', authenticateUser, async (req, 
             return res.status(403).json({ error: 'Forbidden: You can only reject applicants for jobs you posted unless you are an admin.' });
         }
 
-        // Update the application status to rejected
+        // Update the application status to rejected and student outcome to not_got_job
         const result = await pool.query(
-            'UPDATE student_applications SET application_status = $1 WHERE application_id = $2 RETURNING application_id, application_status',
-            ['rejected', applicationId]
+            'UPDATE student_applications SET application_status = $1, student_outcome = $2 WHERE application_id = $3 RETURNING application_id, application_status, student_outcome',
+            ['rejected', 'not_got_job', applicationId]
         );
 
         console.log(`--- DEBUG: Application ${applicationId} marked as rejected by user ${userIdFromSession}. ---`);
@@ -178,6 +204,24 @@ router.put('/applications/:applicationId/reject', authenticateUser, async (req, 
     }
 });
 
+// POST - Fix existing rejected applications (one-time fix)
+router.post('/fix-rejected-applications', authenticateUser, async (req, res) => {
+    try {
+        // Update all existing rejected applications to have student_outcome = 'not_got_job'
+        const result = await pool.query(
+            'UPDATE student_applications SET student_outcome = $1 WHERE application_status = $2 AND student_outcome = $3 RETURNING application_id, application_status, student_outcome',
+            ['not_got_job', 'rejected', 'pending']
+        );
+
+        console.log(`--- DEBUG: Fixed ${result.rows.length} rejected applications. ---`);
+        res.json({ message: `Fixed ${result.rows.length} rejected applications`, updatedCount: result.rows.length });
+
+    } catch (err) {
+        console.error('--- ERROR: Error fixing rejected applications:', err.stack);
+        res.status(500).json({ error: 'Failed to fix rejected applications' });
+    }
+});
+
 // PUT - Update student application outcome
 router.put('/student/applications/:applicationId/outcome', authenticateUser, async (req, res) => {
     const { applicationId } = req.params;
@@ -185,9 +229,9 @@ router.put('/student/applications/:applicationId/outcome', authenticateUser, asy
     const userIdFromSession = req.session.userId;
 
     // Validate outcome
-    const validOutcomes = ['pending', 'got_job', 'not_got_job', 'withdrawn'];
+    const validOutcomes = ['pending', 'got_job', 'not_got_job', 'cancelled'];
     if (!validOutcomes.includes(outcome)) {
-        return res.status(400).json({ error: 'Invalid outcome. Must be one of: pending, got_job, not_got_job, withdrawn' });
+        return res.status(400).json({ error: 'Invalid outcome. Must be one of: pending, got_job, not_got_job, cancelled' });
     }
 
     try {
@@ -214,8 +258,8 @@ router.put('/student/applications/:applicationId/outcome', authenticateUser, asy
             case 'not_got_job':
                 applicationStatus = 'rejected';
                 break;
-            case 'withdrawn':
-                applicationStatus = 'withdrawn';
+            case 'cancelled':
+                applicationStatus = 'cancelled';
                 break;
             default:
                 applicationStatus = 'pending';
@@ -313,7 +357,7 @@ router.get('/:jobId/applications', authenticateUser, async (req, res) => {
             return res.status(403).json({ error: 'Forbidden: You can only view applications for jobs you posted unless you are an admin.' });
         }
 
-        // Get total application count (including withdrawn)
+        // Get total application count (including cancelled)
         const totalCountResult = await pool.query(`
             SELECT COUNT(*) as total_count
             FROM student_applications sa
@@ -322,7 +366,7 @@ router.get('/:jobId/applications', authenticateUser, async (req, res) => {
         
         const totalApplications = parseInt(totalCountResult.rows[0].total_count);
         
-        // Fetch applications with student details (excluding withdrawn applications for display)
+        // Fetch applications with student details (excluding cancelled applications for display)
         const result = await pool.query(`
             SELECT 
                 sa.application_id,
@@ -337,11 +381,11 @@ router.get('/:jobId/applications', authenticateUser, async (req, res) => {
                 u.contact_phone_number
             FROM student_applications sa
             JOIN users u ON sa.student_id = u.user_id
-            WHERE sa.job_id = $1 AND sa.application_status != 'withdrawn'
+            WHERE sa.job_id = $1 AND sa.application_status != 'cancelled'
             ORDER BY sa.applied_at DESC
         `, [jobId]);
         
-        console.log(`--- DEBUG: Fetched ${result.rows.length} visible applications (${totalApplications} total including withdrawn) for job ID ${jobId}. ---`);
+        console.log(`--- DEBUG: Fetched ${result.rows.length} visible applications (${totalApplications} total including cancelled) for job ID ${jobId}. ---`);
         
         // Add total count to the response
         res.json({
@@ -355,21 +399,7 @@ router.get('/:jobId/applications', authenticateUser, async (req, res) => {
     }
 });
 
-// GET job by ID
-router.get('/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const result = await pool.query('SELECT * FROM job_applications WHERE job_id = $1', [id]);
-        if (result.rows.length === 0) {
-            console.log(`--- DEBUG: Job ID ${id} not found.`);
-            return res.status(404).json({ message: 'Job not found' });
-        }
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error('--- ERROR: Error fetching job by ID:', err.stack);
-        res.status(500).json({ error: 'Failed to fetch job' });
-    }
-});
+
 
 // POST a new job (Authenticated User or Admin)
 // MODIFIED: Removed uploadJobLogo.single('company_logo') middleware and all references to company_logo in the INSERT query.

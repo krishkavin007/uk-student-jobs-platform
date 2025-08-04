@@ -110,6 +110,13 @@ function PostJobContent() {
     if (searchParams?.get('sponsored') === 'true') {
       setFormData(prev => ({ ...prev, sponsored: true }))
     }
+    
+    // Handle job title from home page search
+    const jobTitleFromUrl = searchParams?.get('jobTitle');
+    if (jobTitleFromUrl) {
+      const decodedJobTitle = decodeURIComponent(jobTitleFromUrl);
+      setFormData(prev => ({ ...prev, title: decodedJobTitle }))
+    }
   }, [searchParams])
 
   const handleInputChange = (field: string, value: string | boolean) => {

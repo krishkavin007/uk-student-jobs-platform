@@ -3,12 +3,14 @@
 
 import { useState, useMemo, useEffect, Suspense, useRef } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/ui/header"
 import { ContactModal } from "@/components/ui/contact-modal"
+import { Building2Icon, GlobeIcon, ClockIcon } from "lucide-react"
 
 import { useAuth } from "@/app/context/AuthContext"
+import ApplicationMessageModal from '@/app/application-message/application-message';
 
 interface Job {
   job_id: number;
@@ -26,6 +28,7 @@ interface Job {
   created_at: string;
   expires_at: string | null;
   job_status: string;
+  application_count?: number; // Real application count from database
 
   // Frontend-only fields (these will be derived or managed client-side)
   hoursType: string;
@@ -178,16 +181,15 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
             </span>
           </div>
           <p className="text-lg text-gray-300 mb-2 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-400">
-              <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM12 18.75a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-.75h-.75a.75.75 0 0 1-.75-.75v-.75Zm-5.495-2.261A9.752 9.752 0 0 0 6 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H12a7.5 7.5 0 0 0-7.5 7.5c0 1.574.341 3.085.992 4.475C6.425 18.17 7.72 18.75 9 18.75h.75a.75.75 0 0 1 0 1.5H9c-1.802 0-3.52-.693-4.821-1.994A10.455 10.455 0 0 1 2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75a9.752 9.752 0 0 0-.992 4.475 7.472 7.472 0 0 1-1.282 1.832 7.5 7.5 0 0 0-6.177 1.62.75.75 0 0 1-.954-.937Z" clipRule="evenodd" />
-            </svg>
-            {job.contact_name} <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-400">
-              <path fillRule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a8.75 8.75 0 0 0 4.721-6.786c1.294-4.507-1.697-9.078-6.75-9.078s-8.044 4.571-6.75 9.078a8.75 8.75 0 0 0 4.72 6.786ZM12 12.75a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clipRule="evenodd" />
-            </svg>
+            <Building2Icon className="h-5 w-5 text-gray-400" />
+            {job.contact_name} <GlobeIcon className="h-5 w-5 text-gray-400" />
             {job.job_location}
           </p>
           <div className="text-lg font-bold text-green-400 mb-2">£{job.hourly_pay}<span className="text-base font-medium">/hr</span></div>
-          <div className="text-md text-gray-300 mb-4">{job.hours_per_week} hours/week</div>
+          <div className="text-md text-gray-300 mb-4 flex items-center gap-2">
+            <ClockIcon className="h-4 w-4" />
+            {job.hours_per_week} hours/week
+          </div>
           <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
             <span className="px-3 py-1 text-sm bg-blue-900 text-blue-300 rounded-full font-medium shadow-sm">
               {job.job_category}
@@ -199,9 +201,6 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
               Posted {job.postedDate}
             </span>
             <div className="flex items-center px-3 py-1 bg-gray-700 rounded-full text-sm text-gray-300 font-medium shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 mr-2 text-gray-400">
-                <path d="M4.5 6.375a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.75 8.25a.75.75 0 0 0-1.5 0v.75H16.5a.75.75 0 0 0 0 1.5h.75v.75a.75.75 0 0 0 1.5 0v-.75h.75a.75.75 0 0 0 0-1.5h-.75V8.25ZM9 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H15A7.5 7.5 0 0 0 7.5 12v3.75m-9.303 0a.75.75 0 0 0-.256-.574A14.24 14.24 0 0 1 5.305 15h.695Z" />
-              </svg>
               {job.applicationCount} applications
             </div>
           </div>
@@ -248,6 +247,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
 };
 
 
+
+
 // --- Main BrowseJobsPage Component ---
 export default function BrowseJobsPage() {
   const router = useRouter()
@@ -273,6 +274,16 @@ export default function BrowseJobsPage() {
   
   const [selectedJobForModal, setSelectedJobForModal] = useState<Job | null>(null);
   const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+
+  // Application message modal states
+  const [showApplicationMessageModal, setShowApplicationMessageModal] = useState(false);
+  const [selectedJobForApplication, setSelectedJobForApplication] = useState<Job | null>(null);
+  const [applicationMessage, setApplicationMessage] = useState('');
+
+  // Check if we should show the application message modal
+  const shouldShowModal = useSearchParams()?.get('applicationMessage') === 'true';
+  const jobIdFromUrl = useSearchParams()?.get('jobId');
+
 
   // New state for mobile job description expansion
   const [expandedJobIds, setExpandedJobIds] = useState<Set<number>>(new Set<number>()); // Initialize as empty set directly
@@ -336,6 +347,25 @@ export default function BrowseJobsPage() {
     };
   }, [showJobDetailsModal]); 
 
+  // Handle URL parameters for filters (when coming from home page categories and search)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const categoryFromUrl = urlParams.get('category');
+    const queryFromUrl = urlParams.get('query');
+    
+    if (categoryFromUrl) {
+      // Decode the URL parameter to handle spaces and special characters
+      const decodedCategory = decodeURIComponent(categoryFromUrl);
+      setCategoryFilter(decodedCategory);
+    }
+    
+    if (queryFromUrl) {
+      // Decode the URL parameter to handle spaces and special characters
+      const decodedQuery = decodeURIComponent(queryFromUrl);
+      setSearchTerm(decodedQuery);
+    }
+  }, []);
+
   // Handle URL parameters for applied jobs (when returning from payment)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -385,7 +415,7 @@ export default function BrowseJobsPage() {
           postedDate: formatDateAgo(job.created_at),
           applicationUrl: job.contact_email ? `mailto:${job.contact_email}` : null,
           phoneNumber: job.contact_phone,
-          applicationCount: Math.floor(Math.random() * 20) + 1,
+          applicationCount: job.application_count || 0,
           employer: job.contact_name,
         }));
         setJobs(mappedJobs);
@@ -429,6 +459,22 @@ export default function BrowseJobsPage() {
 
     fetchAppliedJobs();
   }, [user]);
+
+  // Handle application message modal
+  useEffect(() => {
+    if (shouldShowModal && jobIdFromUrl && jobs.length > 0) {
+      const job = jobs.find(j => j.job_id.toString() === jobIdFromUrl);
+      if (job) {
+        setSelectedJobForApplication(job);
+        setShowApplicationMessageModal(true);
+        // Restore saved message from sessionStorage
+        const savedMessage = sessionStorage.getItem('applicationMessage');
+        if (savedMessage) {
+          setApplicationMessage(savedMessage);
+        }
+      }
+    }
+  }, [shouldShowModal, jobIdFromUrl, jobs]);
 
   const filteredJobs = useMemo(() => {
     return jobs.filter(job => {
@@ -569,10 +615,53 @@ export default function BrowseJobsPage() {
       return;
     }
 
-    // Don't submit application yet - just redirect to payment
-    // The application will be submitted after payment completion
-    router.push(`/pay?jobId=${job.job_id}&type=apply`);
+    // Show application message modal on the same page without scrolling
+    setSelectedJobForApplication(job);
+    setShowApplicationMessageModal(true);
+    // Update URL to show modal state without causing scroll
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('applicationMessage', 'true');
+    currentUrl.searchParams.set('jobId', job.job_id.toString());
+    window.history.replaceState({}, '', currentUrl.toString());
   };
+
+  const handleApplicationMessageSubmit = async () => {
+    if (!selectedJobForApplication || !applicationMessage.trim()) {
+      alert('Please enter an application message');
+      return;
+    }
+
+    // Store the message in sessionStorage
+    sessionStorage.setItem('applicationMessage', applicationMessage);
+    
+    // Close modal and redirect to payment
+    setShowApplicationMessageModal(false);
+    setApplicationMessage('');
+    setSelectedJobForApplication(null);
+    
+    // Redirect to payment page
+    router.push(`/pay?type=apply&jobId=${selectedJobForApplication.job_id}`);
+  };
+
+  const handleApplicationMessageChange = (message: string) => {
+    setApplicationMessage(message);
+    // Save to sessionStorage as user types
+    sessionStorage.setItem('applicationMessage', message);
+  };
+
+  const handleCloseApplicationMessageModal = () => {
+    setShowApplicationMessageModal(false);
+    setApplicationMessage('');
+    setSelectedJobForApplication(null);
+    // Clear the saved message when closing
+    sessionStorage.removeItem('applicationMessage');
+    // Remove modal parameters from URL without causing scroll
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('applicationMessage');
+    currentUrl.searchParams.delete('jobId');
+    window.history.replaceState({}, '', currentUrl.toString());
+  };
+
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -650,10 +739,12 @@ export default function BrowseJobsPage() {
                 <option value="">All categories</option>
                 <option value="Hospitality">Hospitality</option>
                 <option value="Retail">Retail</option>
-                <option value="Education">Education</option>
-                <option value="Events">Events</option>
-                <option value="Warehouse">Warehouse</option>
-                <option value="Admin">Admin</option>
+                <option value="Tutoring">Tutoring</option>
+                <option value="Admin Support">Admin Support</option>
+                <option value="Tech Support">Tech Support</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Customer Service">Customer Service</option>
+                <option value="Warehouse & Logistics">Warehouse & Logistics</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -775,15 +866,11 @@ export default function BrowseJobsPage() {
                     {/* Employer Name & Location */}
                     <p className="text-sm text-gray-300 flex flex-col overflow-hidden">
                       <span className="flex items-center gap-1 overflow-hidden whitespace-nowrap mb-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-400 flex-shrink-0">
-                          <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM12 18.75a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-.75h-.75a.75.75 0 0 1-.75-.75v-.75Zm-5.495-2.261A9.752 9.752 0 0 0 6 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H12a7.5 7.5 0 0 0-7.5 7.5c0 1.574.341 3.085.992 4.475C6.425 18.17 7.72 18.75 9 18.75h.75a.75.75 0 0 1 0 1.5H9c-1.802 0-3.52-.693-4.821-1.994A10.455 10.455 0 0 1 2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75a9.752 9.752 0 0 0-.992 4.475 7.472 7.472 0 0 1-1.282 1.832 7.5 7.5 0 0 0-6.177 1.62.75.75 0 0 1-.954-.937Z" clipRule="evenodd" />
-                        </svg>
+                        <Building2Icon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                         <span className="flex-grow truncate">{job.contact_name}</span>
                       </span>
                       <span className="flex items-center gap-1 overflow-hidden whitespace-nowrap">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-400 flex-shrink-0">
-                          <path fillRule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a8.75 8.75 0 0 0 4.721-6.786c1.294-4.507-1.697-9.078-6.75-9.078s-8.044 4.571-6.75 9.078a8.75 8.75 0 0 0 4.72 6.786ZM12 12.75a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clipRule="evenodd" />
-                        </svg>
+                        <GlobeIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                         <span className="flex-shrink-0 truncate">{job.job_location}</span>
                       </span>
                     </p>
@@ -793,7 +880,8 @@ export default function BrowseJobsPage() {
                     <div className="text-xl font-bold text-green-400 leading-tight">
                       £{job.hourly_pay}<span className="text-base font-medium">/hr</span>
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
+                    <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                      <ClockIcon className="h-3 w-3" />
                       {job.hours_per_week} hrs/wk
                     </div>
                   </div>
@@ -822,9 +910,6 @@ export default function BrowseJobsPage() {
                   </span>
                   {/* Application Count Badge */}
                   <span className="inline-flex items-center px-2 py-0.5 bg-gray-700 rounded-full text-xs text-gray-300 font-medium">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 mr-1 text-gray-400">
-                      <path d="M4.5 6.375a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.75 8.25a.75.75 0 0 0-1.5 0v.75H16.5a.75.75 0 0 0 0 1.5h.75v.75a.75.75 0 0 0 1.5 0v-.75h.75a.75.75 0 0 0 0-1.5h-.75V8.25ZM9 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H15A7.5 7.5 0 0 0 7.5 12v3.75m-9.303 0a.75.75 0 0 0-.256-.574A14.24 14.24 0 0 1 5.305 15h.695Z" />
-                    </svg>
                     {job.applicationCount} applications
                   </span>
                    {/* Sponsored Badge (internal, if desired) */}
@@ -890,14 +975,11 @@ export default function BrowseJobsPage() {
 
         {/* No Results (only show if not loading, no error, and filteredJobs is empty) */}
         {!jobsLoading && !jobsError && sortedJobs.length === 0 && (
-          <div className="text-center py-12 bg-gray-800 rounded-2xl border border-gray-700 shadow-lg">
+          <div className="text-center py-7 bg-gray-800 rounded-2xl border border-gray-700 shadow-lg">
             <h3 className="text-xl font-semibold mb-2 text-white">No jobs found matching your criteria!</h3>
             <p className="text-gray-300 mb-6">
               Try broadening your search or check back later as new opportunities are posted frequently.
             </p>
-            <Link href="/" className="inline-block px-6 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 text-gray-200 transition-all duration-200 active:scale-98 shadow-sm">
-              Explore Other Sections
-            </Link>
           </div>
         )}
 
@@ -989,6 +1071,19 @@ export default function BrowseJobsPage() {
           isMobile={isMobile}
         />
       )}
+
+      {/* Application Message Modal */}
+      {showApplicationMessageModal && selectedJobForApplication && (
+        <ApplicationMessageModal
+          job={selectedJobForApplication}
+          message={applicationMessage}
+          onMessageChange={handleApplicationMessageChange}
+          onSubmit={handleApplicationMessageSubmit}
+          onClose={handleCloseApplicationMessageModal}
+          isOpen={showApplicationMessageModal}
+        />
+      )}
+
 
       {/* Reduced mt-20 to mt-10 for less space */}
       <footer className="bg-gray-900 text-white py-10">

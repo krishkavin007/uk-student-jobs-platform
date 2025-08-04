@@ -99,6 +99,16 @@ function PaymentContent() {
     // Handle job application submission if this is an apply payment
     if (purchaseType === 'apply' && jobId) {
       try {
+        // Get the application message from sessionStorage
+        const applicationMessage = sessionStorage.getItem('applicationMessage');
+        
+        if (!applicationMessage) {
+          console.error('No application message found in sessionStorage');
+          alert('There was an issue with your application. Please try again.');
+          router.push('/browse-jobs');
+          return;
+        }
+        
         // Submit the job application
         const response = await fetch('/api/job/apply', {
           method: 'POST',
@@ -108,9 +118,12 @@ function PaymentContent() {
           credentials: 'include',
           body: JSON.stringify({
             job_id: parseInt(jobId),
-            application_message: `I'm interested in this position and would like to be considered for the role.`
+            application_message: applicationMessage
           })
         });
+
+        // Clear the application message from sessionStorage after use
+        sessionStorage.removeItem('applicationMessage');
 
         if (response.ok) {
           console.log('Job application submitted successfully after payment');
@@ -213,6 +226,13 @@ function PaymentContent() {
     simulatePaymentSuccess('Card');
   };
 
+  const handleBackToApplication = () => {
+    // Go back to application message modal on browse-jobs page
+    router.push(`/browse-jobs?applicationMessage=true&jobId=${jobId}`);
+  };
+
+
+
 
   if (isAuthLoading) {
       return (
@@ -239,6 +259,8 @@ function PaymentContent() {
       />
 
       <div className="flex-grow container mx-auto px-4 py-8">
+        {/* Back button for apply route */}
+
         <div className="max-w-md mx-auto">
           <Card className="bg-gray-800 border border-gray-700 shadow-xl rounded-2xl text-white">
             <CardHeader className="border-b border-gray-700 pb-4">
@@ -342,7 +364,20 @@ function PaymentContent() {
                     <Label htmlFor="saveBillingAddress" className="text-sm text-gray-300">Save this billing address for future payments</Label>
                   </div>
 
-                  <div className="flex justify-end pt-4">
+                  <div className="flex justify-between pt-4">
+                    {purchaseType === 'apply' && jobId && (
+                      <Button
+                        type="button"
+                        onClick={handleBackToApplication}
+                        className="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md flex items-center gap-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back
+                      </Button>
+                    )}
+                    <div className="flex-1"></div>
                     <Button
                       type="submit"
                       className="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md"

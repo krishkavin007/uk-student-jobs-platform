@@ -261,14 +261,14 @@ export default function HomePage() {
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6"
           >
             {[
-              { name: "Hospitality", icon: BriefcaseIcon, description: "Flexible shifts in hotels, restaurants, and cafes.", link: "/browse-jobs?category=hospitality", color: "blue" },
-              { name: "Retail", icon: DollarSignIcon, description: "Customer service and sales roles in various stores.", link: "/browse-jobs?category=retail", color: "green" },
-              { name: "Tutoring", icon: GraduationCapIcon, description: "Help others learn effectively in academic subjects.", link: "/browse-jobs?category=education", color: "yellow" },
-              { name: "Admin Support", icon: LayoutDashboardIcon, description: "Office tasks, data entry, and administrative duties.", link: "/browse-jobs?category=admin", color: "pink" },
-              { name: "Tech Support", icon: CodeIcon, description: "Entry-level IT support and tech-related tasks.", link: "/browse-jobs?category=tech", color: "red" },
-              { name: "Marketing", icon: LightbulbIcon, description: "Social media, content creation, and promotional roles.", link: "/browse-jobs?category=creative", color: "indigo" },
-              { name: "Customer Service", icon: MessageSquareTextIcon, description: "Assisting customers via phone, email, or chat.", link: "/browse-jobs?category=customer-service", color: "teal" },
-              { name: "Warehouse & Logistics", icon: WrenchIcon, description: "Roles in inventory, packing, and delivery support.", link: "/browse-jobs?category=research", color: "orange" },
+              { name: "Hospitality", icon: BriefcaseIcon, description: "Flexible shifts in hotels, restaurants, and cafes.", link: "/browse-jobs?category=Hospitality", color: "blue" },
+              { name: "Retail", icon: DollarSignIcon, description: "Customer service and sales roles in various stores.", link: "/browse-jobs?category=Retail", color: "green" },
+              { name: "Tutoring", icon: GraduationCapIcon, description: "Help others learn effectively in academic subjects.", link: "/browse-jobs?category=Tutoring", color: "yellow" },
+              { name: "Admin Support", icon: LayoutDashboardIcon, description: "Office tasks, data entry, and administrative duties.", link: "/browse-jobs?category=Admin Support", color: "pink" },
+              { name: "Tech Support", icon: CodeIcon, description: "Entry-level IT support and tech-related tasks.", link: "/browse-jobs?category=Tech Support", color: "red" },
+              { name: "Marketing", icon: LightbulbIcon, description: "Social media, content creation, and promotional roles.", link: "/browse-jobs?category=Marketing", color: "indigo" },
+              { name: "Customer Service", icon: MessageSquareTextIcon, description: "Assisting customers via phone, email, or chat.", link: "/browse-jobs?category=Customer Service", color: "teal" },
+              { name: "Warehouse & Logistics", icon: WrenchIcon, description: "Roles in inventory, packing, and delivery support.", link: "/browse-jobs?category=Warehouse%20%26%20Logistics", color: "orange" },
             ].map((category, index) => (
               <motion.div
                 key={index}
@@ -665,22 +665,20 @@ export default function HomePage() {
                 </form>
               ) : (
                 // Employer Post Job Section
-                <div className="flex flex-col sm:flex-row gap-2.5 items-center justify-center">
+                <form action="/post-job" method="GET" className="flex flex-col sm:flex-row gap-2.5 items-center justify-center">
                   <Input
                     type="text"
-                    name="company-name"
-                    placeholder="Your Company Name (Optional)"
+                    name="jobTitle"
+                    placeholder="Job Title (e.g., 'Marketing Assistant')"
                     className="flex-grow h-12 px-4 text-base bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-lg"
                   />
                   <Button type="submit" size="lg" className="h-12 px-10 text-base font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group relative overflow-hidden">
-                      <Link href="/post-job" className="flex items-center justify-center w-full h-full relative z-10">
-                          <Fragment>
-                              Post a Job for £1 <SearchIcon className="ml-2 h-5 w-5" />
-                              <span className="absolute inset-0 bg-indigo-700 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></span>
-                          </Fragment>
-                      </Link>
+                      <div className="flex items-center justify-center w-full h-full relative z-10">
+                          <span>Post a Job for £1</span> <SearchIcon className="ml-2 h-5 w-5" />
+                          <span className="absolute inset-0 bg-indigo-700 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></span>
+                      </div>
                   </Button>
-                </div>
+                </form>
               )}
             </motion.div>
           </motion.div>
@@ -806,7 +804,7 @@ export default function HomePage() {
               className="flex flex-col sm:flex-row gap-5 md:gap-7 justify-center"
             >
               <Button asChild size="xl" className="h-14 px-8 text-lg bg-purple-600 hover:bg-purple-700 text-white font-extrabold py-4 rounded-full shadow-xl transform hover:scale-105 transition-all duration-300 ease-out group relative overflow-hidden">
-                  <Link href="/signup" className="flex items-center justify-center w-full h-full relative z-10">
+                  <Link href="/browse-jobs" className="flex items-center justify-center w-full h-full relative z-10">
                       <Fragment>
                           Students: Find a Job <ArrowRightIcon className="ml-3 h-6 w-6 transform group-hover:translate-x-1.5 transition-transform" />
                       </Fragment>
