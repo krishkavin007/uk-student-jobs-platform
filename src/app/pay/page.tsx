@@ -43,6 +43,7 @@ function PaymentContent() {
 
   const jobId = searchParams?.get('jobId')
   const purchaseType = searchParams?.get('type');
+  const isSponsored = searchParams?.get('sponsored') === 'true';
 
   let displayAmount = '0.00';
   let purchaseItemName = 'Purchase';
@@ -65,6 +66,18 @@ function PaymentContent() {
     displayAmount = '1.00';
     purchaseItemName = `Phone Number Reveal for Job ID: ${jobId || 'N/A'}`;
     redirectPathOnSuccess = `/browse-jobs?revealed=${jobId}`;
+  } else if (purchaseType === 'apply') {
+    displayAmount = '1.00';
+    purchaseItemName = `Job Application Fee`;
+    redirectPathOnSuccess = `/browse-jobs?applied=${jobId}`;
+  } else if (purchaseType === 'reactivate') {
+    displayAmount = isSponsored ? '5.00' : '1.00';
+    purchaseItemName = isSponsored ? `Sponsored Job Reactivation Fee` : `Job Reactivation Fee`;
+    redirectPathOnSuccess = '/my-account?tab=activity';
+  } else if (purchaseType === 'upgrade') {
+    displayAmount = '5.00';
+    purchaseItemName = `Job Sponsorship Upgrade`;
+    redirectPathOnSuccess = '/my-account?tab=activity';
   } else {
     displayAmount = searchParams?.get('amount') || '1.00';
     purchaseItemName = `Service Fee for: ${purchaseType || 'Unknown Item'}`;
@@ -83,10 +96,96 @@ function PaymentContent() {
     }
     console.log(`Save Billing Address: ${saveBillingAddress}`);
 
+    // Handle job application submission if this is an apply payment
+    if (purchaseType === 'apply' && jobId) {
+      try {
+        // Submit the job application
+        const response = await fetch('/api/job/apply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            job_id: parseInt(jobId),
+            application_message: `I'm interested in this position and would like to be considered for the role.`
+          })
+        });
 
-    alert(`Payment successful via ${method} for ${purchaseItemName}! Redirecting...`);
+        if (response.ok) {
+          console.log('Job application submitted successfully after payment');
+          // Redirect to browse-jobs with the job marked as applied
+          router.push(`/browse-jobs?applied=${jobId}`);
+        } else if (response.status === 409) {
+          console.log('Already applied to this job');
+          router.push(`/browse-jobs?applied=${jobId}`);
+        } else {
+          console.error('Failed to submit application after payment:', response.status);
+          router.push('/browse-jobs');
+        }
+      } catch (error) {
+        console.error('Error submitting application after payment:', error);
+        router.push('/browse-jobs');
+      }
+    } else if (purchaseType === 'reactivate' && jobId) {
+      // Handle job reactivation after payment
+      try {
+        const response = await fetch(`/api/job/${jobId}/reactivate-after-payment`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
 
-    router.push(redirectPathOnSuccess);
+        if (response.ok) {
+          console.log('Job reactivated successfully after payment');
+          alert('Payment successful! Your job has been reactivated and is now visible to students again.');
+          router.push('/my-account?tab=activity');
+        } else {
+          console.error('Failed to reactivate job after payment:', response.status);
+          alert('Payment successful, but there was an issue reactivating your job. Please contact support.');
+          router.push('/my-account?tab=activity');
+        }
+              } catch (error) {
+          console.error('Error reactivating job after payment:', error);
+          alert('Payment successful, but there was an issue reactivating your job. Please contact support.');
+          router.push('/my-account?tab=activity');
+        }
+      } else if (purchaseType === 'upgrade' && jobId) {
+        // Handle job sponsorship upgrade after payment
+        try {
+          const response = await fetch(`/api/job/${jobId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              is_sponsored: true
+            })
+          });
+
+          if (response.ok) {
+            console.log('Job upgraded to sponsored successfully after payment');
+            alert('Payment successful! Your job has been upgraded to sponsored and will now appear at the top of search results.');
+            router.push('/my-account?tab=activity');
+          } else {
+            console.error('Failed to upgrade job after payment:', response.status);
+            alert('Payment successful, but there was an issue upgrading your job. Please contact support.');
+            router.push('/my-account?tab=activity');
+          }
+        } catch (error) {
+          console.error('Error upgrading job after payment:', error);
+          alert('Payment successful, but there was an issue upgrading your job. Please contact support.');
+          router.push('/my-account?tab=activity');
+        }
+      } else {
+        // For other payment types, use the original redirect
+        alert(`Payment successful via ${method} for ${purchaseItemName}! Redirecting...`);
+        router.push(redirectPathOnSuccess);
+      }
+
     setLoading(false);
   };
 

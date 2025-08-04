@@ -291,10 +291,9 @@ export default function BrowseJobsPage() {
   const [appliedJobs, setAppliedJobs] = useState<Set<number>>(() => {
     if (typeof sessionStorage !== 'undefined') {
       const savedApplied = sessionStorage.getItem('appliedJobs');
-      // If nothing in sessionStorage, fall back to initial mock data.
-      return savedApplied ? new Set(JSON.parse(savedApplied)) : new Set([1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49]);
+      return savedApplied ? new Set(JSON.parse(savedApplied)) : new Set();
     }
-    return new Set([1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49]);
+    return new Set();
   });
 
   // Effect to save to sessionStorage whenever the sets change
@@ -337,6 +336,29 @@ export default function BrowseJobsPage() {
     };
   }, [showJobDetailsModal]); 
 
+  // Handle URL parameters for applied jobs (when returning from payment)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const appliedJobId = urlParams.get('applied');
+    
+    if (appliedJobId) {
+      const jobId = parseInt(appliedJobId);
+      if (!isNaN(jobId)) {
+        // Add the job to applied jobs set
+        setAppliedJobs(prev => {
+          const newSet = new Set(prev);
+          newSet.add(jobId);
+          return newSet;
+        });
+        
+        // Clean up the URL parameter
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('applied');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const fetchJobs = async () => {
       setJobsLoading(true);
@@ -377,6 +399,36 @@ export default function BrowseJobsPage() {
 
     fetchJobs();
   }, []);
+
+  // Fetch student's applied jobs from backend
+  useEffect(() => {
+    const fetchAppliedJobs = async () => {
+      if (user && user.user_type === "student") {
+        try {
+          const response = await fetch(`/api/job/student/applications/${user.user_id}`, {
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const applicationsData = await response.json();
+            const appliedJobIds = applicationsData.map((app: any) => app.job_id);
+            
+            // Update sessionStorage with backend data
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('appliedJobs', JSON.stringify(appliedJobIds));
+            }
+            
+            // Update local state
+            setAppliedJobs(new Set(appliedJobIds));
+          }
+        } catch (error) {
+          console.error('Error fetching applied jobs:', error);
+        }
+      }
+    };
+
+    fetchAppliedJobs();
+  }, [user]);
 
   const filteredJobs = useMemo(() => {
     return jobs.filter(job => {
@@ -504,20 +556,23 @@ export default function BrowseJobsPage() {
   }
 
   // MODIFIED: handleApply to update local state AND sessionStorage
-  const handleApply = (job: Job) => {
+  const handleApply = async (job: Job) => {
     if (!user) {
       router.push('/login');
       return;
     }
-    // Update the local state to mark this job as applied
-    setAppliedJobs(prev => {
-      const newState = new Set(prev).add(job.job_id);
-      // sessionStorage will be updated via the useEffect hook
-      return newState;
-    }); // Fixed: Added closing curly brace
-    
-    router.push(`/pay?jobId=${job.job_id}&type=apply`); 
-  }
+
+    // Check if user is an employer - they shouldn't be able to apply for jobs
+    if (user.user_type === 'employer') {
+      alert('This feature is only available for students. Employers can post jobs instead.');
+      router.push('/post-job');
+      return;
+    }
+
+    // Don't submit application yet - just redirect to payment
+    // The application will be submitted after payment completion
+    router.push(`/pay?jobId=${job.job_id}&type=apply`);
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

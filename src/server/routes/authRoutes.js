@@ -125,7 +125,7 @@ router.post('/login', async (req, res) => {
 
         if (result.rows.length === 0) {
             console.log('--- DEBUG: Login failed: User not found for email:', email);
-            return res.status(401).json({ error: 'Invalid credentials' });
+            return res.status(401).json({ error: 'No account found with this email address' });
         }
 
         const user = result.rows[0];

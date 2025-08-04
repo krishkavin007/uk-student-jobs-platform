@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,13 +23,25 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter()
   const { login: authLogin, user } = useAuth();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams?.get('next');
+  
+  // Debug logging
+  console.log("LoginPage: nextUrl from searchParams:", nextUrl);
 
   // Handle redirection if already logged in using useEffect
   useEffect(() => {
     if (user) {
-      router.replace('/my-account');
+      console.log("LoginPage: User already logged in, checking nextUrl:", nextUrl);
+      if (nextUrl) {
+        console.log("LoginPage: Redirecting logged-in user to nextUrl:", nextUrl);
+        router.replace(nextUrl);
+      } else {
+        console.log("LoginPage: Redirecting logged-in user to /my-account");
+        router.replace('/my-account');
+      }
     }
-  }, [user, router]); // Dependencies: user and router
+  }, [user, router, nextUrl]); // Added nextUrl to dependencies
 
   // Effect to handle "Remember me" functionality on component mount
   useEffect(() => {
@@ -78,9 +90,17 @@ export default function LoginPage() {
       console.log("LoginPage: API Response User Data:", userData);
       
       authLogin(userData);
-      console.log("LoginPage: authLogin called, navigating to /my-account.");
+      console.log("LoginPage: authLogin called, navigating to next URL or /my-account.");
 
-      router.push('/my-account');
+      // Redirect to next URL if provided, otherwise go to my-account
+      console.log("LoginPage: About to redirect. nextUrl:", nextUrl);
+      if (nextUrl) {
+        console.log("LoginPage: Redirecting to nextUrl:", nextUrl);
+        router.push(nextUrl);
+      } else {
+        console.log("LoginPage: No nextUrl, redirecting to /my-account");
+        router.push('/my-account');
+      }
 
     } catch (err: unknown) {
       if (err instanceof Error) {

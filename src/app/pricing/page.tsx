@@ -499,6 +499,28 @@ const EmployerContent = () => {
 }
 
 const StudentContent = () => {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  const handleProPackClick = () => {
+    if (isLoading) return; // Don't do anything while loading
+
+    if (!user) {
+      // Not logged in - redirect to login with next parameter
+      router.push('/login?next=/pay?type=pro_pack&amount=5.00');
+      return;
+    }
+
+    if (user.user_type === 'employer') {
+      // Employer trying to access student pricing - redirect to employer pricing
+      router.push('/pricing#employer');
+      return;
+    }
+
+    // Logged in student - redirect to payment
+    router.push('/pay?type=pro_pack&amount=5.00');
+  };
+
   return (
     <div className="space-y-20 sm:space-y-24">
       {/* --- Main Pricing Cards --- */}
@@ -570,8 +592,12 @@ const StudentContent = () => {
 
                 </CardContent>
                 <motion.div variants={titleVariants}>
-                  <Button asChild size="lg" className="w-full mt-1 bg-purple-600 text-white font-bold rounded-full py-6 text-base hover:bg-purple-700 transition-colors">
-                    <Link href="/signup?next=/pay?type=pro_pack">Get Pro Pack</Link>
+                  <Button 
+                    size="lg" 
+                    className="w-full mt-1 bg-purple-600 text-white font-bold rounded-full py-6 text-base hover:bg-purple-700 transition-colors"
+                    onClick={handleProPackClick}
+                  >
+                    Get Pro Pack
                   </Button>
                 </motion.div>
 

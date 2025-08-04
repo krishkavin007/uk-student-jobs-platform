@@ -26,7 +26,7 @@ router.post('/login', async (req, res) => {
         );
         if (result.rows.length === 0) {
             console.log('--- DEBUG: Admin login failed: Admin user not found by username or email.');
-            return res.status(401).json({ error: 'Invalid credentials' });
+            return res.status(401).json({ error: 'No admin account found with this username or email' });
         }
 
         const adminUser = result.rows[0];

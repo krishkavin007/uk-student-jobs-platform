@@ -11,6 +11,9 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const jwt = require('jsonwebtoken'); // Added for JWT verification
+// Import ADMIN_JWT_SECRET from the centralized secrets file
+const { ADMIN_JWT_SECRET } = require('../config/secrets');
 
 // Import the centralized pool from config file
 const pool = require('../config/db');
@@ -18,6 +21,58 @@ const pool = require('../config/db');
 const authenticateUser = require('../middleware/authenticateUser');
 const authenticateAdminJWT = require('../middleware/authenticateAdminJWT');
 const authorizeAdmin = require('../middleware/authorizeAdmin'); // Import the authorization middleware
+
+// Custom middleware to handle both user and admin authentication
+const authenticateUserOrAdmin = (req, res, next) => {
+    console.log('--- DEBUG: authenticateUserOrAdmin middleware called');
+    console.log('--- DEBUG: req.adminUser:', req.adminUser);
+    console.log('--- DEBUG: req.session:', req.session);
+    console.log('--- DEBUG: req.cookies:', req.cookies);
+    console.log('--- DEBUG: req.headers.authorization:', req.headers.authorization);
+    
+    // Check if admin user is already authenticated
+    if (req.adminUser) {
+        console.log('--- DEBUG: Admin user already authenticated');
+        return next();
+    }
+    
+    // PRIORITY: Check for admin JWT authentication first (from cookie or header)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+            const decoded = jwt.verify(token, ADMIN_JWT_SECRET);
+            req.adminUser = decoded;
+            console.log('--- DEBUG: Admin authenticated via Authorization header');
+            return next();
+        } catch (err) {
+            console.log('--- DEBUG: Authorization header JWT verification failed:', err.message);
+        }
+    }
+    
+    // Check for admin JWT authentication from httpOnly cookie
+    const adminToken = req.cookies.admin_jwt;
+    if (adminToken) {
+        try {
+            const decoded = jwt.verify(adminToken, ADMIN_JWT_SECRET);
+            req.adminUser = decoded;
+            console.log('--- DEBUG: Admin authenticated via httpOnly cookie');
+            return next();
+        } catch (err) {
+            console.log('--- DEBUG: Cookie JWT verification failed:', err.message);
+        }
+    }
+    
+    // Fallback: Check if regular user is authenticated via session
+    if (req.session && req.session.userId) {
+        console.log('--- DEBUG: Regular user authenticated via session');
+        return next();
+    }
+    
+    console.log('--- DEBUG: No valid authentication found');
+    // No valid authentication found
+    return res.status(401).json({ error: 'Authentication required: No token found.' });
+};
 
 // --- Multer Storage Configuration for Profile Images ---
 const storage = multer.diskStorage({
@@ -217,7 +272,7 @@ router.get('/:id', authenticateUser, async (req, res) => {
 // PUT update user by ID (Authenticated users for their own profile, or Admin)
 router.put(
     '/:id',
-   authenticateAdminJWT,
+   authenticateUserOrAdmin,
     // Custom middleware to handle Multer errors specifically
     (req, res, next) => {
         // Changed 'userImage' to 'profileImage' to match common frontend expectations
@@ -427,6 +482,59 @@ router.put(
         }
     }
 );
+
+// DELETE /delete-account - User self-delete account (GDPR compliant)
+router.delete('/delete-account', authenticateUser, async (req, res) => {
+    const userId = req.session.userId;
+    
+    if (!userId) {
+        return res.status(401).json({ error: { message: 'User not authenticated' } });
+    }
+
+    try {
+        // First, get user data for cleanup
+        const userResult = await pool.query('SELECT user_image FROM users WHERE user_id = $1', [userId]);
+        
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: { message: 'User not found' } });
+        }
+
+        // Delete user's profile image if it exists
+        if (userResult.rows[0].user_image) {
+            const imagePath = path.join(process.cwd(), 'public', userResult.rows[0].user_image);
+            if (fs.existsSync(imagePath)) {
+                fs.unlink(imagePath, (err) => {
+                    if (err) console.error('--- ERROR: Error deleting user image file:', err);
+                });
+            }
+        }
+
+        // Delete user's session
+        req.session.destroy((err) => {
+            if (err) {
+                console.error('--- ERROR: Error destroying session:', err);
+            }
+        });
+
+        // Delete the user account (this will cascade to related data due to foreign key constraints)
+        const result = await pool.query('DELETE FROM users WHERE user_id = $1 RETURNING user_id', [userId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: { message: 'User not found' } });
+        }
+
+        console.log(`--- DEBUG: User ID ${userId} self-deleted their account. ---`);
+        
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
+        
+        res.status(200).json({ message: 'Account deleted successfully' });
+        
+    } catch (err) {
+        console.error('--- ERROR: Error deleting user account:', err.stack);
+        res.status(500).json({ error: { message: 'Failed to delete account' } });
+    }
+});
 
 // DELETE user by ID (Admin-only)
 router.delete('/:id', authenticateAdminJWT, async (req, res) => {
