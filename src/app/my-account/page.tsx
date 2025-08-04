@@ -1877,7 +1877,7 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
               <CardContent className="p-6 space-y-8">
                 <div className="flex flex-col md:flex-row items-center justify-between p-6 bg-blue-900/20 border border-blue-700 rounded-xl shadow-inner">
                   <h3 className="text-xl font-semibold text-blue-300 mb-3 md:mb-0">Available Job Reveals</h3>
-                  <Badge className="text-4xl py-3 px-6 rounded-full bg-blue-600 text-white font-extrabold animate-fade-in-up">
+                  <Badge className="text-4xl py-3 px-6 bg-blue-600 text-white font-extrabold animate-fade-in-up">
                     {userCredits}
                   </Badge>
                 </div>
