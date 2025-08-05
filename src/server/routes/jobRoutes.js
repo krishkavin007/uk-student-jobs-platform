@@ -297,6 +297,17 @@ router.get('/student/applications/:studentId', authenticateUser, async (req, res
     }
 
     try {
+        // First, automatically move expired active jobs to expired status
+        const now = new Date();
+        const updateExpiredJobs = await pool.query(
+            'UPDATE job_applications SET job_status = $1 WHERE job_status = $2 AND expires_at < $3',
+            ['expired', 'active', now]
+        );
+        
+        if (updateExpiredJobs.rowCount > 0) {
+            console.log(`--- DEBUG: Moved ${updateExpiredJobs.rowCount} expired jobs to expired status. ---`);
+        }
+
         const result = await pool.query(`
             SELECT 
                 sa.application_id,
@@ -312,12 +323,14 @@ router.get('/student/applications/:studentId', authenticateUser, async (req, res
                 ja.contact_email,
                 ja.hourly_pay,
                 ja.hours_per_week,
+                ja.job_status,
                 u.contact_phone_number as employer_phone,
                 u.user_email as employer_email
             FROM student_applications sa
             JOIN job_applications ja ON sa.job_id = ja.job_id
             JOIN users u ON ja.posted_by_user_id = u.user_id
-            WHERE sa.student_id = $1
+            WHERE sa.student_id = $1 
+            AND ja.job_status IN ('active', 'expired') -- Only show active or expired jobs (not archived, filled, or removed)
             ORDER BY sa.applied_at DESC
         `, [studentId]);
         

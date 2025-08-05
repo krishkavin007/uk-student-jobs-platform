@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link'; // Assuming you use Next.js Link for internal navigation
 
 import { DetailedJob, Job } from '@/types/admin-types';
-import { fetchJobDetails } from '@/lib/data-utils';
+import { fetchJobDetails, updateJobStatus } from '@/lib/data-utils';
 
 interface JobDetailsModalProps {
   jobId: string | null;
@@ -23,6 +23,18 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isUpdatingApplicantStatus, setIsUpdatingApplicantStatus] = useState(false);
+  const [statusUpdateModal, setStatusUpdateModal] = useState<{
+    isOpen: boolean;
+    applicantId: string;
+    currentStatus: string;
+    applicantName: string;
+  }>({
+    isOpen: false,
+    applicantId: '',
+    currentStatus: '',
+    applicantName: ''
+  });
 
   useEffect(() => {
     const getJobDetails = async () => {
@@ -30,7 +42,7 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
         setLoading(true);
         setError(null);
         try {
-          const detailedData = await fetchDetailedJob(jobId);
+          const detailedData = await fetchJobDetails(jobId);
           setJob(detailedData);
         } catch (err) {
           setError("Failed to fetch job details.");
@@ -65,11 +77,9 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
     }
   };
 
-  const handleEditJob = () => {
+  const handleArchiveJob = () => {
     if (job) {
-      console.log(`Editing job: ${job.id}`);
-      alert("Simulated: Open job edit form. (Requires backend integration)");
-      // In a real app, this would open another modal or navigate to an edit page.
+      handleUpdateJobStatus('archived');
     }
   };
 
@@ -85,70 +95,110 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
     }
   };
 
+  const handleUpdateApplicantStatus = async (applicantId: string, newStatus: string) => {
+    if (!jobId) return;
+    
+    setIsUpdatingApplicantStatus(true);
+    try {
+      const response = await fetch(`/api/admin/jobs/${jobId}/applicant-status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          applicantId: applicantId,
+          status: newStatus 
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update applicant status');
+      }
+
+      // Refresh job details to get updated data
+      const detailedData = await fetchJobDetails(jobId);
+      setJob(detailedData);
+      if (onJobUpdated) onJobUpdated();
+      
+      // Close the modal
+      setStatusUpdateModal({
+        isOpen: false,
+        applicantId: '',
+        currentStatus: '',
+        applicantName: ''
+      });
+    } catch (error) {
+      console.error('Error updating applicant status:', error);
+      alert('Failed to update applicant status');
+    } finally {
+      setIsUpdatingApplicantStatus(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-6 bg-gray-900 text-gray-100 border-gray-700">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Job Details: {job?.title || "Loading..."}</DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Comprehensive information and administrative actions for this job posting.
-          </DialogDescription>
-        </DialogHeader>
-
+                  <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Job Details: {job?.title || "Loading..."}</DialogTitle>
+          </DialogHeader>
         {loading && <div className="text-center py-8 text-gray-400">Loading job data...</div>}
         {error && <div className="text-red-500 text-center py-8">Error: {error}</div>}
-
         {job && (
-          <div className="space-y-6 mt-6">
+          <div className="space-y-6 mt-2">
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3 justify-end">
-              {job.status === 'pending-approval' && (
+            <div className="flex flex-wrap gap-3 justify-end transition-all duration-200">
+              {job.status !== 'archived' && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleArchiveJob}
+                  disabled={isUpdatingStatus}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {isUpdatingStatus ? 'Archiving...' : 'Archive Job'}
+                </Button>
+              )}
+              {job.status === 'active' && (
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => handleUpdateJobStatus('live')}
-                  disabled={isUpdatingStatus}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {isUpdatingStatus ? 'Approving...' : 'Approve Job'}
-                </Button>
-              )}
-              {job.status === 'live' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
                   onClick={() => handleUpdateJobStatus('filled')}
                   disabled={isUpdatingStatus}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="ml-2 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200"
                 >
                   {isUpdatingStatus ? 'Marking...' : 'Mark as Filled'}
                 </Button>
               )}
-              {job.status !== 'archived' && (
-                 <Button
-                    variant="outline"
+              {job.status === 'archived' && (
+                <>
+                  <Button
+                    variant="default"
                     size="sm"
-                    onClick={() => handleUpdateJobStatus('archived')}
+                    onClick={() => handleUpdateJobStatus('active')}
                     disabled={isUpdatingStatus}
-                    className="text-gray-200 border-gray-600 hover:bg-gray-700"
+                    className="ml-2 bg-green-600 hover:bg-green-700 text-white"
                   >
-                    {isUpdatingStatus ? 'Archiving...' : 'Archive Job'}
+                    {isUpdatingStatus ? 'Unarchiving...' : 'Unarchive Job'}
                   </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleUpdateJobStatus('filled')}
+                    disabled={isUpdatingStatus}
+                    className="ml-2 bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200"
+                  >
+                    {isUpdatingStatus ? 'Marking...' : 'Mark as Filled'}
+                  </Button>
+                </>
               )}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleEditJob}
-                className="text-gray-200 border-gray-600 hover:bg-gray-700"
-              >
-                Edit Job
-              </Button>
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={handleDeleteJob}
+                className="ml-2"
               >
                 Delete Job
               </Button>
@@ -164,21 +214,29 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                 <div><strong>Location:</strong> {job.location}</div>
                 <div><strong>Type:</strong> <span className="capitalize">{job.type.replace(/-/g, ' ')}</span></div>
                 <div><strong>Salary:</strong> ${job.salary.toLocaleString()}</div>
-                <div><strong>Posted On:</strong> {job.postedDate}</div>
-                <div>
-                  <strong>Status:</strong>{" "}
-                  <Badge
-                    className={`capitalize ${
-                      job.status === 'live' ? 'bg-green-600 text-white' :
-                      job.status === 'pending-approval' ? 'bg-yellow-600 text-white' :
-                      job.status === 'filled' ? 'bg-blue-600 text-white' :
-                      'bg-gray-600 text-gray-200'
-                    }`}
-                  >
-                    {job.status.replace(/-/g, ' ')}
+                <div><strong>Posted On:</strong> {new Date(job.postedDate).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                })} {new Date(job.postedDate).toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                })}</div>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm text-gray-400">Status:</span>
+                  <Badge className={`capitalize transition-colors duration-200 ${
+                    job.status === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                    job.status === 'filled' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                    job.status === 'removed' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                    job.status === 'expired' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
+                    job.status === 'archived' ? 'bg-gray-600 hover:bg-gray-700 text-white' :
+                    'bg-gray-600 hover:bg-gray-700 text-gray-200'
+                  }`}>
+                    {job.status}
                   </Badge>
                 </div>
-                <div><strong>Applicants Count:</strong> {job.applicantsCount}</div>
+                <div><strong>Applicants Count:</strong> <Badge className="ml-2 bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200">{job.applicantsCount}</Badge></div>
                 <div className="md:col-span-2"><strong>Description:</strong> <p className="mt-1 text-sm">{job.description}</p></div>
               </CardContent>
             </Card>
@@ -194,19 +252,75 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                         <tr className="border-b border-gray-600">
                           <th className="py-2 px-1">Name</th>
                           <th className="py-2 px-1">Email</th>
+                          <th className="py-2 px-1">Date Applied</th>
                           <th className="py-2 px-1">Status</th>
                           <th className="py-2 px-1 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {job.applicants.map(applicant => (
-                          <tr key={applicant.id} className="border-b border-gray-700 last:border-b-0">
-                            <td className="py-2 px-1">{applicant.name}</td>
-                            <td className="py-2 px-1">{applicant.email}</td>
-                            <td className="py-2 px-1 capitalize">{applicant.status}</td>
+                        {job.applicants.map((applicant, index) => (
+                          <tr key={`applicant-${applicant.user_id || index}`} className="border-b border-gray-700 last:border-b-0">
+                            <td className="py-2 px-1">{applicant.full_name}</td>
+                            <td className="py-2 px-1">{applicant.user_email}</td>
+                            <td className="py-2 px-1">
+                              {(() => {
+                                console.log('Applicant data:', applicant);
+                                console.log('Applicant applied_at:', applicant.applied_at);
+                                console.log('Applicant applied_at type:', typeof applicant.applied_at);
+                                if (!applicant.applied_at) return 'N/A';
+                                
+                                try {
+                                  const date = new Date(applicant.applied_at);
+                                  if (isNaN(date.getTime())) return 'Invalid Date';
+                                  
+                                  const dateStr = date.toLocaleDateString('en-GB', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric'
+                                  }).replace(/-/g, '/');
+                                  
+                                  const timeStr = date.toLocaleTimeString('en-GB', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: false
+                                  });
+                                  
+                                  return `${dateStr} ${timeStr}`;
+                                } catch (error) {
+                                  console.error('Error formatting date:', error);
+                                  return 'Error';
+                                }
+                              })()}
+                            </td>
+                            <td className="py-2 px-1">
+                              <Badge className={`capitalize transition-colors duration-200 ${
+                                applicant.application_status === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
+                                applicant.application_status === 'contacted' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                                applicant.application_status === 'rejected' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                applicant.application_status === 'cancelled' ? 'bg-gray-600 hover:bg-gray-700 text-white' :
+                                'bg-gray-600 hover:bg-gray-700 text-gray-200'
+                              }`}>
+                                {applicant.application_status}
+                              </Badge>
+                            </td>
                             <td className="py-2 px-1 text-right">
                               <Button variant="link" size="sm" className="text-blue-400 hover:underline" onClick={() => { /* Implement view applicant profile */ }}>View Profile</Button>
-                              <Button variant="secondary" size="sm" className="ml-2 text-gray-200 border-gray-600 hover:bg-gray-700">Update Status</Button>
+                              <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="ml-2 bg-purple-600 hover:bg-purple-700 text-white"
+                                onClick={() => {
+                                  setStatusUpdateModal({
+                                    isOpen: true,
+                                    applicantId: applicant.user_id,
+                                    currentStatus: applicant.application_status,
+                                    applicantName: applicant.full_name
+                                  });
+                                }}
+                                disabled={isUpdatingApplicantStatus}
+                              >
+                                {isUpdatingApplicantStatus ? 'Updating...' : 'Update Status'}
+                              </Button>
                             </td>
                           </tr>
                         ))}
@@ -236,7 +350,7 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                 <CardContent>
                   <ul className="list-disc list-inside text-gray-300 space-y-2">
                     {job.moderationNotes.map((note, index) => (
-                      <li key={index} className="text-sm">{note}</li>
+                      <li key={`note-${index}`} className="text-sm">{note}</li>
                     ))}
                   </ul>
                   <Button variant="outline" size="sm" className="mt-4 text-gray-200 border-gray-600 hover:bg-gray-700">Add Note</Button>
@@ -247,5 +361,52 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Status Update Modal */}
+    <Dialog open={statusUpdateModal.isOpen} onOpenChange={() => setStatusUpdateModal(prev => ({ ...prev, isOpen: false }))}>
+      <DialogContent className="max-w-md bg-gray-900 text-gray-100 border-gray-700">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">Update Applicant Status</DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Update status for {statusUpdateModal.applicantName}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 mt-4">
+          <div className="grid grid-cols-2 gap-2">
+            {['pending', 'contacted', 'rejected', 'cancelled'].map((status) => (
+              <Button
+                key={status}
+                variant={statusUpdateModal.currentStatus === status ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleUpdateApplicantStatus(statusUpdateModal.applicantId, status)}
+                disabled={isUpdatingApplicantStatus}
+                className={`capitalize ${
+                  status === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
+                  status === 'contacted' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                  status === 'rejected' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                  status === 'cancelled' ? 'bg-gray-600 hover:bg-gray-700 text-white' :
+                  'text-gray-200 border-gray-600 hover:bg-gray-700'
+                }`}
+              >
+                {isUpdatingApplicantStatus ? 'Updating...' : status}
+              </Button>
+            ))}
+          </div>
+          
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStatusUpdateModal(prev => ({ ...prev, isOpen: false }))}
+              className="text-gray-200 border-gray-600 hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  </>
   );
 }

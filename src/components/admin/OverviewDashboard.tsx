@@ -110,7 +110,7 @@ export function OverviewDashboard({ stats, loading, error }: OverviewDashboardPr
   }
 
   return (
-    <div className="space-y-8 p-1 bg-gray-900 min-h-screen text-gray-100">
+    <div className="space-y-8 p-0.5 bg-gray-900 min-h-screen text-gray-100">
       <h2 className="text-4xl font-extrabold text-center mb-8 bg-gradient-to-r from-purple-400 to-blue-500 text-transparent bg-clip-text">
         Admin Dashboard
       </h2>

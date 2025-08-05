@@ -273,7 +273,7 @@ function MyAccountContent() {
                    app.application_status === 'contacted' ? 'Contacted' : 
                    app.application_status === 'rejected' ? 'Declined' : 
                    app.application_status === 'cancelled' ? 'Cancelled' : 'Pending',
-            studentOutcome: app.student_outcome || 'pending',
+            studentOutcome: app.job_status === 'expired' ? 'expired' : (app.student_outcome || 'pending'),
             employerPhone: app.employer_phone || 'Not provided',
             employerEmail: app.employer_email || 'Not provided',
             isContactInfoRevealed: true, // Since they applied, they have access to contact info
@@ -738,13 +738,18 @@ Thank you for using StudentJobs UK!
 
       const jobData = await response.json();
       
-      // Check if job is inactive (filled, removed, or expired)
+      // Check if job is inactive (filled, removed, expired, or archived)
       if (jobData.job_status && jobData.job_status !== 'active') {
         // Job is in post history - show inactive message
+        const statusMessage = jobData.job_status === 'filled' ? 'Position Filled' : 
+                             jobData.job_status === 'removed' ? 'Job Removed' : 
+                             jobData.job_status === 'expired' ? 'Job Expired' :
+                             jobData.job_status === 'inactive' ? 'Job Archived' : 'Job No Longer Available';
+        
         setSelectedJobForModal({
           job_title: 'Job No Longer Available',
           contact_name: 'N/A',
-          job_description: `This job posting is no longer active. Status: ${jobData.job_status === 'filled' ? 'Position Filled' : jobData.job_status === 'removed' ? 'Job Removed' : 'Job Expired'}.`,
+          job_description: `This job posting is no longer active. Status: ${statusMessage}.`,
           job_location: 'N/A',
           job_category: 'N/A',
           hourly_pay: 'N/A',
@@ -1283,13 +1288,13 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                 <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                                 Application History
                                 <Badge className="ml-2 bg-gray-700 text-gray-300">
-                                  {appliedJobs.filter(job => job.studentOutcome !== 'pending').length}
+                                  {appliedJobs.filter(job => job.studentOutcome !== 'pending' || job.studentOutcome === 'expired').length}
                                 </Badge>
                               </h3>
                               </div>
                             <div className="grid gap-3">
-                              {appliedJobs.filter(job => job.studentOutcome !== 'pending').length > 0 ? (
-                                appliedJobs.filter(job => job.studentOutcome !== 'pending').map((job) => (
+                              {appliedJobs.filter(job => job.studentOutcome !== 'pending' || job.studentOutcome === 'expired').length > 0 ? (
+                                appliedJobs.filter(job => job.studentOutcome !== 'pending' || job.studentOutcome === 'expired').map((job) => (
                                   <Card key={job.id} className="bg-gray-900 border-gray-700 hover:bg-gray-850 transition-colors">
                                     <CardContent className="p-4">
                                       {/* Header Row */}
@@ -1302,12 +1307,14 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                               job.status === 'Declined' ? 'bg-red-900 text-red-300' :
                                               job.studentOutcome === 'got_job' ? 'bg-green-900 text-green-300' :
                                               job.studentOutcome === 'cancelled' ? 'bg-yellow-900 text-yellow-300' :
+                                              job.studentOutcome === 'expired' ? 'bg-orange-900 text-orange-300' :
                                               'bg-gray-700 text-gray-300'
                                             }`}>
                                               {job.status === 'Contacted' ? 'Contacted' :
                                                job.status === 'Declined' ? 'Declined' :
                                                job.studentOutcome === 'got_job' ? 'Got Job' :
                                                job.studentOutcome === 'cancelled' ? 'Cancelled' :
+                                               job.studentOutcome === 'expired' ? 'Expired' :
                                                job.studentOutcome}
                                             </Badge>
                             </div>

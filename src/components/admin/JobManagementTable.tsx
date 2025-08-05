@@ -8,31 +8,54 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Job } from '@/types/admin-types';
-import { updateJobStatus } from '@/lib/data-utils'; // Assuming this function exists for actions
+import { updateJobStatus } from '@/lib/data-utils';
 
 interface JobManagementTableProps {
   jobs: Job[];
   loading: boolean;
   error: string | null;
   onViewDetails: (jobId: string) => void;
-  onRefreshJobs: () => void; // For refreshing data after actions
+  onJobUpdated: () => void;
 }
 
-export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefreshJobs }: JobManagementTableProps) {
+export function JobManagementTable({ jobs, loading, error, onViewDetails, onJobUpdated }: JobManagementTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Categories from browse-jobs page
+  const categories = [
+    'Hospitality',
+    'Retail', 
+    'Tutoring',
+    'Admin Support',
+    'Tech Support',
+    'Marketing',
+    'Customer Service',
+    'Warehouse & Logistics',
+    'Other'
+  ];
+
+  // Real statuses from database
+  const statuses = [
+    'active',
+    'filled',
+    'removed', 
+    'expired',
+    'archived'
+  ];
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           job.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          job.location.toLowerCase().includes(searchTerm.toLowerCase());
+                          job.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          job.type.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesType = filterType === 'all' || job.type === filterType;
+    const matchesCategory = filterCategory === 'all' || job.type === filterCategory;
     const matchesStatus = filterStatus === 'all' || job.status === filterStatus;
 
-    return matchesSearch && matchesType && matchesStatus;
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const handleJobStatusUpdate = async (jobId: string, newStatus: Job['status']) => {
@@ -41,7 +64,7 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefr
       const success = await updateJobStatus(jobId, newStatus);
       if (success) {
         alert(`Job ${jobId} status updated to ${newStatus}.`);
-        onRefreshJobs(); // Refresh data in parent component
+        onJobUpdated();
       } else {
         alert(`Failed to update job status for ${jobId}.`);
       }
@@ -54,8 +77,24 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefr
 
   const handleJobAction = (jobId: string, action: string) => {
     console.log(`Performing '${action}' for job: ${jobId}`);
-    // In a real app, this would trigger an API call based on the action
     alert(`Simulated action: ${action} for job ${jobId}. (Requires backend integration)`);
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-600 hover:bg-green-700 text-white';
+      case 'filled':
+        return 'bg-blue-600 hover:bg-blue-700 text-white';
+      case 'removed':
+        return 'bg-red-600 hover:bg-red-700 text-white';
+      case 'expired':
+        return 'bg-yellow-600 hover:bg-yellow-700 text-white';
+      case 'archived':
+        return 'bg-gray-600 hover:bg-gray-700 text-white';
+      default:
+        return 'bg-gray-600 hover:bg-gray-700 text-gray-200';
+    }
   };
 
   return (
@@ -65,21 +104,20 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefr
         <CardDescription className="text-gray-400">View and manage all job listings.</CardDescription>
         <div className="flex flex-col md:flex-row gap-4 mt-4">
           <Input
-            placeholder="Search by title, company, or location..."
+            placeholder="Search by title, company, location, or category..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-grow bg-gray-900 border-gray-700 text-gray-200 placeholder-gray-500 focus:border-blue-500"
           />
-          <Select value={filterType} onValueChange={setFilterType}>
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger className="w-[180px] bg-gray-900 border-gray-700 text-gray-200 focus:ring-blue-500">
-              <SelectValue placeholder="Filter by Type" />
+              <SelectValue placeholder="Filter by Category" />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="full-time">Full-time</SelectItem>
-              <SelectItem value="part-time">Part-time</SelectItem>
-              <SelectItem value="contract">Contract</SelectItem>
-              <SelectItem value="internship">Internship</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map(category => (
+                <SelectItem key={category} value={category}>{category}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -88,15 +126,14 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefr
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
               <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="live">Live</SelectItem>
-              <SelectItem value="pending-approval">Pending Approval</SelectItem>
-              <SelectItem value="filled">Filled</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-              <SelectItem value="flagged">Flagged</SelectItem>
+              {statuses.map(status => (
+                <SelectItem key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Button onClick={onRefreshJobs} className="bg-gray-700 hover:bg-gray-600 text-white">Refresh Data</Button>
+          <Button onClick={onJobUpdated} className="bg-gray-700 hover:bg-gray-600 text-white">Refresh Data</Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -110,6 +147,7 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefr
                   <th className="px-4 py-2">Job Title</th>
                   <th className="px-4 py-2">Company</th>
                   <th className="px-4 py-2">Location</th>
+                  <th className="px-4 py-2">Category</th>
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2">Applicants</th>
                   <th className="px-4 py-2 text-right">Actions</th>
@@ -122,19 +160,17 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefr
                       <td className="px-4 py-3">{job.title}</td>
                       <td className="px-4 py-3">{job.companyName}</td>
                       <td className="px-4 py-3">{job.location}</td>
+                      <td className="px-4 py-3">{job.type}</td>
                       <td className="px-4 py-3">
-                        <Badge
-                          className={`capitalize ${
-                            job.status === 'live' ? 'bg-green-600 text-white' :
-                            job.status === 'pending-approval' ? 'bg-yellow-600 text-white' :
-                            job.status === 'filled' ? 'bg-blue-600 text-white' :
-                            'bg-gray-600 text-gray-200'
-                          }`}
-                        >
-                          {job.status.replace(/-/g, ' ')}
+                        <Badge className={`capitalize transition-colors duration-200 ${getStatusBadgeColor(job.status)}`}>
+                          {job.status}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3">{job.applicantsCount}</td>
+                      <td className="px-4 py-3 text-center">
+                        <Badge className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200">
+                          {job.applicantsCount}
+                        </Badge>
+                      </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <Button
                           variant="default"
@@ -144,34 +180,37 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefr
                         >
                           View Details
                         </Button>
-                        <Button
-                          variant="ghost" // Changed variant to 'ghost'
-                          size="sm"
-                          onClick={() => handleJobAction(job.id, 'Edit')}
-                          className="ml-2 text-gray-200 border border-gray-600 hover:bg-gray-700 hover:text-white" // Added border explicitly
-                        >
-                          Edit
-                        </Button>
-                        {job.status === 'pending-approval' && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleJobStatusUpdate(job.id, 'live')}
-                            disabled={isUpdatingStatus}
-                            className="ml-2 bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            {isUpdatingStatus ? 'Approving...' : 'Approve'}
-                          </Button>
-                        )}
-                        {job.status === 'live' && (
+                        {job.status === 'active' && (
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleJobStatusUpdate(job.id, 'filled')} // Or 'archive'
+                            onClick={() => handleJobStatusUpdate(job.id, 'archived')}
                             disabled={isUpdatingStatus}
-                            className="ml-2 bg-purple-600 hover:bg-purple-700 text-white" // Custom color for 'Mark Filled'
+                            className="ml-2 bg-purple-600 hover:bg-purple-700 text-white"
                           >
-                            {isUpdatingStatus ? 'Marking...' : 'Mark Filled'}
+                            {isUpdatingStatus ? 'Archiving...' : 'Archive'}
+                          </Button>
+                        )}
+                        {job.status === 'filled' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleJobStatusUpdate(job.id, 'archived')}
+                            disabled={isUpdatingStatus}
+                            className="ml-2 bg-purple-600 hover:bg-purple-700 text-white"
+                          >
+                            {isUpdatingStatus ? 'Archiving...' : 'Archive'}
+                          </Button>
+                        )}
+                        {job.status === 'archived' && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleJobStatusUpdate(job.id, 'active')}
+                            disabled={isUpdatingStatus}
+                            className="ml-2 bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {isUpdatingStatus ? 'Unarchiving...' : 'Unarchive'}
                           </Button>
                         )}
                         <Button
@@ -187,7 +226,7 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onRefr
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-4 py-4 text-center text-gray-400">No jobs found matching your criteria.</td>
+                    <td colSpan={7} className="px-4 py-4 text-center text-gray-400">No jobs found matching your criteria.</td>
                   </tr>
                 )}
               </tbody>

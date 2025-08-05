@@ -389,17 +389,17 @@ export async function fetchJobDetails(jobId: string | number): Promise<DetailedJ
     }
 }
 
-export async function updateJobStatus(jobId: string | number, status: 'active' | 'inactive' | 'expired'): Promise<{ message: string }> {
+export async function updateJobStatus(jobId: string | number, status: 'active' | 'filled' | 'removed' | 'expired' | 'archived'): Promise<boolean> {
     try {
         const response = await fetch(`${BACKEND_URL}/api/admin/jobs/${jobId}/status`, getAuthenticatedFetchOptions('PUT', { status }));
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to update job status');
         }
-        return response.json();
+        return true; // Return true on success
     } catch (error) {
         console.error(`Error updating job ${jobId} status:`, error);
-        throw error;
+        return false; // Return false on error
     }
 }
 

@@ -22,16 +22,26 @@ export interface User {
 }
 
 export interface Job {
-  job_id: number;
-  job_title: string;
-  job_description: string;
-  employer_id: string;
-  job_location: string;
-  job_type: 'full-time' | 'part-time' | 'contract' | 'internship';
+  id: string;
+  title: string;
+  companyName: string;
+  location: string;
+  type: string; // job_category from database
+  status: 'active' | 'filled' | 'removed' | 'expired' | 'archived';
+  applicantsCount: number;
+  postedDate: string;
+  salary?: string;
+  description: string;
+  // Keep original fields for backward compatibility
+  job_id?: number;
+  job_title?: string;
+  job_description?: string;
+  employer_id?: string;
+  job_location?: string;
+  job_type?: 'full-time' | 'part-time' | 'contract' | 'internship';
   job_salary?: string;
-  job_category: string;
-  posted_date: string;
-  job_status: 'active' | 'inactive' | 'expired';
+  job_category?: string;
+  job_status?: 'active' | 'inactive' | 'expired';
 }
 
 export interface Payment {
