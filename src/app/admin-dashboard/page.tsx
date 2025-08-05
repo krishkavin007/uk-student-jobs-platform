@@ -37,6 +37,7 @@ import { AdminUserManagementTable } from '@/components/admin/AdminUserManagement
 import { AddAdminUserModal } from '@/components/admin/AddAdminUserModal';
 import { EditAdminUserModal } from '@/components/admin/EditAdminUserModal';
 import { DeleteAdminUserConfirmation } from '@/components/admin/DeleteAdminUserConfirmation';
+import { ViewAdminUserModal } from '@/components/admin/ViewAdminUserModal';
 // Import the new AddUserModal
 import { AddUserModal } from "@/components/admin/AddUserModal"; // Import AddUserModal
 
@@ -56,6 +57,7 @@ export default function Home() {
   const [isAddAdminUserModalOpen, setIsAddAdminUserModalOpen] = useState(false);
   const [isEditAdminUserModalOpen, setIsEditAdminUserModalOpen] = useState(false);
   const [isDeleteAdminUserConfirmationOpen, setIsDeleteAdminUserConfirmationOpen] = useState(false);
+  const [isViewAdminUserModalOpen, setIsViewAdminUserModalOpen] = useState(false);
   const [selectedAdminUserId, setSelectedAdminUserId] = useState<string | null>(null);
 
   // NEW: State for the Add User Modal (for normal users)
@@ -432,6 +434,12 @@ const getAdminUsers = useCallback(async () => {
     setIsEditAdminUserModalOpen(true); // Open Edit Admin User Modal
   };
 
+  const handleViewAdminUser = (userId: string) => {
+    console.log(`View Admin User ${userId} clicked.`);
+    setSelectedAdminUserId(userId);
+    setIsViewAdminUserModalOpen(true);
+  };
+
   const confirmDeleteAdminUser = useCallback(async () => {
     if (selectedAdminUserId) {
       try {
@@ -691,7 +699,9 @@ const getAdminUsers = useCallback(async () => {
                       setSelectedAdminUserId(userId);
                       setIsDeleteAdminUserConfirmationOpen(true);
                     }}
+                    onViewAdminUser={handleViewAdminUser}
                     onToggleAdminUserStatus={handleToggleAdminUserStatus}
+                    onRefreshData={getAdminUsers}
                   />
                 </CardContent>
               </Card>
@@ -1199,6 +1209,13 @@ const getAdminUsers = useCallback(async () => {
         isOpen={isDeleteAdminUserConfirmationOpen}
         onClose={() => setIsDeleteAdminUserConfirmationOpen(false)}
         onConfirm={confirmDeleteAdminUser}
+      />
+
+      {/* View Admin User Modal */}
+      <ViewAdminUserModal
+        adminUser={adminUsers.find(user => user.admin_id === selectedAdminUserId) || null}
+        isOpen={isViewAdminUserModalOpen}
+        onClose={() => setIsViewAdminUserModalOpen(false)}
       />
 
       {/* NEW: Add User Modal (for normal users) */}

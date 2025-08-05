@@ -25,6 +25,8 @@ interface AdminUserManagementTableProps {
   error: string | null;
   onEditAdminUser?: (adminId: string) => void;
   onDeleteAdminUser?: (adminId: string) => void;
+  onViewAdminUser?: (adminId: string) => void;
+  onRefreshData?: () => void;
 }
 
 export function AdminUserManagementTable({
@@ -33,6 +35,8 @@ export function AdminUserManagementTable({
   error,
   onEditAdminUser,
   onDeleteAdminUser,
+  onViewAdminUser,
+  onRefreshData,
 }: AdminUserManagementTableProps) {
   const { toast } = useToast();
 
@@ -144,10 +148,18 @@ export function AdminUserManagementTable({
             size="sm"
             onClick={handleClearFilters}
             disabled={!areFiltersActive}
-            className="bg-gray-700 text-gray-100 hover:bg-gray-600 whitespace-nowrap flex-shrink-0 ml-auto"
+            className="bg-gray-700 text-gray-100 hover:bg-gray-600 whitespace-nowrap flex-shrink-0"
           >
             <XCircle className="mr-2 h-4 w-4" /> Clear Filters
           </Button>
+          {onRefreshData && (
+            <Button
+              onClick={onRefreshData}
+              className="bg-gray-700 hover:bg-gray-600 text-white whitespace-nowrap flex-shrink-0"
+            >
+              Refresh Data
+            </Button>
+          )}
         </div>
 
         {loading ? (
@@ -322,6 +334,14 @@ export function AdminUserManagementTable({
                       </Badge>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => onViewAdminUser?.(adminUser.admin_id)}
+                      >
+                        View
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
