@@ -75,57 +75,9 @@ app.prepare().then(async () => {
     server.use('/api/admin', express.json(), adminAuthRoutes);
     server.use('/api/user', userRoutes);
     server.use('/api/job', express.json(), jobRoutes);
+    server.use('/api/admin/dashboard', express.json(), require('./routes/adminDashboardRoutes'));
 
-    // --- MODIFIED: Admin Dashboard / Analytics Route ---
-    server.get(
-        '/api/admin/dashboard/analytics',
-        authenticateAdminJWT, // Add admin JWT authentication
-        authorizeAdmin(['super_admin', 'admin', 'viewer']), // Authorize specific admin roles
-        async (req, res) => {
-            try {
-                // 1. Get total number of Students
-                const studentsResult = await pool.query(
-                    "SELECT COUNT(user_id) FROM users WHERE user_type = 'student';"
-                );
-                const totalStudents = parseInt(studentsResult.rows[0].count, 10);
 
-                // 2. Get total number of Employers
-                const employersResult = await pool.query(
-                    "SELECT COUNT(user_id) FROM users WHERE user_type = 'employer';"
-                );
-                const totalEmployers = parseInt(employersResult.rows[0].count, 10);
-
-                // 3. Get total number of Admins (assuming user_type can be 'admin' or 'super_admin')
-                const adminsResult = await pool.query(
-                    "SELECT COUNT(user_id) FROM users WHERE user_type IN ('admin', 'super_admin');"
-                );
-                const totalAdmins = parseInt(adminsResult.rows[0].count, 10);
-
-                // 4. Get number of Active Logins (e.g., logged in within the last 15 minutes and user_status is 'active')
-                // Adjust '15 minutes' as per your definition of "active"
-                const activeLoginsResult = await pool.query(
-                    `SELECT COUNT(DISTINCT user_id)
-                     FROM users
-                     WHERE last_login >= NOW() - INTERVAL '15 minutes'
-                       AND user_status = 'active';`
-                );
-                const activeLogins = parseInt(activeLoginsResult.rows[0].count, 10);
-
-                // Combine all results into a single object matching the AdminStats type on the frontend
-                res.json({
-                    totalStudents,
-                    totalEmployers,
-                    totalAdmins,
-                    activeLogins,
-                });
-
-            } catch (err) {
-                console.error('--- ERROR: Error fetching dashboard analytics data:', err.stack);
-                // Return a structured error response
-                res.status(500).json({ error: { message: 'Failed to fetch dashboard analytics data' } });
-            }
-        }
-    );
 
     // --- Admin Action: Get User by ID (Admin Only) ---
     // Make sure these admin-specific routes are also protected

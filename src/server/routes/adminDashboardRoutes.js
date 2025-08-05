@@ -7,7 +7,7 @@ const authorizeAdmin = require('../middleware/authorizeAdmin');
 
 // Define an API endpoint for fetching dashboard statistics
 router.get(
-  '/stats',
+  '/analytics',
   authenticateAdminJWT, // Protect the route with JWT authentication
   authorizeAdmin(['super_admin', 'admin', 'viewer']), // Only specific admin roles can access
   async (req, res) => {
@@ -40,12 +40,48 @@ router.get(
       );
       const activeLogins = parseInt(activeLoginsResult.rows[0].count, 10);
 
+      // 5. Get new students for the last 7 days
+      const newStudentsResult = await pool.query(
+        `SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as count
+         FROM users 
+         WHERE user_type = 'student' 
+           AND created_at >= CURRENT_DATE - INTERVAL '7 days'
+         GROUP BY DATE(created_at)
+         ORDER BY date ASC;`
+      );
+      
+      const newStudentsByDay = newStudentsResult.rows.map(row => ({
+        date: row.date,
+        count: parseInt(row.count, 10)
+      }));
+
+      // 6. Get new employers for the last 7 days
+      const newEmployersResult = await pool.query(
+        `SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as count
+         FROM users 
+         WHERE user_type = 'employer' 
+           AND created_at >= CURRENT_DATE - INTERVAL '7 days'
+         GROUP BY DATE(created_at)
+         ORDER BY date ASC;`
+      );
+      
+      const newEmployersByDay = newEmployersResult.rows.map(row => ({
+        date: row.date,
+        count: parseInt(row.count, 10)
+      }));
+
       // Combine all results into a single object
       const adminStats = {
         totalStudents,
         totalEmployers,
         totalAdmins,
         activeLogins,
+        newStudentsByDay,
+        newEmployersByDay,
       };
 
       res.json(adminStats); // Send the combined statistics as JSON

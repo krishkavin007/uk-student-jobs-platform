@@ -94,10 +94,18 @@ export interface DetailedPayment extends Payment {
   refund_history?: { amount: number; date: string; reason: string }[];
 }
 
+// Chart data point interface for time-series data
+export interface ChartDataPoint {
+  date: string;
+  count: number;
+}
+
 // UPDATED: AdminStats for OverviewDashboard
 export interface AdminStats {
   totalStudents: number;
   totalEmployers: number;
   totalAdmins: number;
   activeLogins: number;
+  newStudentsByDay?: ChartDataPoint[]; // New students data for the last 7 days
+  newEmployersByDay?: ChartDataPoint[]; // New employers data for the last 7 days
 }
