@@ -861,7 +861,7 @@ export default function BrowseJobsPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-grow pr-4">
                     {/* Job Title */}
-                    <h3 className="text-xl md:text-2xl font-extrabold text-white leading-tight mb-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                    <h3 className="text-xl md:text-2xl font-extrabold text-white leading-tight mb-1 break-words">
                       {job.job_title}
                     </h3>
                     {/* Employer Name & Location */}

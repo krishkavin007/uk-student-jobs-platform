@@ -381,17 +381,17 @@ function PostJobContent() {
                           <SelectTrigger className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
-<SelectContent className="bg-gray-800 text-gray-100 border-gray-700">
-  <SelectItem value="Hospitality">Hospitality</SelectItem>
-  <SelectItem value="Retail">Retail</SelectItem>
-  <SelectItem value="Tutoring">Tutoring</SelectItem>
-  <SelectItem value="AdminSupport">Admin Support</SelectItem>
-  <SelectItem value="TechSupport">Tech Support</SelectItem>
-  <SelectItem value="Marketing">Marketing</SelectItem>
-  <SelectItem value="CustomerService">Customer Service</SelectItem>
-  <SelectItem value="Warehouse">Warehouse & Logistics</SelectItem>
-  <SelectItem value="Other">Other</SelectItem>
-</SelectContent>
+                        <SelectContent className="bg-gray-800 text-gray-100 border-gray-700">
+                          <SelectItem value="Hospitality">Hospitality</SelectItem>
+                          <SelectItem value="Retail">Retail</SelectItem>
+                          <SelectItem value="Tutoring">Tutoring</SelectItem>
+                          <SelectItem value="AdminSupport">Admin Support</SelectItem>
+                          <SelectItem value="TechSupport">Tech Support</SelectItem>
+                          <SelectItem value="Marketing">Marketing</SelectItem>
+                          <SelectItem value="CustomerService">Customer Service</SelectItem>
+                          <SelectItem value="Warehouse & Logistics">Warehouse & Logistics</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
