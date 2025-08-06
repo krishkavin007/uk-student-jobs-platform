@@ -126,8 +126,6 @@ export function JobManagementTable({
   return (
     <Card className="bg-gray-800 border-gray-700">
       <CardHeader>
-        <CardTitle className="text-gray-200">Job Postings Management</CardTitle>
-        <CardDescription className="text-gray-400">View and manage all job listings.</CardDescription>
         <div className="flex flex-col md:flex-row gap-4 mt-4">
           <Input
             placeholder="Search by title, company, location, or category..."
@@ -258,9 +256,6 @@ export function JobManagementTable({
               </tbody>
             </table>
           </div>
-        )}
-        {!loading && !error && filteredJobs.length === 0 && jobs.length > 0 && (
-            <div className="text-center py-4 text-gray-400">No jobs found matching your filters.</div>
         )}
         
         {/* Pagination Controls */}
