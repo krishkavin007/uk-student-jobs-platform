@@ -281,31 +281,31 @@ router.put('/:id/applicant-status', authenticateAdminJWT, async (req, res) => {
     console.log('--- DEBUG: Admin update applicant status route hit for job ID:', id, 'applicant ID:', applicantId, 'status:', status);
 
     try {
-        // Validate status
-        const validStatuses = ['pending', 'contacted', 'rejected', 'cancelled'];
+        // Validate status - these are the frontend display values
+        const validStatuses = ['applied', 'hired', 'rejected', 'cancelled'];
         if (!validStatuses.includes(status)) {
-            return res.status(400).json({ error: 'Invalid status. Must be one of: pending, contacted, rejected, cancelled' });
+            return res.status(400).json({ error: 'Invalid status. Must be one of: applied, hired, rejected, cancelled' });
         }
 
         console.log('--- DEBUG: Updating applicant status to:', status);
 
-        // Map application_status to student_outcome
+        // Map status to student_outcome
         let studentOutcome;
         switch (status) {
-            case 'pending':
-                studentOutcome = 'pending';
+            case 'applied':
+                studentOutcome = 'applied';
                 break;
-            case 'contacted':
-                studentOutcome = 'pending'; // Still in process
+            case 'hired':
+                studentOutcome = 'hired';
                 break;
             case 'rejected':
-                studentOutcome = 'not_got_job';
+                studentOutcome = 'declined';
                 break;
             case 'cancelled':
                 studentOutcome = 'cancelled';
                 break;
             default:
-                studentOutcome = 'pending';
+                studentOutcome = 'applied';
         }
 
         // Update both application_status (for employer) and student_outcome (for student)

@@ -186,8 +186,13 @@ export function JobManagementTable({
                       <td className="px-4 py-3">{job.location}</td>
                       <td className="px-4 py-3">{job.type}</td>
                       <td className="px-4 py-3">
-                        <Badge className={`capitalize transition-colors duration-200 ${getStatusBadgeColor(job.status)}`}>
-                          {job.status}
+                        <Badge className={`transition-colors duration-200 ${getStatusBadgeColor(job.status)}`}>
+                          {job.status === 'active' ? 'Active' :
+                           job.status === 'filled' ? 'Filled' :
+                           job.status === 'removed' ? 'Removed' :
+                           job.status === 'expired' ? 'Expired' :
+                           job.status === 'archived' ? 'Archived' :
+                           job.status}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-center">

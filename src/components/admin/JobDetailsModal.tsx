@@ -45,9 +45,11 @@ const getJobStatusBadgeClasses = (status: string) => {
 const getApplicantStatusBadgeClasses = (status: string) => {
   switch (status.toLowerCase()) {
     case 'pending':
-      return 'bg-yellow-600 hover:bg-yellow-700 text-white';
-    case 'contacted':
       return 'bg-blue-600 hover:bg-blue-700 text-white';
+    case 'applied':
+      return 'bg-blue-600 hover:bg-blue-700 text-white';
+    case 'hired':
+      return 'bg-green-600 hover:bg-green-700 text-white';
     case 'rejected':
       return 'bg-red-600 hover:bg-red-700 text-white';
     case 'cancelled':
@@ -161,8 +163,13 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
             {job && (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-sm text-gray-400">Status:</span>
-                <Badge className={`capitalize transition-colors duration-200 ${getJobStatusBadgeClasses(job.status)}`}>
-                  {job.status}
+                <Badge className={`transition-colors duration-200 ${getJobStatusBadgeClasses(job.status)}`}>
+                  {job.status === 'active' ? 'Active' :
+                   job.status === 'filled' ? 'Filled' :
+                   job.status === 'removed' ? 'Removed' :
+                   job.status === 'expired' ? 'Expired' :
+                   job.status === 'archived' ? 'Archived' :
+                   job.status}
                 </Badge>
               </div>
             )}
@@ -253,9 +260,14 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                               {applicant.applied_at ? new Date(applicant.applied_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}
                             </td>
                             <td className="py-2 px-1">
-                              <Badge className={`capitalize transition-colors duration-200 ${getApplicantStatusBadgeClasses(applicant.application_status)}`}>
-                                {applicant.application_status}
-                              </Badge>
+                                                          <Badge className={`transition-colors duration-200 ${getApplicantStatusBadgeClasses(applicant.application_status)}`}>
+                              {applicant.application_status === 'pending' ? 'Applied' :
+                               applicant.application_status === 'applied' ? 'Applied' :
+                               applicant.application_status === 'hired' ? 'Hired' :
+                               applicant.application_status === 'rejected' ? 'Declined' :
+                               applicant.application_status === 'cancelled' ? 'Cancelled' :
+                               applicant.application_status}
+                            </Badge>
                             </td>
                             <td className="py-2 px-1 text-right flex items-center justify-end gap-2">
                               <Link href={`/admin-dashboard?viewUser=${applicant.user_id}`} target="_blank">
@@ -268,14 +280,18 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="bg-gray-800 border-gray-700 text-gray-200">
-                                  {['pending', 'contacted', 'rejected', 'cancelled'].map(status => (
+                                  {['applied', 'hired', 'rejected', 'cancelled'].map(status => (
                                     <DropdownMenuItem
                                       key={status}
                                       onClick={() => handleUpdateApplicantStatus(applicant.user_id, status)}
                                       disabled={isUpdatingApplicantStatus || applicant.application_status === status}
-                                      className="cursor-pointer capitalize hover:bg-gray-700"
+                                      className="cursor-pointer hover:bg-gray-700"
                                     >
-                                      {status}
+                                      {status === 'applied' ? 'Applied' :
+                                       status === 'hired' ? 'Hired' :
+                                       status === 'rejected' ? 'Declined' :
+                                       status === 'cancelled' ? 'Cancelled' :
+                                       status}
                                     </DropdownMenuItem>
                                   ))}
                                 </DropdownMenuContent>

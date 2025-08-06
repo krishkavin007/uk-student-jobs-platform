@@ -59,7 +59,21 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const result = await pool.query('SELECT * FROM job_applications WHERE job_id = $1', [id]);
+        const result = await pool.query(`
+            SELECT 
+                ja.*,
+                COALESCE(application_counts.count, 0) as application_count
+            FROM job_applications ja
+            LEFT JOIN (
+                SELECT 
+                    job_id,
+                    COUNT(*) as count
+                FROM student_applications
+                GROUP BY job_id
+            ) application_counts ON ja.job_id = application_counts.job_id
+            WHERE ja.job_id = $1
+        `, [id]);
+        
         if (result.rows.length === 0) {
             console.log(`--- DEBUG: Job ID ${id} not found.`);
             return res.status(404).json({ message: 'Job not found' });
@@ -98,7 +112,7 @@ router.post('/apply', authenticateUser, async (req, res) => {
                 job_id, student_id, application_message, application_status, applied_at
             ) VALUES ($1, $2, $3, $4, $5)
             RETURNING application_id`,
-            [job_id, student_id, application_message || null, 'pending', new Date()]
+            [job_id, student_id, application_message || null, 'applied', new Date()]
         );
 
         console.log(`--- DEBUG: Student ${student_id} applied to job ${job_id} ---`);
@@ -147,10 +161,10 @@ router.put('/applications/:applicationId/contact', authenticateUser, async (req,
             return res.status(403).json({ error: 'Forbidden: You can only contact applicants for jobs you posted unless you are an admin.' });
         }
 
-        // Update the application status to contacted and student outcome to pending (still in process)
+        // Update the application status to applied and student outcome to applied (still in process)
         const result = await pool.query(
             'UPDATE student_applications SET application_status = $1, student_outcome = $2 WHERE application_id = $3 RETURNING application_id, application_status, student_outcome',
-            ['contacted', 'pending', applicationId]
+            ['applied', 'applied', applicationId]
         );
 
         console.log(`--- DEBUG: Application ${applicationId} marked as contacted by user ${userIdFromSession}. ---`);
@@ -189,10 +203,10 @@ router.put('/applications/:applicationId/reject', authenticateUser, async (req, 
             return res.status(403).json({ error: 'Forbidden: You can only reject applicants for jobs you posted unless you are an admin.' });
         }
 
-        // Update the application status to rejected and student outcome to not_got_job
+        // Update the application status to rejected and student outcome to declined
         const result = await pool.query(
             'UPDATE student_applications SET application_status = $1, student_outcome = $2 WHERE application_id = $3 RETURNING application_id, application_status, student_outcome',
-            ['rejected', 'not_got_job', applicationId]
+            ['rejected', 'declined', applicationId]
         );
 
         console.log(`--- DEBUG: Application ${applicationId} marked as rejected by user ${userIdFromSession}. ---`);
@@ -207,10 +221,10 @@ router.put('/applications/:applicationId/reject', authenticateUser, async (req, 
 // POST - Fix existing rejected applications (one-time fix)
 router.post('/fix-rejected-applications', authenticateUser, async (req, res) => {
     try {
-        // Update all existing rejected applications to have student_outcome = 'not_got_job'
+        // Update all existing rejected applications to have student_outcome = 'declined'
         const result = await pool.query(
             'UPDATE student_applications SET student_outcome = $1 WHERE application_status = $2 AND student_outcome = $3 RETURNING application_id, application_status, student_outcome',
-            ['not_got_job', 'rejected', 'pending']
+            ['declined', 'rejected', 'applied']
         );
 
         console.log(`--- DEBUG: Fixed ${result.rows.length} rejected applications. ---`);
@@ -222,6 +236,71 @@ router.post('/fix-rejected-applications', authenticateUser, async (req, res) => 
     }
 });
 
+
+
+// PUT - Employer confirm student hire
+router.put('/applications/:applicationId/confirm-hire', authenticateUser, async (req, res) => {
+    const { applicationId } = req.params;
+    const { confirmed } = req.body;
+    const userIdFromSession = req.session.userId;
+
+    try {
+        // Check if the application exists and get job details
+        const checkApp = await pool.query(
+            'SELECT sa.application_id, sa.student_id, sa.student_outcome, ja.posted_by_user_id FROM student_applications sa JOIN job_applications ja ON sa.job_id = ja.job_id WHERE sa.application_id = $1',
+            [applicationId]
+        );
+
+        if (checkApp.rows.length === 0) {
+            return res.status(404).json({ error: 'Application not found' });
+        }
+
+        const application = checkApp.rows[0];
+
+        // Check if the user is the employer who posted the job
+        if (application.posted_by_user_id !== parseInt(userIdFromSession, 10)) {
+            return res.status(403).json({ error: 'Forbidden: You can only confirm hires for jobs you posted' });
+        }
+
+        // Check if the student has marked themselves as hired
+        if (application.student_outcome !== 'hired') {
+            return res.status(400).json({ error: 'Student has not marked themselves as hired' });
+        }
+
+        if (confirmed) {
+            // Employer confirmed the hire - keep status as hired
+            const result = await pool.query(
+                'UPDATE student_applications SET student_outcome = $1, application_status = $2 WHERE application_id = $3 RETURNING application_id, student_outcome, application_status',
+                ['hired', 'hired', applicationId]
+            );
+
+            console.log(`--- DEBUG: Employer ${userIdFromSession} confirmed hire for application ${applicationId}. ---`);
+            res.json({ 
+                message: 'Hire confirmed successfully', 
+                outcome: result.rows[0].student_outcome,
+                applicationStatus: result.rows[0].application_status
+            });
+        } else {
+            // Employer declined the hire - set to rejected
+            const result = await pool.query(
+                'UPDATE student_applications SET student_outcome = $1, application_status = $2 WHERE application_id = $3 RETURNING application_id, student_outcome, application_status',
+                ['declined', 'rejected', applicationId]
+            );
+
+            console.log(`--- DEBUG: Employer ${userIdFromSession} declined hire for application ${applicationId}. ---`);
+            res.json({ 
+                message: 'Hire declined, status set to rejected', 
+                outcome: result.rows[0].student_outcome,
+                applicationStatus: result.rows[0].application_status
+            });
+        }
+
+    } catch (err) {
+        console.error('--- ERROR: Error confirming hire:', err.stack);
+        res.status(500).json({ error: 'Failed to confirm hire' });
+    }
+});
+
 // PUT - Update student application outcome
 router.put('/student/applications/:applicationId/outcome', authenticateUser, async (req, res) => {
     const { applicationId } = req.params;
@@ -229,9 +308,9 @@ router.put('/student/applications/:applicationId/outcome', authenticateUser, asy
     const userIdFromSession = req.session.userId;
 
     // Validate outcome
-    const validOutcomes = ['pending', 'got_job', 'not_got_job', 'cancelled'];
+    const validOutcomes = ['applied', 'hired', 'declined', 'cancelled'];
     if (!validOutcomes.includes(outcome)) {
-        return res.status(400).json({ error: 'Invalid outcome. Must be one of: pending, got_job, not_got_job, cancelled' });
+        return res.status(400).json({ error: 'Invalid outcome. Must be one of: applied, hired, declined, cancelled' });
     }
 
     try {
@@ -252,17 +331,17 @@ router.put('/student/applications/:applicationId/outcome', authenticateUser, asy
         // Update the outcome and sync with application_status for employer view
         let applicationStatus;
         switch (outcome) {
-            case 'got_job':
-                applicationStatus = 'contacted';
+            case 'hired':
+                applicationStatus = 'applied'; // Student claims hired, but employer needs to confirm (keep as applied until confirmed)
                 break;
-            case 'not_got_job':
+            case 'declined':
                 applicationStatus = 'rejected';
                 break;
             case 'cancelled':
                 applicationStatus = 'cancelled';
                 break;
-            default:
-                applicationStatus = 'pending';
+            default: // For 'applied'
+                applicationStatus = 'applied';
         }
 
         const result = await pool.query(
@@ -306,6 +385,26 @@ router.get('/student/applications/:studentId', authenticateUser, async (req, res
         
         if (updateExpiredJobs.rowCount > 0) {
             console.log(`--- DEBUG: Moved ${updateExpiredJobs.rowCount} expired jobs to expired status. ---`);
+            
+            // Get the job IDs that were just expired
+            const expiredJobIds = await pool.query(
+                'SELECT job_id FROM job_applications WHERE job_status = $1 AND expires_at < $2',
+                ['expired', now]
+            );
+            
+            // Update student applications for expired jobs to declined status
+            // BUT completely skip employer-confirmed hired students (they keep their hired status forever)
+            for (const job of expiredJobIds.rows) {
+                await pool.query(
+                    `UPDATE student_applications 
+                     SET student_outcome = $1, application_status = $2 
+                     WHERE job_id = $3 
+                       AND NOT (student_outcome = 'hired' AND application_status = 'hired')`,
+                    ['declined', 'rejected', job.job_id]
+                );
+            }
+            
+            console.log(`--- DEBUG: Updated student applications for ${expiredJobIds.rows.length} expired jobs to declined status. ---`);
         }
 
         const result = await pool.query(`
@@ -330,7 +429,6 @@ router.get('/student/applications/:studentId', authenticateUser, async (req, res
             JOIN job_applications ja ON sa.job_id = ja.job_id
             JOIN users u ON ja.posted_by_user_id = u.user_id
             WHERE sa.student_id = $1 
-            AND ja.job_status IN ('active', 'expired') -- Only show active or expired jobs (not archived, filled, or removed)
             ORDER BY sa.applied_at DESC
         `, [studentId]);
         
@@ -386,6 +484,7 @@ router.get('/:jobId/applications', authenticateUser, async (req, res) => {
                 sa.job_id,
                 sa.application_message,
                 sa.application_status,
+                sa.student_outcome,
                 sa.applied_at,
                 u.user_first_name,
                 u.user_last_name,
@@ -516,6 +615,7 @@ router.put('/:id/fill', authenticateUser, async (req, res) => {
             return res.status(403).json({ error: 'Forbidden: You can only mark jobs you posted as filled unless you are an admin.' });
         }
 
+        // Update job status to filled
         const result = await pool.query(
             'UPDATE job_applications SET job_status = $1 WHERE job_id = $2 RETURNING job_id, job_title',
             ['filled', id]
@@ -526,7 +626,18 @@ router.put('/:id/fill', authenticateUser, async (req, res) => {
             return res.status(404).json({ message: 'Job not found or nothing to update.' });
         }
 
-        console.log(`--- DEBUG: Job ID ${id} marked as filled. ---`);
+        // Update all student applications for this job to declined status
+        // BUT completely skip employer-confirmed hired students (they keep their hired status forever)
+        const studentUpdateResult = await pool.query(
+            `UPDATE student_applications 
+             SET student_outcome = $1, application_status = $2 
+             WHERE job_id = $3 
+               AND NOT (student_outcome = 'hired' AND application_status = 'hired')
+             RETURNING application_id`,
+            ['declined', 'rejected', id]
+        );
+
+        console.log(`--- DEBUG: Job ID ${id} marked as filled. Updated ${studentUpdateResult.rows.length} student applications to declined. ---`);
         res.json({ message: 'Job marked as filled successfully', job: result.rows[0] });
 
     } catch (err) {
@@ -557,6 +668,7 @@ router.put('/:id/remove', authenticateUser, async (req, res) => {
             return res.status(403).json({ error: 'Forbidden: You can only remove jobs you posted unless you are an admin.' });
         }
 
+        // Update job status to removed
         const result = await pool.query(
             'UPDATE job_applications SET job_status = $1 WHERE job_id = $2 RETURNING job_id, job_title',
             ['removed', id]
@@ -567,7 +679,18 @@ router.put('/:id/remove', authenticateUser, async (req, res) => {
             return res.status(404).json({ message: 'Job not found or nothing to update.' });
         }
 
-        console.log(`--- DEBUG: Job ID ${id} moved to post history. ---`);
+        // Update all student applications for this job to declined status  
+        // BUT completely skip employer-confirmed hired students (they keep their hired status forever)
+        const studentUpdateResult = await pool.query(
+            `UPDATE student_applications 
+             SET student_outcome = $1, application_status = $2 
+             WHERE job_id = $3 
+               AND NOT (student_outcome = 'hired' AND application_status = 'hired')
+             RETURNING application_id`,
+            ['declined', 'rejected', id]
+        );
+
+        console.log(`--- DEBUG: Job ID ${id} moved to post history. Updated ${studentUpdateResult.rows.length} student applications to declined. ---`);
         res.json({ message: 'Job moved to post history successfully', job: result.rows[0] });
 
     } catch (err) {
