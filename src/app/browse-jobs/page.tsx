@@ -118,9 +118,10 @@ interface JobDetailsModalProps {
   appliedJobs: Set<number>;
   user: any;
   isMobile: boolean; // Keep this prop, but the component itself won't be rendered on mobile
+  applicationsStatus: Map<number, {status: string, applicationStatus: string, confirmed: boolean}>;
 }
 
-const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply, onRevealPhone, revealedPhones, appliedJobs, user }) => {
+const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply, onRevealPhone, revealedPhones, appliedJobs, user, applicationsStatus }) => {
   const modalContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -217,29 +218,44 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
           <button
             onClick={() => onApply(job)}
             className={`px-6 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-md text-lg font-semibold ${
-              user && appliedJobs.has(job.job_id)
+              user && applicationsStatus.get(job.job_id)?.status === 'declined'
+                ? 'bg-red-700 text-white hover:bg-red-800 cursor-not-allowed opacity-90'
+                : user && applicationsStatus.get(job.job_id)?.status === 'hired'
+                ? 'bg-green-600 text-white hover:bg-green-700 cursor-not-allowed opacity-90'
+                : user && appliedJobs.has(job.job_id)
                 ? 'bg-green-700 text-white hover:bg-green-800 cursor-not-allowed opacity-90'
                 : 'bg-blue-700 text-white hover:bg-blue-800'
             }`}
-            disabled={!!user && appliedJobs.has(job.job_id)}
+            disabled={!!user && (appliedJobs.has(job.job_id) || applicationsStatus.get(job.job_id)?.status === 'declined' || applicationsStatus.get(job.job_id)?.status === 'hired')}
           >
-            {user && appliedJobs.has(job.job_id) ? 'Applied ✓' : 'Apply Now'}
+            {user && (appliedJobs.has(job.job_id) || applicationsStatus.get(job.job_id)?.status === 'declined' || applicationsStatus.get(job.job_id)?.status === 'hired') 
+              ? (applicationsStatus.get(job.job_id)?.status === 'declined' 
+                  ? 'Declined ✗' 
+                  : applicationsStatus.get(job.job_id)?.status === 'hired' && applicationsStatus.get(job.job_id)?.confirmed
+                    ? 'Hired 💪🏻'
+                    : applicationsStatus.get(job.job_id)?.status === 'hired'
+                      ? 'Hired ✓'
+                      : 'Applied ✓')
+              : 'Apply Now'}
           </button>
 
-          <button
-            onClick={() => onRevealPhone(job.job_id)}
-            className={`px-6 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-sm ${
-              revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
-                ? 'border-green-600 bg-green-900 text-green-300 cursor-not-allowed opacity-90'
-                : 'border-gray-600 hover:bg-gray-800 text-gray-200'
-            }`}
-            disabled={revealedPhones.has(job.job_id) || (!!user && appliedJobs.has(job.job_id))}
-          >
-            {revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
-              ? `📞 ${job.contact_phone}`
-              : '📞 Reveal Phone (£1)'
-            }
-          </button>
+          {/* Hide phone reveal button for declined applications */}
+          {!(user && applicationsStatus.get(job.job_id)?.status === 'declined') && (
+            <button
+              onClick={() => onRevealPhone(job.job_id)}
+              className={`px-6 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-sm ${
+                revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
+                  ? 'border-green-600 bg-green-900 text-green-300 cursor-not-allowed opacity-90'
+                  : 'border-gray-600 hover:bg-gray-800 text-gray-200'
+              }`}
+              disabled={revealedPhones.has(job.job_id) || (!!user && appliedJobs.has(job.job_id))}
+            >
+              {revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
+                ? `📞 ${job.contact_phone}`
+                : '📞 Reveal Phone (£1)'
+              }
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -306,6 +322,8 @@ export default function BrowseJobsPage() {
     }
     return new Set();
   });
+
+  const [applicationsStatus, setApplicationsStatus] = useState<Map<number, {status: string, applicationStatus: string, confirmed: boolean}>>(new Map());
 
   // Effect to save to sessionStorage whenever the sets change
   useEffect(() => {
@@ -441,7 +459,22 @@ export default function BrowseJobsPage() {
           
           if (response.ok) {
             const applicationsData = await response.json();
-            const appliedJobIds = applicationsData.map((app: any) => app.job_id);
+            
+            // Store all applications with their status for reference
+            const applicationsMap = new Map();
+            applicationsData.forEach((app: any) => {
+              applicationsMap.set(app.job_id, {
+                status: app.student_outcome || 'applied',
+                applicationStatus: app.application_status,
+                confirmed: app.student_outcome === 'hired' && app.application_status === 'hired'
+              });
+            });
+            setApplicationsStatus(applicationsMap);
+            
+            // Only include non-declined applications in appliedJobs
+            const appliedJobIds = applicationsData
+              .filter((app: any) => app.student_outcome !== 'declined')
+              .map((app: any) => app.job_id);
             
             // Update sessionStorage with backend data
             if (typeof sessionStorage !== 'undefined') {
@@ -944,29 +977,44 @@ export default function BrowseJobsPage() {
                   <button
                     onClick={() => handleApply(job)}
                     className={`px-6 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-md ${
-                      user && appliedJobs.has(job.job_id)
+                      user && applicationsStatus.get(job.job_id)?.status === 'declined'
+                        ? 'bg-red-700 text-white hover:bg-red-800 cursor-not-allowed opacity-90'
+                        : user && applicationsStatus.get(job.job_id)?.status === 'hired'
+                        ? 'bg-green-600 text-white hover:bg-green-700 cursor-not-allowed opacity-90'
+                        : user && appliedJobs.has(job.job_id)
                         ? 'bg-green-700 text-white hover:bg-green-800 cursor-not-allowed opacity-90'
                         : 'bg-blue-700 text-white hover:bg-blue-800'
                     }`}
-                    disabled={!!user && appliedJobs.has(job.job_id)}
+                    disabled={!!user && (appliedJobs.has(job.job_id) || applicationsStatus.get(job.job_id)?.status === 'declined' || applicationsStatus.get(job.job_id)?.status === 'hired')}
                   >
-                    {user && appliedJobs.has(job.job_id) ? 'Applied ✓' : 'Apply Now'}
+                    {user && (appliedJobs.has(job.job_id) || applicationsStatus.get(job.job_id)?.status === 'declined' || applicationsStatus.get(job.job_id)?.status === 'hired') 
+                      ? (applicationsStatus.get(job.job_id)?.status === 'declined' 
+                          ? 'Declined ✗' 
+                          : applicationsStatus.get(job.job_id)?.status === 'hired' && applicationsStatus.get(job.job_id)?.confirmed
+                            ? 'Hired 💪🏻'
+                            : applicationsStatus.get(job.job_id)?.status === 'hired'
+                              ? 'Hired ✓'
+                              : 'Applied ✓')
+                      : 'Apply Now'}
                   </button>
 
-                  <button
-                    onClick={() => handleRevealPhone(job.job_id)}
-                    className={`px-5 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-sm ${
-                      revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
-                        ? 'border-green-600 bg-green-900 text-green-300 cursor-not-allowed opacity-90'
-                        : 'border-gray-600 hover:bg-gray-700 text-gray-200'
-                    }`}
-                    disabled={revealedPhones.has(job.job_id) || (!!user && appliedJobs.has(job.job_id))}
-                  >
-                    {revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
-                      ? `📞 ${job.contact_phone}`
-                      : '📞 Reveal Phone (£1)'
-                    }
-                  </button>
+                  {/* Hide phone reveal button for declined applications */}
+                  {!(user && applicationsStatus.get(job.job_id)?.status === 'declined') && (
+                    <button
+                      onClick={() => handleRevealPhone(job.job_id)}
+                      className={`px-5 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-sm ${
+                        revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
+                          ? 'border-green-600 bg-green-900 text-green-300 cursor-not-allowed opacity-90'
+                          : 'border-gray-600 hover:bg-gray-700 text-gray-200'
+                      }`}
+                      disabled={revealedPhones.has(job.job_id) || (!!user && appliedJobs.has(job.job_id))}
+                    >
+                      {revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
+                        ? `📞 ${job.contact_phone}`
+                        : '📞 Reveal Phone (£1)'
+                      }
+                    </button>
+                  )}
                 </div>
               </div>
               // END OF TOTALLY NEW JOB CARD BLOCK DESIGN
@@ -1070,6 +1118,7 @@ export default function BrowseJobsPage() {
           appliedJobs={appliedJobs}
           user={user}
           isMobile={isMobile}
+          applicationsStatus={applicationsStatus}
         />
       )}
 
