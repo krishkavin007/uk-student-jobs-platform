@@ -912,6 +912,14 @@ Thank you for using StudentJobs UK!
               {user.user_type === "student" ? (
                 <>
                   <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
+                    <h3 className="text-2xl font-bold text-white mb-2">Your Applications</h3>
+                                            <p className="text-5xl font-extrabold text-purple-500 mb-4">{appliedJobs.filter(job => job.studentOutcome === 'pending').length}</p>
+                    <p className="text-gray-400 mb-4">Active applications.</p>
+                    <Button onClick={() => setActiveView("activity")} className="bg-purple-600 hover:bg-purple-500 text-white">
+                      View Applications
+                    </Button>
+                  </Card>
+                  <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
                     <h3 className="text-2xl font-bold text-white mb-2">Available Credits</h3>
 <Badge className="text-5xl py-3 px-6 text-white font-extrabold mb-4 animate-pulse bg-transparent border-none shadow-none hover:bg-transparent hover:border-none hover:shadow-none hover:text-white">
                       {userCredits}
@@ -919,14 +927,6 @@ Thank you for using StudentJobs UK!
                     <p className="text-gray-400 mb-4">For revealing employer contact details.</p>
                     <Button onClick={() => setActiveView("credits")} className="bg-green-600 hover:bg-green-500 text-white">
                       Manage Credits
-                    </Button>
-                  </Card>
-                  <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
-                    <h3 className="text-2xl font-bold text-white mb-2">Your Applications</h3>
-                                            <p className="text-5xl font-extrabold text-purple-500 mb-4">{appliedJobs.filter(job => job.studentOutcome === 'pending').length}</p>
-                    <p className="text-gray-400 mb-4">Active applications.</p>
-                    <Button onClick={() => setActiveView("activity")} className="bg-purple-600 hover:bg-purple-500 text-white">
-                      View Applications
                     </Button>
                   </Card>
                 </>
