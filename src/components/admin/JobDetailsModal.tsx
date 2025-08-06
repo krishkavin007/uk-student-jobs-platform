@@ -147,9 +147,10 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
   };
 
   const jobStatusActions = [
-    { label: 'Mark as Filled', status: 'filled', hidden: job?.status === 'filled' },
-    { label: 'Archive Job', status: 'archived', hidden: job?.status === 'archived' },
-    { label: 'Unarchive Job', status: 'active', hidden: job?.status !== 'archived' },
+    { id: 'fill', label: 'Mark as Filled', status: 'filled', hidden: job?.status === 'filled' },
+    { id: 'archive', label: 'Archive Job', status: 'archived', hidden: job?.status === 'archived' },
+    { id: 'unarchive', label: 'Unarchive Job', status: 'active', hidden: job?.status !== 'archived' },
+    { id: 'reactivate', label: 'Reactivate', status: 'active', hidden: job?.status === 'active' },
   ];
 
   if (!isOpen) return null;
@@ -186,7 +187,7 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                   .filter(action => !action.hidden)
                   .map(action => (
                     <DropdownMenuItem
-                      key={action.status}
+                      key={action.id}
                       onClick={() => handleUpdateJobStatus(action.status as Job['status'])}
                       disabled={isUpdatingStatus}
                       className="cursor-pointer hover:bg-gray-700"
