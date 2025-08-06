@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Job } from '@/types/admin-types';
-import { updateJobStatus } from '@/lib/data-utils';
+import { updateJobStatus, deleteJob } from '@/lib/data-utils';
 
 interface JobManagementTableProps {
   jobs: Job[];
@@ -16,9 +16,23 @@ interface JobManagementTableProps {
   error: string | null;
   onViewDetails: (jobId: string) => void;
   onJobUpdated: () => void;
+  onPageChange?: (page: number) => void;
+  currentPage?: number;
+  totalPages?: number;
+  totalCount?: number;
 }
 
-export function JobManagementTable({ jobs, loading, error, onViewDetails, onJobUpdated }: JobManagementTableProps) {
+export function JobManagementTable({ 
+  jobs, 
+  loading, 
+  error, 
+  onViewDetails, 
+  onJobUpdated,
+  onPageChange,
+  currentPage = 1,
+  totalPages = 1,
+  totalCount = 0
+}: JobManagementTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -75,9 +89,21 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onJobU
     }
   };
 
-  const handleJobAction = (jobId: string, action: string) => {
-    console.log(`Performing '${action}' for job: ${jobId}`);
-    alert(`Simulated action: ${action} for job ${jobId}. (Requires backend integration)`);
+  const handleJobAction = async (jobId: string, action: string) => {
+    if (action === 'Delete') {
+      if (window.confirm(`Are you sure you want to delete job "${jobId}"? This action cannot be undone.`)) {
+        try {
+          await deleteJob(jobId);
+          alert(`Job ${jobId} has been deleted successfully.`);
+          onJobUpdated(); // Refresh the job list
+        } catch (error) {
+          alert(`Failed to delete job: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+    } else {
+      console.log(`Performing '${action}' for job: ${jobId}`);
+      alert(`Simulated action: ${action} for job ${jobId}. (Requires backend integration)`);
+    }
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -235,6 +261,68 @@ export function JobManagementTable({ jobs, loading, error, onViewDetails, onJobU
         )}
         {!loading && !error && filteredJobs.length === 0 && jobs.length > 0 && (
             <div className="text-center py-4 text-gray-400">No jobs found matching your filters.</div>
+        )}
+        
+        {/* Pagination Controls */}
+        {!loading && !error && totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
+            <div className="text-sm text-gray-400">
+              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, totalCount)} of {totalCount} jobs
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(currentPage - 1)}
+                disabled={currentPage <= 1}
+                className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+              >
+                Previous
+              </Button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => onPageChange?.(pageNum)}
+                      className={
+                        currentPage === pageNum 
+                          ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                          : "bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                      }
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange?.(currentPage + 1)}
+                disabled={currentPage >= totalPages}
+                className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

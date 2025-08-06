@@ -38,6 +38,7 @@ import { AddAdminUserModal } from '@/components/admin/AddAdminUserModal';
 import { EditAdminUserModal } from '@/components/admin/EditAdminUserModal';
 import { DeleteAdminUserConfirmation } from '@/components/admin/DeleteAdminUserConfirmation';
 import { ViewAdminUserModal } from '@/components/admin/ViewAdminUserModal';
+import { ViewUserModal } from '@/components/admin/ViewUserModal';
 // Import the new AddUserModal
 import { AddUserModal } from "@/components/admin/AddUserModal"; // Import AddUserModal
 
@@ -52,6 +53,15 @@ export default function Home() {
   const { isAuthenticated, isLoading, logout } = useAdminAuth();
 
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Check for viewUser parameter and switch to users tab if present
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const viewUser = searchParams.get('viewUser');
+    if (viewUser) {
+      setActiveTab("users");
+    }
+  }, []);
 
   // Inside src/app/admin-dashboard/page.tsx, within the Home component:
   const [isAddAdminUserModalOpen, setIsAddAdminUserModalOpen] = useState(false);
@@ -79,6 +89,9 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [jobsError, setJobsError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [isJobDetailsModalOpen, setIsJobDetailsModalOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
@@ -162,18 +175,7 @@ export default function Home() {
     }
   }, []);
 
-  const getJobs = useCallback(async () => {
-    try {
-      setJobsLoading(true);
-      const data = await fetchJobs();
-      setJobs(data);
-    } catch (err) {
-      console.error("Error fetching jobs:", err);
-      setJobsError("Failed to fetch jobs.");
-    } finally {
-      setJobsLoading(false);
-    }
-  }, []);
+
 
   const getPayments = useCallback(async () => {
     try {
@@ -322,7 +324,14 @@ const getAdminUsers = useCallback(async () => {
   const handleCloseJobDetailsModal = () => {
     setIsJobDetailsModalOpen(false);
     setSelectedJobId(null);
-    getJobs(); // Refresh job list after modal closes, in case of changes
+  };
+
+  const handlePageChange = (page: number) => {
+    getJobs(page);
+  };
+
+  const handleRefreshJobs = () => {
+    getJobs(1); // Reset to page 1 when refreshing
   };
 
   // Payment Details Modal
@@ -440,6 +449,18 @@ const getAdminUsers = useCallback(async () => {
     setIsViewAdminUserModalOpen(true);
   };
 
+  const handleViewUser = (userId: string) => {
+    // Add viewUser parameter to URL
+    const url = new URL(window.location.href);
+    url.searchParams.set('viewUser', userId);
+    window.history.pushState({}, '', url.toString());
+  };
+
+  const handleUsersLoaded = (loadedUsers: User[]) => {
+    console.log('Admin Dashboard - received users:', loadedUsers.length);
+    setUsers(loadedUsers);
+  };
+
   const confirmDeleteAdminUser = useCallback(async () => {
     if (selectedAdminUserId) {
       try {
@@ -497,6 +518,28 @@ const getAdminUsers = useCallback(async () => {
       getUsers();
     }
   }, [isAuthenticated, activeTab, getUsers]);
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === "jobs") {
+
+    }
+  }, [isAuthenticated, activeTab]);
+
+  const getJobs = useCallback(async (page: number = 1) => {
+    try {
+      setJobsLoading(true);
+      const data = await fetchJobs(page, 20);
+      setJobs(data.jobs);
+      setCurrentPage(data.pagination.currentPage);
+      setTotalPages(data.pagination.totalPages);
+      setTotalCount(data.pagination.totalCount);
+    } catch (err) {
+      console.error("Error fetching jobs:", err);
+      setJobsError("Failed to fetch jobs.");
+    } finally {
+      setJobsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && activeTab === "jobs") {
@@ -670,10 +713,10 @@ const getAdminUsers = useCallback(async () => {
 
             <TabsContent value="users" className="pt-0"> {/* Added pt-0 to remove top padding from TabsContent */}
               <UserManagementTable
-                initialUsers={users}
                 onUserUpdated={getUsers}
                 onAddUser={() => setIsAddUserModalOpen(true)} // CORRECTED: Now opens the AddUserModal
-                // onViewDetails={handleViewUserDetails} // Removed
+                onViewUser={handleViewUser}
+                onUsersLoaded={handleUsersLoaded}
               />
             </TabsContent>
 
@@ -720,7 +763,11 @@ const getAdminUsers = useCallback(async () => {
                     loading={jobsLoading}
                     error={jobsError}
                     onViewDetails={handleViewJobDetails}
-                    onJobUpdated={getJobs} // Pass the refresh function
+                    onJobUpdated={handleRefreshJobs} // Pass the refresh function
+                    onPageChange={handlePageChange}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
                   />
                 </CardContent>
               </Card>
@@ -1183,7 +1230,7 @@ const getAdminUsers = useCallback(async () => {
         jobId={selectedJobId}
         isOpen={isJobDetailsModalOpen}
         onClose={handleCloseJobDetailsModal}
-        onJobUpdated={getJobs}
+        onJobUpdated={handleRefreshJobs}
       />
       <PaymentDetailsModal
         paymentId={selectedPaymentId}
@@ -1224,6 +1271,9 @@ const getAdminUsers = useCallback(async () => {
         onClose={() => setIsAddUserModalOpen(false)}
         onUserAdded={getUsers} // Pass getUsers to refresh the list after a new user is added
       />
+
+      {/* View User Modal */}
+      <ViewUserModal users={users} />
     </div>
   );
 }

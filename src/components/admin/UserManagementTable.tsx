@@ -28,11 +28,13 @@ interface UserManagementTableProps {
   onUserUpdated: () => void;
   // New prop to handle opening the AddUserModal
   onAddUser: () => void;
+  onViewUser?: (userId: string) => void;
+  onUsersLoaded?: (users: User[]) => void;
 }
 
 const USERS_PER_PAGE = 20;
 
-export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUserUpdated, onAddUser }) => {
+export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUserUpdated, onAddUser, onViewUser, onUsersLoaded }) => {
   const [users, setUsers] = React.useState<User[]>([]);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [hasMore, setHasMore] = React.useState(true);
@@ -113,6 +115,14 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
       fetchUsers(currentPage);
     }
   }, [currentPage]);
+
+  // Notify parent component when users are loaded
+  React.useEffect(() => {
+    if (users.length > 0 && onUsersLoaded) {
+      console.log('UserManagementTable - calling onUsersLoaded with:', users.length, 'users');
+      onUsersLoaded(users);
+    }
+  }, [users, onUsersLoaded]);
 
   const handleSort = (column: keyof User) => {
     if (sortColumn === column) {
@@ -355,7 +365,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
           <table className="min-w-full divide-y divide-gray-700">
             <thead className="bg-gray-700 sticky top-0 z-10"><tr>
               {/* USER ID COLUMN HEADER WITH SORT ICON */}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('user_id')}
@@ -366,7 +376,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                 </Button>
               </th>
               {/* FIRST NAME COLUMN HEADER WITH SORT ICON */}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('user_first_name')}
@@ -377,7 +387,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                 </Button>
               </th>
               {/* LAST NAME COLUMN HEADER WITH SORT ICON */}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('user_last_name')}
@@ -388,7 +398,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                 </Button>
               </th>
               {/* EMAIL COLUMN HEADER WITH SORT ICON */}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('user_email')}
@@ -399,7 +409,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                 </Button>
               </th>
               {/* TYPE COLUMN HEADER WITH FILTER ICON */}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 <div className="flex items-center gap-1">
                   Type
                   <DropdownMenu>
@@ -441,7 +451,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                 </div>
               </th>
               {/* STATUS COLUMN HEADER WITH FILTER ICON */}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 <div className="flex items-center gap-1">
                   Status
                   <DropdownMenu>
@@ -488,7 +498,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                   </DropdownMenu>
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 Actions
               </th>
             </tr></thead>
@@ -505,26 +515,26 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                     key={user.user_id}
                     className="hover:bg-gray-800 transition-colors"
                   >
-                    <td className="px-6 py-4 text-sm text-gray-300 max-w-[100px] overflow-hidden text-ellipsis">
+                    <td className="px-3 py-4 text-sm text-gray-300 max-w-[80px] overflow-hidden text-ellipsis">
                       {user.user_id}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                    <td className="px-3 py-4 text-sm text-gray-300">
                       {user.user_first_name || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                    <td className="px-3 py-4 text-sm text-gray-300">
                       {user.user_last_name || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
+                    <td className="px-3 py-4 text-sm text-gray-300">
                       {user.user_email}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-4">
                       <Badge
                         className={getTypeBadgeClasses(user.user_type)}
                       >
                         {user.user_type || 'N/A'}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-sm w-[120px]">
+                    <td className="px-3 py-4 text-sm w-[100px]">
                       <div className="flex items-center justify-center">
                         <Badge
                           className={`
@@ -537,7 +547,18 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                         </Badge>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm flex gap-2">
+                    <td className="px-3 py-4 text-sm flex gap-4">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => {
+                          console.log('View button clicked for user:', user.user_id);
+                          onViewUser?.(user.user_id);
+                        }}
+                      >
+                        View
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"

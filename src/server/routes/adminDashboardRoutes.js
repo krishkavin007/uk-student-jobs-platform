@@ -30,15 +30,26 @@ router.get(
       );
       const totalAdmins = parseInt(adminsResult.rows[0].count, 10);
 
-      // 4. Get number of Active Logins (e.g., logged in within the last 15 minutes and user_status is 'active')
-      // Adjust '15 minutes' as per your definition of "active"
-      const activeLoginsResult = await pool.query(
-        `SELECT COUNT(DISTINCT user_id)
-         FROM users
-         WHERE last_login >= NOW() - INTERVAL '15 minutes'
-           AND user_status = 'active';`
-      );
-      const activeLogins = parseInt(activeLoginsResult.rows[0].count, 10);
+      // 4. Get number of Active Logins (users with active sessions)
+      let activeLogins = 0;
+      try {
+        const activeLoginsResult = await pool.query(
+          `SELECT COUNT(*) as count
+           FROM user_sessions
+           WHERE expire > NOW();`
+        );
+        activeLogins = parseInt(activeLoginsResult.rows[0].count, 10);
+      } catch (error) {
+        console.log('Session table not available, using fallback method');
+        // Fallback: count users with recent login activity
+        const fallbackResult = await pool.query(
+          `SELECT COUNT(DISTINCT user_id)
+           FROM users
+           WHERE last_login >= NOW() - INTERVAL '5 minutes'
+             AND user_status = 'active';`
+        );
+        activeLogins = parseInt(fallbackResult.rows[0].count, 10);
+      }
 
       // 5. Get new students for the last 7 days
       const newStudentsResult = await pool.query(

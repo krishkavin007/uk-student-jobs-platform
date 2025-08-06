@@ -417,6 +417,8 @@ router.get('/:jobId/applications', authenticateUser, async (req, res) => {
 // POST a new job (Authenticated User or Admin)
 // MODIFIED: Removed uploadJobLogo.single('company_logo') middleware and all references to company_logo in the INSERT query.
 router.post('/', authenticateUser, async (req, res) => {
+    console.log('--- DEBUG: Job posting request body:', req.body);
+    
     const {
         job_title,
         job_description,
@@ -430,6 +432,8 @@ router.post('/', authenticateUser, async (req, res) => {
         is_sponsored,
         expires_at
     } = req.body;
+    
+    console.log('--- DEBUG: job_category received:', job_category);
 
     // Use posted_by_user_id from session (authenticated user)
     const posted_by_user_id = req.session.userId;

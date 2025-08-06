@@ -4,11 +4,31 @@ const router = express.Router();
 const pool = require('../config/db');
 const authenticateAdminJWT = require('../middleware/authenticateAdminJWT');
 
-// GET all jobs for admin dashboard
+// GET all jobs for admin dashboard with pagination
 router.get('/', authenticateAdminJWT, async (req, res) => {
     console.log('--- DEBUG: Admin jobs route hit ---');
+    
+    // Get pagination parameters from query string
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+    
+    console.log(`--- DEBUG: Pagination - page: ${page}, limit: ${limit}, offset: ${offset} ---`);
+    
     try {
-        console.log('--- DEBUG: About to execute query ---');
+        // First, get total count for pagination metadata
+        const countResult = await pool.query(`
+            SELECT COUNT(*) as total
+            FROM job_applications ja
+            LEFT JOIN users u ON ja.posted_by_user_id = u.user_id
+        `);
+        
+        const totalCount = parseInt(countResult.rows[0].total);
+        const totalPages = Math.ceil(totalCount / limit);
+        
+        console.log(`--- DEBUG: Total jobs: ${totalCount}, Total pages: ${totalPages} ---`);
+        
+        // Get paginated jobs
         const result = await pool.query(`
             SELECT 
                 ja.job_id as id,
@@ -31,7 +51,9 @@ router.get('/', authenticateAdminJWT, async (req, res) => {
                 GROUP BY job_id
             ) application_counts ON ja.job_id = application_counts.job_id
             ORDER BY ja.created_at DESC
-        `);
+            LIMIT $1 OFFSET $2
+        `, [limit, offset]);
+        
         console.log('--- DEBUG: Query executed successfully, rows:', result.rows.length);
 
         // Transform the data to match the expected format
@@ -48,8 +70,22 @@ router.get('/', authenticateAdminJWT, async (req, res) => {
             description: row.description
         }));
 
-        console.log('--- DEBUG: Sending response with', jobs.length, 'jobs');
-        res.json(jobs);
+        // Return paginated response with metadata
+        const response = {
+            jobs: jobs,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalCount: totalCount,
+                itemsPerPage: limit,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            }
+        };
+
+        console.log('--- DEBUG: Sending paginated response with', jobs.length, 'jobs');
+        console.log('--- DEBUG: Response structure:', JSON.stringify(response, null, 2));
+        res.json(response);
     } catch (err) {
         console.error('Error fetching jobs for admin:', err.stack);
         res.status(500).json({ error: 'Failed to fetch jobs' });
