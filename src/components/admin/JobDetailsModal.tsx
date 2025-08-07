@@ -54,6 +54,8 @@ const getApplicantStatusBadgeClasses = (status: string) => {
       return 'bg-red-600 hover:bg-red-700 text-white';
     case 'cancelled':
       return 'bg-gray-600 hover:bg-gray-700 text-white';
+    case 'pending_hire_offer':
+      return 'bg-orange-600 hover:bg-orange-700 text-white';
     default:
       return 'bg-gray-600 hover:bg-gray-700 text-white';
   }
@@ -269,6 +271,7 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                                applicant.application_status === 'hired' ? 'Hired' :
                                applicant.application_status === 'rejected' ? 'Declined' :
                                applicant.application_status === 'cancelled' ? 'Cancelled' :
+                               applicant.application_status === 'pending_hire_offer' ? 'Offer Pending' :
                                applicant.application_status}
                             </Badge>
                             </td>
@@ -283,7 +286,7 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="bg-gray-800 border-gray-700 text-gray-200">
-                                  {['applied', 'hired', 'rejected', 'cancelled'].map(status => (
+                                  {['applied', 'hired', 'pending_hire_offer', 'rejected', 'cancelled'].map(status => (
                                     <DropdownMenuItem
                                       key={status}
                                       onClick={() => handleUpdateApplicantStatus(applicant.user_id, status)}
@@ -294,6 +297,7 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                                        status === 'hired' ? 'Hired' :
                                        status === 'rejected' ? 'Declined' :
                                        status === 'cancelled' ? 'Cancelled' :
+                                       status === 'pending_hire_offer' ? 'Offer Pending' :
                                        status}
                                     </DropdownMenuItem>
                                   ))}

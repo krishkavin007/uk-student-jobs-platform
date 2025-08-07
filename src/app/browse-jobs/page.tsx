@@ -58,27 +58,27 @@ const formatDateAgo = (isoDateString: string): string => {
 
   let interval = seconds / 31536000;
   if (interval > 1) {
-    return Math.floor(interval) + " years ago";
+    return Math.floor(interval) + (Math.floor(interval) === 1 ? " year ago" : " years ago");
   }
   interval = seconds / 2592000;
   if (interval > 1) {
-    return Math.floor(interval) + " months ago";
+    return Math.floor(interval) + (Math.floor(interval) === 1 ? " month ago" : " months ago");
   }
   interval = seconds / 604800;
   if (interval > 1) {
-    return Math.floor(interval) + " weeks ago";
+    return Math.floor(interval) + (Math.floor(interval) === 1 ? " week ago" : " weeks ago");
   }
   interval = seconds / 86400;
   if (interval > 1) {
-    return Math.floor(interval) + " days ago";
+    return Math.floor(interval) + (Math.floor(interval) === 1 ? " day ago" : " days ago");
   }
   interval = seconds / 3600;
   if (interval > 1) {
-    return Math.floor(interval) + " hours ago";
+    return Math.floor(interval) + (Math.floor(interval) === 1 ? " hour ago" : " hours ago");
   }
   interval = seconds / 60;
   if (interval > 1) {
-    return Math.floor(interval) + " minutes ago";
+    return Math.floor(interval) + (Math.floor(interval) === 1 ? " minute ago" : " minutes ago");
   }
   return "just now";
 };
@@ -229,7 +229,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
               user && applicationsStatus.get(job.job_id)?.status === 'declined'
                 ? 'bg-red-700 text-white hover:bg-red-800 cursor-not-allowed opacity-90'
                 : user && applicationsStatus.get(job.job_id)?.status === 'hired'
-                ? 'bg-green-600 text-white hover:bg-green-700 cursor-not-allowed opacity-90'
+                ? 'bg-purple-600 text-white hover:bg-purple-700 cursor-not-allowed opacity-90'
                 : user && appliedJobs.has(job.job_id)
                 ? 'bg-green-700 text-white hover:bg-green-800 cursor-not-allowed opacity-90'
                 : 'bg-blue-700 text-white hover:bg-blue-800'
@@ -996,7 +996,7 @@ export default function BrowseJobsPage() {
                       user && applicationsStatus.get(job.job_id)?.status === 'declined'
                         ? 'bg-red-700 text-white hover:bg-red-800 cursor-not-allowed opacity-90'
                         : user && applicationsStatus.get(job.job_id)?.status === 'hired'
-                        ? 'bg-green-600 text-white hover:bg-green-700 cursor-not-allowed opacity-90'
+                        ? 'bg-purple-600 text-white hover:bg-purple-700 cursor-not-allowed opacity-90'
                         : user && appliedJobs.has(job.job_id)
                         ? 'bg-green-700 text-white hover:bg-green-800 cursor-not-allowed opacity-90'
                         : 'bg-blue-700 text-white hover:bg-blue-800'
