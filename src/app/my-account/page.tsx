@@ -71,6 +71,7 @@ interface Applicant {
   phone: string;
   studentOutcome?: string; // Add this for hire confirmation check
   confirmed?: boolean; // Add this to track if employer has confirmed the hire
+  image?: string; // Add this for user profile image
 }
 
 interface PostedJob {
@@ -132,6 +133,10 @@ function MyAccountContent() {
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   const [selectedJobForApplicants, setSelectedJobForApplicants] = useState<PostedJob | null>(null);
   const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
+  
+  // Applicants modal filters
+  const [applicantSearchTerm, setApplicantSearchTerm] = useState('');
+  const [showLast24Hours, setShowLast24Hours] = useState(false);
 
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -243,7 +248,7 @@ function MyAccountContent() {
                     name: `${app.user_first_name} ${app.user_last_name}`,
                     email: app.user_email,
                     university: app.university_college || 'Not specified',
-                    appliedDate: new Date(app.applied_at).toLocaleDateString(),
+                    appliedDate: app.applied_at, // Keep ISO string for proper filtering
                                       status: app.application_status === 'applied' ? 'applied' : 
                          app.application_status === 'hired' ? 'hired' :
                          app.application_status === 'rejected' ? 'rejected' : 
@@ -251,6 +256,7 @@ function MyAccountContent() {
                          app.application_status === 'pending' ? 'pending' : 'pending',
                     message: app.application_message || 'No message provided',
                     phone: app.contact_phone_number || 'Not provided',
+                    image: app.user_image || null,
                     studentOutcome: app.student_outcome || 'applied', // Add this for hire confirmation check
                     confirmed: app.student_outcome === 'hired' && app.application_status === 'hired' // Only true when employer confirms (both must be 'hired')
                   }));
@@ -1931,12 +1937,30 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                  });
                                  
                                  return filteredJobs.length > 0 ? (
-                                   filteredJobs.map((job) => (
-                                     <div key={job.id} className="group relative bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 md:p-6 border border-gray-700/50 hover:border-green-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-green-500/10">
+                                   filteredJobs.map((job) => {
+                                     // Check if this job has pending hire confirmations
+                                     const hasPendingConfirmation = job.applicants && job.applicants.some(
+                                       applicant => applicant.studentOutcome === 'hired' && !applicant.confirmed
+                                     );
+                                     
+                                     return (
+                                     <div key={job.id} className={`group relative bg-gradient-to-r rounded-2xl p-4 md:p-6 border transition-all duration-300 hover:shadow-xl ${
+                                       hasPendingConfirmation 
+                                         ? 'from-orange-900/30 to-orange-800/20 border-orange-500/50 hover:border-orange-400/70 shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20' 
+                                         : 'from-gray-900 to-gray-800 border-gray-700/50 hover:border-green-500/30 hover:shadow-green-500/10'
+                                     }`}>
                                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                                          <div className="flex-1">
                                            <div className="flex items-center gap-2 mb-2">
                                              <h4 className="text-lg md:text-xl font-semibold text-white group-hover:text-green-300 transition-colors">{job.title}</h4>
+                                             {hasPendingConfirmation && (
+                                               <span className="px-3 py-1 bg-orange-500/20 text-orange-400 border border-orange-500/40 rounded-full text-xs font-medium flex items-center gap-1 animate-pulse">
+                                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                 </svg>
+                                                 Action Required
+                                               </span>
+                                             )}
                                   {job.sponsored && (
                                                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full text-xs">
                                       Sponsored
@@ -1978,9 +2002,16 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                                size="sm"
                                                variant="outline"
                                                onClick={() => handleViewApplicants(job)}
-                                               className="text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-800/30 text-xs md:text-sm px-2 md:px-3 py-1"
+                                               className={`text-blue-400 border-blue-700 bg-blue-900/20 hover:bg-blue-800/30 text-xs md:text-sm px-2 md:px-3 py-1 ${
+                                                 hasPendingConfirmation ? 'animate-pulse shadow-lg shadow-blue-500/20' : ''
+                                               }`}
                                              >
                                                View ({job.applications})
+                                               {hasPendingConfirmation && (
+                                                 <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                 </svg>
+                                               )}
                                              </Button>
                                            )}
 
@@ -2062,7 +2093,8 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                                           </div>
                                         </div>
                                       </div>
-                                    ))
+                                    );
+                                   })
                                   ) : (
                                    <div className="text-center py-8 md:py-12 bg-gradient-to-br from-gray-900/50 to-gray-800/50 rounded-2xl border border-gray-700/30">
                                      <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
@@ -2099,105 +2131,198 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
                 </CardContent>
               </Card>
 
-              <Dialog open={editingJobId !== null} onOpenChange={() => {
-                setEditingJobId(null)
-                setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
-              }}>
-                <DialogContent className="max-w-lg p-6 bg-gray-800 border-gray-700 text-gray-100">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-white">Edit Job Posting</DialogTitle>
-                    <DialogDescription className="text-gray-400">
-                      Update your job details. Changes will be visible immediately.
-                    </DialogDescription>
-                  </DialogHeader>
-                  {editingJobId && (() => {
-                    const currentJob = postedJobs.find(j => j.id === editingJobId)
-                    if (!currentJob) return null;
-                    return (
-                      <div className="space-y-5 mt-4">
-                        <div>
-                          <Label htmlFor="editTitle" className="text-sm font-medium text-gray-300">Job Title</Label>
-                          <Input
-                            id="editTitle"
-                            value={editJobData.title}
-                            onChange={(e) => setEditJobData(prev => ({ ...prev, title: e.target.value }))}
-                            className="rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="editDescription" className="text-sm font-medium text-gray-300">Job Description</Label>
-                          <textarea
-                            id="editDescription"
-                            value={editJobData.description}
-                            onChange={(e) => setEditJobData(prev => ({ ...prev, description: e.target.value }))}
-                            className="w-full h-32 rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500 p-3 resize-none"
-                            placeholder="Enter job description..."
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="editApplications" className="text-sm font-medium text-gray-300">Applications Received</Label>
-                          <Input
-                            id="editApplications"
-                            type="number"
-                            value={editJobData.applications}
-                            onChange={(e) => setEditJobData(prev => ({ ...prev, applications: parseInt(e.target.value) || 0 }))}
-                            disabled
-                            className="bg-gray-700 cursor-not-allowed rounded-md border-gray-600 text-gray-400"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Applications count is read-only.</p>
-                        </div>
-
-                        <div className="p-4 bg-blue-900/20 border border-blue-700 rounded-lg">
-                          <div className="flex items-start space-x-3">
-                            <input
-                              type="checkbox"
-                              id="editSponsored"
-                              checked={editJobData.sponsored}
-                              onChange={(e) => setEditJobData(prev => ({ ...prev, sponsored: e.target.checked }))}
-                              className="mt-1 h-5 w-5 text-blue-600 border-gray-600 rounded focus:ring-blue-500 cursor-pointer bg-gray-700"
-                              disabled={currentJob.sponsored}
-                            />
-                            <div className="flex-1">
-                              <Label htmlFor="editSponsored" className="font-medium text-gray-300 cursor-pointer">
-                                {currentJob.sponsored ? "Currently Sponsored" : "Upgrade to Sponsored (+£4)"}
-                              </Label>
-                              <p className="text-sm text-gray-400 mt-1">
-                                {currentJob.sponsored
-                                  ? "This job is already sponsored and appears at the top of search results."
-                                  : "Move your job to the top of search results and get 3x more visibility."
-                                }
-                              </p>
-                              {!currentJob.sponsored && editJobData.sponsored && (
-                                <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700 rounded text-sm text-yellow-300 flex items-center gap-2">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                  </svg>
-                                  <span>You'll be charged £4 to upgrade this job to sponsored.</span>
-                                </div>
-                              )}
-                            </div>
+              {/* Redesigned Edit Modal - World Class UX/UI */}
+              {editingJobId !== null && (
+                <div 
+                  className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                  onClick={() => {
+                    setEditingJobId(null)
+                    setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
+                  }}
+                >
+                  <div 
+                    className="bg-gray-900 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-gray-800"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Modern Header */}
+                    <div className="bg-gray-800 p-4 border-b border-gray-700 flex-shrink-0 rounded-t-3xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-green-500/20 rounded-2xl flex items-center justify-center">
+                            <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-bold text-white mb-1">Edit Job Posting</h2>
+                            <p className="text-gray-400 text-sm">Update your job details and settings</p>
                           </div>
                         </div>
+                        <button
+                          onClick={() => {
+                            setEditingJobId(null)
+                            setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
+                          }}
+                          className="w-10 h-10 rounded-2xl bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-colors"
+                        >
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       </div>
-                    )
-                  })()}
-                  <DialogFooter className="mt-6 flex justify-end gap-3">
-                    <Button variant="outline" onClick={() => {
-                      setEditingJobId(null)
-                      setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
-                    }} className="px-5 py-2 rounded-md transition-colors duration-200 border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSaveJobChanges}
-                      disabled={isProcessingUpgrade}
-                      className="bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-md transition-colors duration-200 text-white"
-                    >
-                      {isProcessingUpgrade ? 'Processing Payment...' : 'Save Changes'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    </div>
+
+                    {/* Content Section with Proper Scrolling */}
+                    <div className="flex-grow overflow-y-auto p-6">
+                      {editingJobId && (() => {
+                        const currentJob = postedJobs.find(j => j.id === editingJobId)
+                        if (!currentJob) return null;
+                        return (
+                          <div className="space-y-6">
+                            {/* Job Title Section */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <label className="text-sm font-semibold text-white">Job Title</label>
+                              </div>
+                              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 focus-within:border-blue-500/50 transition-colors">
+                                <input
+                                  value={editJobData.title}
+                                  onChange={(e) => setEditJobData(prev => ({ ...prev, title: e.target.value }))}
+                                  className="w-full p-4 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl"
+                                  placeholder="Enter job title..."
+                                />
+                              </div>
+                            </div>
+
+                            {/* Job Description Section */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                <label className="text-sm font-semibold text-white">Job Description</label>
+                              </div>
+                              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 focus-within:border-blue-500/50 transition-colors">
+                                <textarea
+                                  value={editJobData.description}
+                                  onChange={(e) => setEditJobData(prev => ({ ...prev, description: e.target.value }))}
+                                  className="w-full p-4 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl resize-none"
+                                  rows={8}
+                                  placeholder="Describe the job requirements, responsibilities, and benefits..."
+                                />
+                              </div>
+                              <p className="text-xs text-gray-500">Provide detailed information to attract qualified candidates</p>
+                            </div>
+
+                            {/* Applications Count Section */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                <label className="text-sm font-semibold text-white">Applications Received</label>
+                              </div>
+                              <div className="bg-gray-800/30 rounded-xl border border-gray-700/50 opacity-60">
+                                <div className="p-4 flex items-center gap-3">
+                                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                  </svg>
+                                  <span className="text-gray-400 font-medium">{editJobData.applications} applications</span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500">This value is automatically updated and cannot be modified</p>
+                            </div>
+
+                            {/* Sponsored Section */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                <label className="text-sm font-semibold text-white">Sponsorship</label>
+                              </div>
+                              <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-700/50 rounded-xl p-5">
+                                <div className="flex items-start gap-4">
+                                  <div className="flex-shrink-0 mt-1">
+                                    <input
+                                      type="checkbox"
+                                      id="editSponsored"
+                                      checked={editJobData.sponsored}
+                                      onChange={(e) => setEditJobData(prev => ({ ...prev, sponsored: e.target.checked }))}
+                                      className="w-5 h-5 text-blue-600 border-gray-600 rounded focus:ring-blue-500 cursor-pointer bg-gray-700"
+                                      disabled={currentJob.sponsored}
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <label htmlFor="editSponsored" className="font-semibold text-white cursor-pointer">
+                                        {currentJob.sponsored ? "Currently Sponsored" : "Upgrade to Sponsored"}
+                                      </label>
+                                      {!currentJob.sponsored && (
+                                        <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30">
+                                          +£4
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-300 mb-3">
+                                      {currentJob.sponsored
+                                        ? "This job is already sponsored and appears at the top of search results with priority visibility."
+                                        : "Move your job to the top of search results and get 3x more visibility from qualified candidates."
+                                      }
+                                    </p>
+                                    {!currentJob.sponsored && editJobData.sponsored && (
+                                      <div className="bg-yellow-900/20 border border-yellow-600/50 rounded-lg p-3 flex items-start gap-3">
+                                        <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        <div>
+                                          <p className="text-sm font-medium text-yellow-300 mb-1">Payment Required</p>
+                                          <p className="text-xs text-yellow-400">You'll be charged £4 to upgrade this job to sponsored status upon saving.</p>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })()}
+                    </div>
+
+                    {/* Modern Footer */}
+                    <div className="bg-gray-800/50 border-t border-gray-700 p-4 flex-shrink-0 rounded-b-3xl">
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => {
+                            setEditingJobId(null)
+                            setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
+                          }}
+                          className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium transition-all duration-200 border border-gray-600 hover:border-gray-500 text-sm"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveJobChanges}
+                          disabled={isProcessingUpgrade}
+                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                        >
+                          {isProcessingUpgrade ? (
+                            <>
+                              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                              Processing Payment...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Save Changes
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </> /* Closed React Fragment here */
           )}
 
@@ -2635,156 +2760,301 @@ className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hov
         </div>
       )}
 
-      {/* Applicants Modal */}
+      {/* Redesigned Applicants Modal - World Class UX/UI */}
       {isApplicantsModalOpen && selectedJobForApplicants && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setIsApplicantsModalOpen(false)}
         >
           <div 
-            className="bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            className="bg-gray-900 rounded-3xl shadow-2xl max-w-4xl w-full h-[90vh] flex flex-col border border-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <div>
-                <h2 className="text-xl font-bold text-white">{selectedJobForApplicants.title}</h2>
-                <p className="text-gray-400 text-sm">Applicant Details</p>
+            {/* Modern Header */}
+            <div className="bg-gray-800 p-6 border-b border-gray-700 flex-shrink-0 rounded-t-3xl">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 01 5.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-1">{selectedJobForApplicants.title}</h2>
+                    <p className="text-gray-400 text-sm">
+                      {selectedJobForApplicants.applicants?.length || 0} 
+                      {selectedJobForApplicants.applicants?.length === 1 ? ' applicant' : ' applicants'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsApplicantsModalOpen(false)}
+                  className="w-10 h-10 bg-gray-700/50 hover:bg-gray-600/50 rounded-full flex items-center justify-center transition-all duration-200 group"
+                >
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={() => setIsApplicantsModalOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors p-1"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              
+              {/* Search and Filter Controls */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search applicants..."
+                      value={applicantSearchTerm}
+                      onChange={(e) => setApplicantSearchTerm(e.target.value)}
+                      className="w-full bg-gray-700/50 border border-gray-600/50 rounded-xl px-4 py-2 pl-10 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:bg-gray-700"
+                    />
+                    <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="last24hours"
+                    checked={showLast24Hours}
+                    onChange={(e) => setShowLast24Hours(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <label htmlFor="last24hours" className="text-sm text-gray-300 whitespace-nowrap">
+                    Last 24 hours
+                  </label>
+                </div>
+              </div>
             </div>
             
-            <div className="overflow-y-auto max-h-[calc(80vh-80px)] p-4">
-              {selectedJobForApplicants.applicants && selectedJobForApplicants.applicants.length > 0 ? (
-                <div className="space-y-3">
-                  {selectedJobForApplicants.applicants.map((applicant, index) => (
-                    <div key={applicant.id} className="bg-gray-700/50 rounded-xl p-4 border border-gray-600/30">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
-                              <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Scrollable Content - Fixed Height */}
+            <div className="flex-1 overflow-y-auto p-6 min-h-0">
+              {(() => {
+                const filteredApplicants = selectedJobForApplicants.applicants ? selectedJobForApplicants.applicants
+                  .filter(applicant => {
+                    // Search filter - search all fields
+                    const searchTerm = applicantSearchTerm.toLowerCase();
+                    const matchesSearch = !searchTerm || 
+                      applicant.name.toLowerCase().includes(searchTerm) ||
+                      applicant.email.toLowerCase().includes(searchTerm) ||
+                      applicant.university.toLowerCase().includes(searchTerm) ||
+                      applicant.phone.toLowerCase().includes(searchTerm) ||
+                      (applicant.message && applicant.message.toLowerCase().includes(searchTerm)) ||
+                      new Date(applicant.appliedDate).toLocaleDateString().toLowerCase().includes(searchTerm);
+                    
+                    // Date filter (last 24 hours)
+                    const matchesDate = !showLast24Hours || (() => {
+                      const now = new Date();
+                      const appliedDate = new Date(applicant.appliedDate);
+                      const hoursDiff = (now.getTime() - appliedDate.getTime()) / (1000 * 60 * 60);
+                      return hoursDiff <= 24;
+                    })();
+                    
+                    return matchesSearch && matchesDate;
+                  }) : [];
+
+                if (!selectedJobForApplicants.applicants || selectedJobForApplicants.applicants.length === 0) {
+                  // No applicants at all
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="w-20 h-20 bg-gray-700/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 01-5.356 1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-3">No applicants for this job</h3>
+                        <p className="text-gray-400 text-lg">This job hasn't received any applications yet.</p>
+                      </div>
+                    </div>
+                  );
+                } else if (filteredApplicants.length === 0) {
+                  // Has applicants but none match filter
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="w-20 h-20 bg-gray-700/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-3">
+                          {applicantSearchTerm ? `No applicant available with "${applicantSearchTerm}"` : 'No applicants match the selected filters'}
+                        </h3>
+                        <p className="text-gray-400 text-lg">Try adjusting your search or filter criteria.</p>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // Show filtered applicants
+                  return (
+                    <div className="space-y-6">
+                      {filteredApplicants.map((applicant, index) => (
+                    <div key={applicant.id} className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700/30 hover:border-gray-600/50 transition-all duration-300">
+                      {/* Applicant Header */}
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-gray-600/20 to-gray-500/20 flex items-center justify-center">
+                            {applicant.image ? (
+                              console.log("DEBUG: applicant.image value in modal:", applicant.image),
+                              <img 
+                                src={applicant.image} 
+                                alt={applicant.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-white">{applicant.name}</h3>
-                              <p className="text-gray-400 text-sm">{applicant.university}</p>
-                            </div>
+                            )}
                           </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                              </svg>
-                              <span className="text-gray-300">{applicant.email}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-sm">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                              </svg>
-                              <span className="text-gray-300">{applicant.phone}</span>
-                            </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-white">{applicant.name}</h3>
                           </div>
-                          
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-gray-400 text-sm">Applied:</span>
-                            <span className="text-white text-sm">{applicant.appliedDate}</span>
-                          </div>
-                          
-                          {applicant.message && (
-                            <div className="mb-3">
-                              <p className="text-gray-400 text-sm mb-1">Message:</p>
-                              <div className="bg-gray-600/30 rounded-lg p-2">
-                                <p className="text-white text-sm">{applicant.message}</p>
-                              </div>
-                            </div>
-                          )}
                         </div>
                         
-                        <div className="flex flex-col gap-2 sm:flex-col">
-                          <div className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full">
-                            <span className="text-blue-400 text-xs font-medium flex items-center gap-1">
-                              {applicant.status === 'pending' ? 'Applied' :
-                               applicant.status === 'applied' ? 'Applied' :
-                               applicant.status === 'hired' ? 'Hired' :
-                               applicant.status === 'rejected' ? 'Declined' :
-                               applicant.status === 'cancelled' ? 'Cancelled' :
-                               applicant.status}
-                              {applicant.status === 'hired' && applicant.confirmed && (
-                                <svg className="w-3 h-3 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </span>
+                        {/* Status Badge */}
+                        <div className={`px-4 py-2 rounded-full border ${
+                          applicant.status === 'hired' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
+                          applicant.status === 'rejected' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
+                          applicant.status === 'cancelled' ? 'bg-gray-500/20 border-gray-500/30 text-gray-400' :
+                          'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                        }`}>
+                          <span className="text-sm font-semibold flex items-center gap-2">
+                            {applicant.status === 'pending' ? 'Applied' :
+                             applicant.status === 'applied' ? 'Applied' :
+                             applicant.status === 'hired' ? 'Hired' :
+                             applicant.status === 'rejected' ? 'Declined' :
+                             applicant.status === 'cancelled' ? 'Cancelled' :
+                             applicant.status}
+                            {applicant.status === 'hired' && applicant.confirmed && (
+                              <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Contact Information Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 p-3 bg-gray-700/30 rounded-xl">
+                            <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                              <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-400 mb-1">Email</p>
+                              <p className="text-white font-medium">{applicant.email}</p>
+                            </div>
                           </div>
                           
-                          {/* Hire Confirmation Section for Students who marked themselves as hired but not yet confirmed */}
-                          {applicant.studentOutcome === 'hired' && !applicant.confirmed && (
-                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-2 mb-2">
-                              <p className="text-yellow-400 text-xs font-medium mb-2">Student marked as hired - Confirm?</p>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleEmployerConfirmHire(true, applicant.id)}
-                                  className="bg-green-600 hover:bg-green-500 text-white text-xs px-2 py-1"
-                                >
-                                  Confirm Hire
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleEmployerConfirmHire(false, applicant.id)}
-                                  className="bg-red-600 hover:bg-red-500 text-white text-xs px-2 py-1"
-                                >
-                                  Decline
-                                </Button>
-                              </div>
+                          <div className="flex items-center gap-3 p-3 bg-gray-700/30 rounded-xl">
+                            <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                              <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                              </svg>
                             </div>
-                          )}
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-400 mb-1">Phone</p>
+                              <p className="text-white font-medium">{applicant.phone}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 p-3 bg-gray-700/30 rounded-xl">
+                            <div className="w-8 h-8 bg-gray-500/20 rounded-lg flex items-center justify-center">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a4 4 0 118 0v4m-4 8a2 2 0 100-4 2 2 0 000 4zm0 0v4m-4-8a2 2 0 100-4 2 2 0 000 4zm8 0a2 2 0 100-4 2 2 0 000 4z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-400 mb-1">University</p>
+                              <p className="text-white font-medium">{applicant.university}</p>
+                            </div>
+                          </div>
                           
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleContactApplicant(applicant.id)}
-                              className="text-green-400 border-green-700 bg-green-900/20 hover:bg-green-800/30 text-xs px-2 py-1"
-                            >
-                              Contact
-                            </Button>
-                            
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRejectApplicant(applicant.id)}
-                              className="text-red-400 border-red-700 bg-red-900/20 hover:bg-red-800/30 text-xs px-2 py-1"
-                            >
-                              Reject
-                            </Button>
+                          <div className="flex items-center gap-3 p-3 bg-gray-700/30 rounded-xl">
+                            <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                              <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-400 mb-1">Applied Date</p>
+                              <p className="text-white font-medium">{new Date(applicant.appliedDate).toLocaleDateString()}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
+
+                      {/* Application Message */}
+                      {applicant.message && (
+                        <div className="mb-6">
+                          <div className="bg-gradient-to-r from-gray-700/20 to-gray-600/20 rounded-xl p-4 border border-gray-600/30">
+                            <div className="flex items-center gap-2 mb-3">
+                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                              <h4 className="text-sm font-semibold text-gray-300">Application Message</h4>
+                            </div>
+                            <p className="text-gray-200 leading-relaxed">{applicant.message}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hire Confirmation Section */}
+                      {applicant.studentOutcome === 'hired' && !applicant.confirmed && (
+                        <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            <h4 className="text-sm font-semibold text-yellow-400">Student marked as hired - Confirm?</h4>
+                          </div>
+                          <div className="flex gap-3">
+                            <Button
+                              onClick={() => handleEmployerConfirmHire(true, applicant.id)}
+                              className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200"
+                            >
+                              ✓ Confirm Hire
+                            </Button>
+                            <Button
+                              onClick={() => handleEmployerConfirmHire(false, applicant.id)}
+                              className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200"
+                            >
+                              ✗ Decline
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      {!(applicant.studentOutcome === 'hired' && !applicant.confirmed) && (
+                        <div className="flex items-center gap-3 pt-4 border-t border-gray-700/50">
+                          <Button
+                            onClick={() => handleRejectApplicant(applicant.id)}
+                            className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 hover:border-red-600/50 px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Reject
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">No Applicants Yet</h3>
-                  <p className="text-gray-400">This job hasn't received any applications yet.</p>
-                </div>
-              )}
+                      ))}
+                    </div>
+                  );
+                }
+              })()}
+  
             </div>
           </div>
         </div>

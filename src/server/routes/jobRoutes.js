@@ -490,7 +490,8 @@ router.get('/:jobId/applications', authenticateUser, async (req, res) => {
                 u.user_last_name,
                 u.user_email,
                 u.university_college,
-                u.contact_phone_number
+                u.contact_phone_number,
+                u.user_image
             FROM student_applications sa
             JOIN users u ON sa.student_id = u.user_id
             WHERE sa.job_id = $1 AND sa.application_status != 'cancelled'
