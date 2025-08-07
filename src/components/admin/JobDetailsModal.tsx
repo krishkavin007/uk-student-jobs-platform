@@ -227,6 +227,8 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
                 <div><strong>Salary:</strong> ${job.salary.toLocaleString()}</div>
                 <div><strong>Posted On:</strong> {new Date(job.postedDate).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</div>
                 <div><strong>Applicants Count:</strong> <Badge className={`ml-2 ${getJobStatusBadgeClasses('filled')}`}>{job.applicantsCount}</Badge></div>
+                <div><strong>Positions Available:</strong> <Badge className={`ml-2 bg-emerald-600 hover:bg-emerald-700 text-white`}>{job.positions_available || 1}</Badge></div>
+                <div><strong>Positions Filled:</strong> <Badge className={`ml-2 ${getJobStatusBadgeClasses('active')}`}>{job.positions_filled || 0}</Badge></div>
                 <div><strong>Clicks:</strong> <Badge className={`ml-2 ${getJobStatusBadgeClasses('filled')}`}>{job.jobAnalytics?.clicks?.toLocaleString() || '0'}</Badge></div>
               </CardContent>
               <CardContent className="pt-0">

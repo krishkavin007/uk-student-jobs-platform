@@ -26,6 +26,7 @@ interface JobPayload {
   job_location: string;
   hourly_pay: number;
   hours_per_week: string;
+  positions_available: number;
   job_description: string;
   is_sponsored: boolean;
   contact_name: string;
@@ -63,6 +64,7 @@ function PostJobContent() {
     location: "",
     hourlyPay: "",
     hoursPerWeek: "",
+    positionsAvailable: "1",
     description: "",
     // Employer Contact/Account Info
     firstName: "", // Frontend field name
@@ -159,10 +161,18 @@ function PostJobContent() {
     }
 
     // Basic client-side validation for job fields
-    if (!formData.title || !formData.category || !formData.location || !formData.hourlyPay || !formData.hoursPerWeek || !formData.description || (!user && !formData.agreeToTerms)) {
+    if (!formData.title || !formData.category || !formData.location || !formData.hourlyPay || !formData.hoursPerWeek || !formData.positionsAvailable || !formData.description || (!user && !formData.agreeToTerms)) {
       setError("Please fill in all required job details and accept the terms and conditions (if creating an account).");
       setIsLoading(false);
       console.log("LOG V5: Missing job or terms data.");
+      return;
+    }
+
+    // Validate positions available
+    const positions = parseInt(formData.positionsAvailable);
+    if (isNaN(positions) || positions < 1 || positions > 50) {
+      setError("Number of positions must be between 1 and 50.");
+      setIsLoading(false);
       return;
     }
 
@@ -175,6 +185,7 @@ function PostJobContent() {
         job_location: formData.location,
         hourly_pay: parseFloat(formData.hourlyPay),
         hours_per_week: formData.hoursPerWeek,
+        positions_available: positions,
         job_description: formData.description,
         is_sponsored: formData.sponsored,
         // Use user data if logged in, otherwise use form data for contact
@@ -407,7 +418,7 @@ function PostJobContent() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="hourlyPay" className="text-gray-200">Hourly Pay (£) *</Label>
                         <Input
@@ -433,6 +444,21 @@ function PostJobContent() {
                           required
                           className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="positionsAvailable" className="text-gray-200">Positions Available *</Label>
+                        <Input
+                          id="positionsAvailable"
+                          type="number"
+                          min="1"
+                          max="50"
+                          placeholder="1"
+                          value={formData.positionsAvailable}
+                          onChange={(e) => handleInputChange("positionsAvailable", e.target.value)}
+                          required
+                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        />
+                        <p className="text-xs text-gray-400">Number of people you want to hire</p>
                       </div>
                     </div>
 

@@ -83,6 +83,10 @@ interface PostedJob {
   applications: number;
   sponsored: boolean;
   status: string;
+  positions_available?: number;
+  positions_filled?: number;
+  positions_remaining?: number;
+  position_status?: string;
   applicants: Applicant[];
 }
 
@@ -147,7 +151,8 @@ function MyAccountContent() {
     title: "",
     description: "", // Added description field
     applications: 0,
-    sponsored: false
+    sponsored: false,
+    positions_available: 1
   });
   const [isProcessingUpgrade, setIsProcessingUpgrade] = useState(false);
   const [removingJobId, setRemovingJobId] = useState<number | null>(null);
@@ -169,6 +174,14 @@ function MyAccountContent() {
   // Employer confirmation modal state
   const [showEmployerConfirmation, setShowEmployerConfirmation] = useState(false);
   const [pendingHiredApplication, setPendingHiredApplication] = useState<any>(null);
+  
+  // Employer accept applicant modal state
+  const [showEmployerAcceptConfirmation, setShowEmployerAcceptConfirmation] = useState(false);
+  const [pendingAcceptApplicant, setPendingAcceptApplicant] = useState<{id: number, name: string} | null>(null);
+  
+  // Student hire offer response modal state
+  const [showStudentHireOfferModal, setShowStudentHireOfferModal] = useState(false);
+  const [pendingHireOfferResponse, setPendingHireOfferResponse] = useState<{jobId: number, jobTitle: string, employerName: string, action: 'accept' | 'decline'} | null>(null);
 
   // Application filtering state - SEPARATE FOR STUDENT AND EMPLOYER
   // Student section filters
@@ -237,6 +250,7 @@ function MyAccountContent() {
           
           if (response.ok) {
             const jobsData = await response.json();
+            console.log('--- DEBUG: Raw job data from server:', jobsData);
             
           // Transform the database jobs and fetch applications for each job
           const transformedJobs: PostedJob[] = await Promise.all(
@@ -280,7 +294,7 @@ function MyAccountContent() {
                 console.error(`Error fetching applications for job ${job.job_id}:`, error);
               }
               
-              return {
+              const transformedJob = {
               id: job.job_id,
               title: job.job_title,
               description: job.job_description,
@@ -289,8 +303,19 @@ function MyAccountContent() {
                 applications: applicationCount || 0,
               sponsored: job.is_sponsored || false,
               status: job.job_status || 'Active',
+              positions_available: job.positions_available || 1,
+              positions_filled: job.positions_filled || 0,
+              positions_remaining: job.positions_remaining || (job.positions_available || 1) - (job.positions_filled || 0),
+              position_status: job.position_status || 'no_hires',
                 applicants: applications
               };
+              
+              console.log(`--- DEBUG: Transformed job ${job.job_id}:`, {
+                original_positions: job.positions_available,
+                transformed_positions: transformedJob.positions_available
+              });
+              
+              return transformedJob;
             })
           );
             
@@ -337,7 +362,8 @@ function MyAccountContent() {
                    app.application_status === 'applied' ? 'Applied' : 
                    app.application_status === 'hired' ? 'Hired' :
                    app.application_status === 'rejected' ? 'Declined' : 
-                   app.application_status === 'cancelled' ? 'Cancelled' : 'Applied',
+                   app.application_status === 'cancelled' ? 'Cancelled' :
+                   app.application_status === 'pending_hire_offer' ? 'Offer Pending' : 'Applied',
             studentOutcome: app.student_outcome || 'applied',
             employerPhone: (app.student_outcome === 'declined' || 
                            (app.job_status === 'expired') ||
@@ -614,7 +640,8 @@ Thank you for using StudentJobs UK!
             title: job.title,
             description: job.description,
             applications: job.applications,
-            sponsored: false // Don't pre-check sponsored for expired job reactivation
+            sponsored: false, // Don't pre-check sponsored for expired job reactivation
+            positions_available: job.positions_available || 1
           });
           alert('This job has expired. Please update the details and save to reactivate it.');
         }
@@ -641,7 +668,8 @@ Thank you for using StudentJobs UK!
       title: job.title,
       description: job.description,
       applications: job.applications,
-      sponsored: job.sponsored
+      sponsored: job.sponsored,
+      positions_available: job.positions_available || 1
     });
   };
 
@@ -650,7 +678,7 @@ Thank you for using StudentJobs UK!
 
     const currentJob = postedJobs.find(j => j.id === editingJobId);
     const needsPayment = currentJob && !currentJob.sponsored && editJobData.sponsored;
-    const isExpiredJob = currentJob && (currentJob.status === "filled" || currentJob.status === "removed" || currentJob.status === "expired");
+    const isExpiredJob = currentJob && (currentJob.status === "removed" || currentJob.status === "expired");
 
     try {
       // Send update to backend
@@ -663,7 +691,8 @@ Thank you for using StudentJobs UK!
         body: JSON.stringify({
           job_title: editJobData.title,
           job_description: editJobData.description,
-          is_sponsored: editJobData.sponsored
+          is_sponsored: editJobData.sponsored,
+          positions_available: editJobData.positions_available === '' ? 1 : editJobData.positions_available
         })
       });
 
@@ -678,7 +707,11 @@ Thank you for using StudentJobs UK!
           alert('Job updated successfully!');
         }
 
-        // Update local state
+        // Get the updated job data from server response
+        const responseData = await response.json();
+        const updatedJobFromServer = responseData.job;
+
+        // Update local state with server response data
         setPostedJobs(prevJobs =>
           prevJobs.map(job =>
             job.id === editingJobId ? { 
@@ -686,12 +719,20 @@ Thank you for using StudentJobs UK!
               title: editJobData.title, 
               description: editJobData.description, 
               sponsored: editJobData.sponsored,
+              positions_available: updatedJobFromServer.positions_available || editJobData.positions_available,
+              positions_filled: updatedJobFromServer.positions_filled || job.positions_filled,
               status: isExpiredJob ? "active" : job.status
             } : job
           )
         );
       } else {
+        // Try to get the error message from the response
+        try {
+          const errorData = await response.json();
+          alert(errorData.error || 'Failed to update job. Please try again.');
+        } catch {
         alert('Failed to update job. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error updating job:', error);
@@ -700,7 +741,7 @@ Thank you for using StudentJobs UK!
 
     setIsProcessingUpgrade(false);
     setEditingJobId(null);
-    setEditJobData({ title: "", description: "", applications: 0, sponsored: false });
+    setEditJobData({ title: "", description: "", applications: 0, sponsored: false, positions_available: 1 });
   };
 
   const handleRevealContactInfo = (jobId: number) => {
@@ -853,6 +894,99 @@ Thank you for using StudentJobs UK!
   const handleViewApplicants = (job: PostedJob) => {
     setSelectedJobForApplicants(job);
     setIsApplicantsModalOpen(true);
+  };
+
+  const handleEmployerSendHireOffer = async (confirmed: boolean) => {
+    if (!confirmed || !pendingAcceptApplicant) {
+      setShowEmployerAcceptConfirmation(false);
+      setPendingAcceptApplicant(null);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/job/applications/${pendingAcceptApplicant.id}/send-hire-offer`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send hire offer');
+      }
+
+      // Update applicants list to show pending offer status
+      if (selectedJobForApplicants) {
+        setSelectedJobForApplicants(prev => ({
+          ...prev!,
+          applicants: prev!.applicants.map(app => 
+            app.id === pendingAcceptApplicant.id 
+              ? { ...app, status: 'pending_hire_offer' as const }
+              : app
+          )
+        }));
+      }
+
+      alert(`Hire offer sent to ${pendingAcceptApplicant.name}! They will be notified to accept or decline.`);
+      
+    } catch (error) {
+      console.error('Error sending hire offer:', error);
+      alert(error instanceof Error ? error.message : 'Failed to send hire offer. Please try again.');
+    } finally {
+      setShowEmployerAcceptConfirmation(false);
+      setPendingAcceptApplicant(null);
+    }
+  };
+
+  const handleStudentHireOfferResponse = async (confirmed: boolean) => {
+    if (!pendingHireOfferResponse) {
+      setShowStudentHireOfferModal(false);
+      return;
+    }
+    
+    if (!confirmed) {
+      setShowStudentHireOfferModal(false);
+      setPendingHireOfferResponse(null);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/job/applications/${pendingHireOfferResponse.jobId}/respond-hire-offer`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: pendingHireOfferResponse.action
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to respond to hire offer');
+      }
+
+      // Update local state
+      const newStatus = pendingHireOfferResponse.action === 'accept' ? 'hired' : 'declined';
+      setAppliedJobs(prev => prev.map(job => 
+        job.id === pendingHireOfferResponse.jobId 
+          ? { ...job, status: newStatus, studentOutcome: newStatus }
+          : job
+      ));
+
+      const actionText = pendingHireOfferResponse.action === 'accept' ? 'accepted' : 'declined';
+      alert(`You have ${actionText} the hire offer from ${pendingHireOfferResponse.employerName}!`);
+      
+    } catch (error) {
+      console.error('Error responding to hire offer:', error);
+      alert(error instanceof Error ? error.message : 'Failed to respond to hire offer. Please try again.');
+    } finally {
+      setShowStudentHireOfferModal(false);
+      setPendingHireOfferResponse(null);
+    }
   };
 
   const handleEmployerConfirmHire = async (confirmed: boolean, applicantId?: number) => {
@@ -1247,8 +1381,8 @@ Thank you for using StudentJobs UK!
 
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {user.user_type === "student" ? (
-                  <>
+              {user.user_type === "student" ? (
+                <>
                     {/* Applications Card */}
                     <article 
                       className="group bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-800 rounded-3xl p-6 border border-purple-500/20 shadow-xl hover:shadow-purple-500/10 transition-all duration-300 hover:scale-[1.02] focus-within:ring-2 focus-within:ring-purple-500"
@@ -1306,7 +1440,7 @@ Thank you for using StudentJobs UK!
                             className="text-4xl font-bold text-green-400 mb-1 animate-pulse"
                             aria-label={`${userCredits} credits available`}
                           >
-                            {userCredits}
+                      {userCredits}
                           </div>
                           <div className="text-xs text-green-300 font-medium">CREDITS</div>
                         </div>
@@ -1324,9 +1458,9 @@ Thank you for using StudentJobs UK!
                         </svg>
                       </button>
                     </article>
-                  </>
-                ) : (
-                  <>
+                </>
+              ) : (
+                <>
                     {/* Job Postings Card */}
                     <article 
                       className="group bg-gradient-to-br from-orange-900/20 via-gray-900 to-gray-800 rounded-3xl p-6 border border-orange-500/20 shadow-xl hover:shadow-orange-500/10 transition-all duration-300 hover:scale-[1.02] focus-within:ring-2 focus-within:ring-orange-500"
@@ -1390,8 +1524,8 @@ Thank you for using StudentJobs UK!
                         </svg>
                       </button>
                     </article>
-                  </>
-                )}
+                </>
+              )}
 
                 {/* Account Settings Card */}
                 <article 
@@ -1410,7 +1544,7 @@ Thank you for using StudentJobs UK!
                       <div className="text-xs text-pink-300 font-medium">SETTINGS</div>
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3">Account Settings</h3>
+                  <h3 className="text-xl font-bold text-white mb-2">Account Settings</h3>
                   <p className="text-gray-400 text-sm mb-4">Account & Privacy Settings</p>
                   <button
                     onClick={() => handleViewChange("settings")}
@@ -1438,10 +1572,10 @@ Thank you for using StudentJobs UK!
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <div>
+                  <div>
                       <h2 className="text-2xl font-bold text-white mb-1">Your Profile</h2>
                       <p className="text-gray-400 text-sm">Manage your personal details and contact information</p>
-                    </div>
+                  </div>
                   </div>
                   <button
                     onClick={() => setIsEditingProfile(!isEditingProfile)}
@@ -1483,62 +1617,62 @@ Thank you for using StudentJobs UK!
                     {/* Profile Picture Column */}
                     <div className="flex flex-col items-center lg:items-center space-y-4">
                       <div className="relative w-36 h-36 rounded-2xl overflow-hidden border-2 border-gray-700 bg-gray-800 flex items-center justify-center shadow-lg">
-                        {(user.user_image) ? (
-                          <img
-                            src={user.user_image}
-                            alt="Profile Image"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
+                    {(user.user_image) ? (
+                      <img
+                        src={user.user_image}
+                        alt="Profile Image"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
                           <div className="text-gray-400 text-4xl font-bold uppercase">
-                            {user.user_first_name?.[0]}{user.user_last_name?.[0]}
-                          </div>
-                        )}
+                        {user.user_first_name?.[0]}{user.user_last_name?.[0]}
                       </div>
-                      {isEditingProfile && (
+                    )}
+                  </div>
+                  {isEditingProfile && (
                         <div className="space-y-2 w-full">
                           <label className="text-sm font-semibold text-white block text-center">Upload New Image</label>
                           <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 hover:border-blue-500/50 transition-colors cursor-pointer">
                             <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleImageUpload}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
                               className="w-full p-2 bg-transparent text-gray-300 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-blue-600 file:text-white file:hover:bg-blue-500 file:cursor-pointer cursor-pointer text-xs"
-                            />
+                      />
                           </div>
                           <p className="text-xs text-gray-500 text-center">JPG, PNG, GIF (max 5MB)</p>
-                        </div>
-                      )}
                     </div>
+                  )}
+                </div>
 
                     {/* Form Fields - Three Columns */}
                     <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 lg:-mt-6">
                       {/* First Name */}
-                      <div className="space-y-2">
+                  <div className="space-y-2">
                         <label className="text-sm font-semibold text-white">First Name</label>
                         <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
-                            value={isEditingProfile ? editedFirstName : user.user_first_name || ''}
-                            onChange={(e) => setEditedFirstName(e.target.value)}
-                            disabled={!isEditingProfile}
+                      value={isEditingProfile ? editedFirstName : user.user_first_name || ''}
+                      onChange={(e) => setEditedFirstName(e.target.value)}
+                      disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                             placeholder="Enter your first name..."
-                          />
-                        </div>
+                    />
+                  </div>
                       </div>
 
                       {/* Last Name */}
-                      <div className="space-y-2">
+                  <div className="space-y-2">
                         <label className="text-sm font-semibold text-white">Last Name</label>
                         <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
-                            value={isEditingProfile ? editedLastName : user.user_last_name || ''}
-                            onChange={(e) => setEditedLastName(e.target.value)}
-                            disabled={!isEditingProfile}
+                      value={isEditingProfile ? editedLastName : user.user_last_name || ''}
+                      onChange={(e) => setEditedLastName(e.target.value)}
+                      disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                             placeholder="Enter your last name..."
-                          />
-                        </div>
+                    />
+                  </div>
                       </div>
 
                       {/* Email Address */}
@@ -1546,72 +1680,72 @@ Thank you for using StudentJobs UK!
                         <label className="text-sm font-semibold text-white">Email Address</label>
                         <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
-                            type="email"
-                            value={isEditingProfile ? editedEmail : user.user_email || ''}
-                            onChange={(e) => setEditedEmail(e.target.value)}
-                            disabled={!isEditingProfile}
+                      type="email"
+                      value={isEditingProfile ? editedEmail : user.user_email || ''}
+                      onChange={(e) => setEditedEmail(e.target.value)}
+                      disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                             placeholder="Enter your email address..."
-                          />
-                        </div>
+                    />
+                  </div>
                       </div>
 
                       {/* Phone Number */}
-                      <div className="space-y-2">
+                  <div className="space-y-2">
                         <label className="text-sm font-semibold text-white">Phone Number</label>
                         <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
-                            value={isEditingProfile ? editedContactPhoneNumber : user.contact_phone_number || ''}
-                            onChange={(e) => setEditedContactPhoneNumber(e.target.value)}
-                            disabled={!isEditingProfile}
+                      value={isEditingProfile ? editedContactPhoneNumber : user.contact_phone_number || ''}
+                      onChange={(e) => setEditedContactPhoneNumber(e.target.value)}
+                      disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                             placeholder="Enter your phone number..."
-                          />
-                        </div>
+                    />
+                  </div>
                       </div>
 
                       {/* City */}
-                      <div className="space-y-2">
+                  <div className="space-y-2">
                         <label className="text-sm font-semibold text-white">City</label>
                         <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
-                            value={isEditingProfile ? editedUserCity : user.user_city || ''}
-                            onChange={(e) => setEditedUserCity(e.target.value)}
-                            disabled={!isEditingProfile}
+                      value={isEditingProfile ? editedUserCity : user.user_city || ''}
+                      onChange={(e) => setEditedUserCity(e.target.value)}
+                      disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                             placeholder="e.g., Manchester"
-                          />
+                    />
                         </div>
-                      </div>
+                  </div>
 
                       {/* University/Business Name */}
-                      {user.user_type === "student" ? (
+                  {user.user_type === "student" ? (
                         <div className="space-y-2 md:col-span-2">
                           <label className="text-sm font-semibold text-white">University/College</label>
                           <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                             <input
-                              value={isEditingProfile ? editedUniversityCollege : user.university_college || ''}
-                              onChange={(e) => setEditedUniversityCollege(e.target.value)}
-                              disabled={!isEditingProfile}
+                        value={isEditingProfile ? editedUniversityCollege : user.university_college || ''}
+                        onChange={(e) => setEditedUniversityCollege(e.target.value)}
+                        disabled={!isEditingProfile}
                               className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                               placeholder="Enter your university or college..."
-                            />
+                      />
                           </div>
-                        </div>
-                      ) : (
+                    </div>
+                  ) : (
                         <div className="space-y-2 md:col-span-2">
                           <label className="text-sm font-semibold text-white">Business Name</label>
                           <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                             <input
-                              value={isEditingProfile ? editedOrganisationName : user.organisation_name || ''}
-                              onChange={(e) => setEditedOrganisationName(e.target.value)}
-                              disabled={!isEditingProfile}
+                        value={isEditingProfile ? editedOrganisationName : user.organisation_name || ''}
+                        onChange={(e) => setEditedOrganisationName(e.target.value)}
+                        disabled={!isEditingProfile}
                               className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                               placeholder="Enter your business name..."
-                            />
+                      />
                           </div>
-                        </div>
-                      )}
+                    </div>
+                  )}
                     </div>
                   </div>
                 </div>
@@ -1796,12 +1930,14 @@ Thank you for using StudentJobs UK!
                                             job.studentOutcome === 'declined' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
                                             job.studentOutcome === 'cancelled' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
                                             job.status === 'Declined' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                            job.status === 'Offer Pending' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
                                             'bg-blue-500/20 text-blue-400 border-blue-500/30'
                                           } text-xs md:text-sm w-fit flex items-center gap-1`}>
                                             {job.studentOutcome === 'hired' ? 'Hired' :
                                              job.studentOutcome === 'declined' ? 'Declined' :
                                              job.studentOutcome === 'cancelled' ? 'Cancelled' :
                                              job.status === 'Declined' ? 'Declined' :
+                                             job.status === 'Offer Pending' ? 'Offer Pending' :
                                              job.studentOutcome === 'applied' ? 'Applied' :
                                              job.studentOutcome}
                                             {job.studentOutcome === 'hired' && job.confirmed && (
@@ -1898,6 +2034,33 @@ Thank you for using StudentJobs UK!
                                             </svg>
                                             Reveal Contact (1 Credit)
                                           </Button>
+                                        ) : job.status === 'Offer Pending' ? (
+                                          <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
+                                            <Button
+                                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 md:px-4 py-2 rounded-lg transition-all duration-200 text-xs md:text-sm"
+                                              onClick={() => {
+                                                setPendingHireOfferResponse({ jobId: job.id, jobTitle: job.title, employerName: job.company || job.employer, action: 'accept' });
+                                                setShowStudentHireOfferModal(true);
+                                              }}
+                                            >
+                                              <svg className="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                              </svg>
+                                              Accept
+                                            </Button>
+                                            <Button
+                                              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-3 md:px-4 py-2 rounded-lg transition-all duration-200 text-xs md:text-sm"
+                                              onClick={() => {
+                                                setPendingHireOfferResponse({ jobId: job.id, jobTitle: job.title, employerName: job.company || job.employer, action: 'decline' });
+                                                setShowStudentHireOfferModal(true);
+                                              }}
+                                            >
+                                              <svg className="w-3 h-3 md:w-4 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                              </svg>
+                                              Decline
+                                            </Button>
+                              </div>
                                         ) : (
                                           <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full sm:w-auto">
                                             <Button
@@ -1927,9 +2090,9 @@ Thank you for using StudentJobs UK!
                                               </svg>
                                               Cancel
                                             </Button>
-                                          </div>
+                              </div>
                                         )}
-                                      </div>
+                            </div>
                                     )}
                           </div>
                         ))
@@ -2023,14 +2186,36 @@ Thank you for using StudentJobs UK!
                              <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-xl p-3 md:p-4 border border-yellow-500/20">
                                <div className="flex items-center justify-between">
                                  <div>
-                                   <p className="text-yellow-400 text-xs md:text-sm font-medium">Filled Positions</p>
+                                   <p className="text-yellow-400 text-xs md:text-sm font-medium">People Hired</p>
                                    <p className="text-lg md:text-2xl font-bold text-white">
-                                     {postedJobs.filter(job => job.status === "filled").length}
+                                     {postedJobs.reduce((total, job) => total + (job.positions_filled || 0), 0)}
                                    </p>
                                  </div>
                                  <div className="w-8 h-8 md:w-10 md:h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                                    <svg className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                   </svg>
+                                 </div>
+                               </div>
+                             </div>
+                             
+                             <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-xl p-3 md:p-4 border border-orange-500/20">
+                               <div className="flex items-center justify-between">
+                                 <div>
+                                   <p className="text-orange-400 text-xs md:text-sm font-medium">Open Positions</p>
+                                   <p className="text-lg md:text-2xl font-bold text-white">
+                                     {postedJobs.reduce((total, job) => {
+                                       // Only count open positions for active jobs
+                                       if (job.status === 'Active' || job.status === 'active') {
+                                         return total + Math.max(0, (job.positions_available || 1) - (job.positions_filled || 0));
+                                       }
+                                       return total;
+                                     }, 0)}
+                                   </p>
+                                 </div>
+                                 <div className="w-8 h-8 md:w-10 md:h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                                   <svg className="w-4 h-4 md:w-5 md:h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m-8 0V6a2 2 0 00-2 2v6" />
                                    </svg>
                                  </div>
                                </div>
@@ -2237,11 +2422,21 @@ Thank you for using StudentJobs UK!
                                                 job.status === 'expired' ? 'Expired' : job.status}
                                              </span>
                                            </div>
-                                           <div className="flex items-center gap-4 text-sm text-gray-400 mb-3">
-                                             <span>Posted: {job.postedDate}</span>
-                                             <span>Expires: {job.expiryDate}</span>
-                                             <div className="text-center md:text-left">
-                                               <span className="text-blue-400 font-medium text-lg md:text-base">{job.applications || 0} applications</span>
+                                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-400 mb-3">
+                                             <div className="flex items-center gap-2 sm:gap-4">
+                                               <span>Posted: {job.postedDate}</span>
+                                               <span>Expires: {job.expiryDate}</span>
+                                             </div>
+                                             <div className="flex items-center gap-3">
+                                               <span className="text-blue-400 font-medium text-sm">{job.applications || 0} applications</span>
+                                               <span className="text-yellow-400 font-semibold text-sm px-2 py-1 bg-yellow-900/20 rounded-lg border border-yellow-500/20">
+                                                 {job.positions_filled || 0}/{job.positions_available || 1}
+                                                 {job.status === 'Active' && Math.max(0, (job.positions_available || 1) - (job.positions_filled || 0)) > 0 && (
+                                                   <span className="ml-1 text-xs text-green-400">
+                                                     ({Math.max(0, (job.positions_available || 1) - (job.positions_filled || 0))} open)
+                                                   </span>
+                                                 )}
+                                               </span>
                                              </div>
                                            </div>
                                          </div>
@@ -2351,7 +2546,7 @@ Thank you for using StudentJobs UK!
                                             )}
                                           </div>
                                         </div>
-                                      </div>
+                                        </div>
                                     );
                                    })
                                   ) : (
@@ -2395,8 +2590,8 @@ Thank you for using StudentJobs UK!
                 <div 
                   className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                   onClick={() => {
-                    setEditingJobId(null)
-                    setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
+                setEditingJobId(null)
+                setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
                   }}
                 >
                   <div 
@@ -2433,10 +2628,10 @@ Thank you for using StudentJobs UK!
 
                     {/* Content Section with Proper Scrolling */}
                     <div className="flex-grow overflow-y-auto p-6">
-                      {editingJobId && (() => {
-                        const currentJob = postedJobs.find(j => j.id === editingJobId)
-                        if (!currentJob) return null;
-                        return (
+                  {editingJobId && (() => {
+                    const currentJob = postedJobs.find(j => j.id === editingJobId)
+                    if (!currentJob) return null;
+                    return (
                           <div className="space-y-6">
                             {/* Job Title Section */}
                             <div className="space-y-3">
@@ -2446,12 +2641,12 @@ Thank you for using StudentJobs UK!
                               </div>
                               <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 focus-within:border-blue-500/50 transition-colors">
                                 <input
-                                  value={editJobData.title}
-                                  onChange={(e) => setEditJobData(prev => ({ ...prev, title: e.target.value }))}
+                            value={editJobData.title}
+                            onChange={(e) => setEditJobData(prev => ({ ...prev, title: e.target.value }))}
                                   className="w-full p-4 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl"
                                   placeholder="Enter job title..."
-                                />
-                              </div>
+                          />
+                        </div>
                             </div>
 
                             {/* Job Description Section */}
@@ -2461,16 +2656,51 @@ Thank you for using StudentJobs UK!
                                 <label className="text-sm font-semibold text-white">Job Description</label>
                               </div>
                               <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 focus-within:border-blue-500/50 transition-colors">
-                                <textarea
-                                  value={editJobData.description}
-                                  onChange={(e) => setEditJobData(prev => ({ ...prev, description: e.target.value }))}
+                          <textarea
+                            value={editJobData.description}
+                            onChange={(e) => setEditJobData(prev => ({ ...prev, description: e.target.value }))}
                                   className="w-full p-4 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl resize-none"
                                   rows={8}
                                   placeholder="Describe the job requirements, responsibilities, and benefits..."
+                          />
+                        </div>
+                              <p className="text-xs text-gray-500">Provide detailed information to attract qualified candidates</p>
+                        </div>
+
+                            {/* Positions Available Section */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                <label className="text-sm font-semibold text-white">Positions Available</label>
+                              </div>
+                              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 focus-within:border-blue-500/50 transition-colors">
+                                <input
+                            type="number"
+                                  min="1"
+                                  max="50"
+                                  value={editJobData.positions_available}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    // Allow empty string while typing, but convert to number when not empty
+                                    setEditJobData(prev => ({ 
+                                      ...prev, 
+                                      positions_available: value === '' ? '' : parseInt(value) || 1 
+                                    }));
+                                  }}
+                                  onFocus={(e) => e.target.select()}
+                                  className="w-full p-4 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl"
+                                  placeholder="Number of people you want to hire"
                                 />
                               </div>
-                              <p className="text-xs text-gray-500">Provide detailed information to attract qualified candidates</p>
-                            </div>
+                              <p className="text-xs text-gray-500">
+                                Number of people you want to hire (1-50)
+                                {editingJobId && postedJobs.find(j => j.id === editingJobId)?.positions_filled > 0 && (
+                                  <span className="block text-yellow-400 mt-1">
+                                    Note: You already have {postedJobs.find(j => j.id === editingJobId)?.positions_filled} people hired
+                                  </span>
+                                )}
+                              </p>
+                        </div>
 
                             {/* Applications Count Section */}
                             <div className="space-y-3">
@@ -2498,16 +2728,16 @@ Thank you for using StudentJobs UK!
                               <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-700/50 rounded-xl p-5">
                                 <div className="flex items-start gap-4">
                                   <div className="flex-shrink-0 mt-1">
-                                    <input
-                                      type="checkbox"
-                                      id="editSponsored"
-                                      checked={editJobData.sponsored}
-                                      onChange={(e) => setEditJobData(prev => ({ ...prev, sponsored: e.target.checked }))}
+                            <input
+                              type="checkbox"
+                              id="editSponsored"
+                              checked={editJobData.sponsored}
+                              onChange={(e) => setEditJobData(prev => ({ ...prev, sponsored: e.target.checked }))}
                                       className="w-5 h-5 text-blue-600 border-gray-600 rounded focus:ring-blue-500 cursor-pointer bg-gray-700"
-                                      disabled={currentJob.sponsored}
-                                    />
+                              disabled={currentJob.sponsored}
+                            />
                                   </div>
-                                  <div className="flex-1">
+                            <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
                                       <label htmlFor="editSponsored" className="font-semibold text-white cursor-pointer">
                                         {currentJob.sponsored ? "Currently Sponsored" : "Upgrade to Sponsored"}
@@ -2519,29 +2749,29 @@ Thank you for using StudentJobs UK!
                                       )}
                                     </div>
                                     <p className="text-sm text-gray-300 mb-3">
-                                      {currentJob.sponsored
+                                {currentJob.sponsored
                                         ? "This job is already sponsored and appears at the top of search results with priority visibility."
                                         : "Move your job to the top of search results and get 3x more visibility from qualified candidates."
-                                      }
-                                    </p>
-                                    {!currentJob.sponsored && editJobData.sponsored && (
+                                }
+                              </p>
+                              {!currentJob.sponsored && editJobData.sponsored && (
                                       <div className="bg-yellow-900/20 border border-yellow-600/50 rounded-lg p-3 flex items-start gap-3">
                                         <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
+                                  </svg>
                                         <div>
                                           <p className="text-sm font-medium text-yellow-300 mb-1">Payment Required</p>
                                           <p className="text-xs text-yellow-400">You'll be charged £4 to upgrade this job to sponsored status upon saving.</p>
                                         </div>
-                                      </div>
-                                    )}
-                                  </div>
                                 </div>
-                              </div>
+                              )}
+                                  </div>
                             </div>
                           </div>
-                        )
-                      })()}
+                        </div>
+                      </div>
+                    )
+                  })()}
                     </div>
 
                     {/* Modern Footer */}
@@ -2549,16 +2779,16 @@ Thank you for using StudentJobs UK!
                       <div className="flex justify-end gap-3">
                         <button
                           onClick={() => {
-                            setEditingJobId(null)
-                            setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
+                      setEditingJobId(null)
+                      setEditJobData({ title: "", description: "", applications: 0, sponsored: false })
                           }}
                           className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-medium transition-all duration-200 border border-gray-600 hover:border-gray-500 text-sm"
                         >
-                          Cancel
+                      Cancel
                         </button>
                         <button
-                          onClick={handleSaveJobChanges}
-                          disabled={isProcessingUpgrade}
+                      onClick={handleSaveJobChanges}
+                      disabled={isProcessingUpgrade}
                           className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
                         >
                           {isProcessingUpgrade ? (
@@ -3294,8 +3524,24 @@ Thank you for using StudentJobs UK!
                       )}
 
                       {/* Action Buttons */}
-                      {!(applicant.studentOutcome === 'hired' && !applicant.confirmed) && (
+                      {!(applicant.studentOutcome === 'hired' && !applicant.confirmed) && 
+                       applicant.status !== 'hired' && 
+                       applicant.status !== 'declined' && 
+                       applicant.status !== 'rejected' &&
+                       applicant.status !== 'pending_hire_offer' && (
                         <div className="flex items-center gap-3 pt-4 border-t border-gray-700/50">
+                          <Button
+                            onClick={() => {
+                              setPendingAcceptApplicant({ id: applicant.id, name: applicant.name });
+                              setShowEmployerAcceptConfirmation(true);
+                            }}
+                            className="bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-600/30 hover:border-green-600/50 px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Accept
+                          </Button>
                           <Button
                             onClick={() => handleRejectApplicant(applicant.id)}
                             className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 hover:border-red-600/50 px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
@@ -3387,6 +3633,68 @@ Thank you for using StudentJobs UK!
                 className="bg-green-600 hover:bg-green-500 px-5 py-2 rounded-md transition-colors text-white"
               >
                 Confirm Hire
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Employer Accept Confirmation Modal */}
+      {showEmployerAcceptConfirmation && pendingAcceptApplicant && user?.user_type === "employer" && (
+        <AlertDialog open={showEmployerAcceptConfirmation} onOpenChange={setShowEmployerAcceptConfirmation}>
+          <AlertDialogContent className="max-w-md p-6 bg-gray-800 border-gray-700 text-gray-100">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-2xl font-bold text-white">Send Hire Offer</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400">
+                Are you sure you contacted this person and hiring him?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex justify-end gap-3 mt-6">
+              <AlertDialogCancel 
+                onClick={() => handleEmployerSendHireOffer(false)}
+                className="px-5 py-2 rounded-md border border-gray-600 text-white bg-gray-600 hover:bg-gray-500 transition duration-150"
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => handleEmployerSendHireOffer(true)}
+                className="bg-green-600 hover:bg-green-500 px-5 py-2 rounded-md transition-colors text-white"
+              >
+                Send Offer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Student Hire Offer Response Modal */}
+      {showStudentHireOfferModal && pendingHireOfferResponse && user?.user_type === "student" && (
+        <AlertDialog open={showStudentHireOfferModal} onOpenChange={setShowStudentHireOfferModal}>
+          <AlertDialogContent className="max-w-md p-6 bg-gray-800 border-gray-700 text-gray-100">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-2xl font-bold text-white">
+                {pendingHireOfferResponse.action === 'accept' ? 'Accept Job Offer?' : 'Decline Job Offer?'}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400">
+                {pendingHireOfferResponse.employerName} said he contacted you and offered this job?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex justify-end gap-3 mt-6">
+              <AlertDialogCancel 
+                onClick={() => handleStudentHireOfferResponse(false)}
+                className="px-5 py-2 rounded-md border border-gray-600 text-white bg-gray-600 hover:bg-gray-500 transition duration-150"
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => handleStudentHireOfferResponse(true)}
+                className={`${
+                  pendingHireOfferResponse.action === 'accept' 
+                    ? 'bg-green-600 hover:bg-green-500' 
+                    : 'bg-red-600 hover:bg-red-500'
+                } px-5 py-2 rounded-md transition-colors text-white`}
+              >
+                {pendingHireOfferResponse.action === 'accept' ? 'Yes, Accept' : 'Yes, Decline'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

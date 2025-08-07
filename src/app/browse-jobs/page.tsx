@@ -29,6 +29,9 @@ interface Job {
   expires_at: string | null;
   job_status: string;
   application_count?: number; // Real application count from database
+  positions_available?: number;
+  positions_filled?: number;
+  positions_remaining?: number;
 
   // Frontend-only fields (these will be derived or managed client-side)
   hoursType: string;
@@ -201,8 +204,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
               </svg>
               Posted {job.postedDate}
             </span>
-            <div className="flex items-center px-3 py-1 bg-gray-700 rounded-full text-sm text-gray-300 font-medium shadow-sm">
-              {job.applicationCount} applications
+            <div className="flex items-center gap-3">
+              <div className="flex items-center px-3 py-1 bg-gray-700 rounded-full text-sm text-gray-300 font-medium shadow-sm">
+                {job.applicationCount} applications
+              </div>
+              <div className="px-3 py-1 bg-yellow-900/20 rounded-lg text-sm text-yellow-400 font-semibold border border-yellow-500/20">
+                {Math.max(0, (job.positions_available || 1) - (job.positions_filled || 0))} open
+              </div>
             </div>
           </div>
         </div>
@@ -435,6 +443,10 @@ export default function BrowseJobsPage() {
           phoneNumber: job.contact_phone,
           applicationCount: job.application_count || 0,
           employer: job.contact_name,
+          // Preserve position data from backend
+          positions_available: job.positions_available || 1,
+          positions_filled: job.positions_filled || 0,
+          positions_remaining: job.positions_remaining || Math.max(0, (job.positions_available || 1) - (job.positions_filled || 0)),
         }));
         setJobs(mappedJobs);
       } catch (err) {
@@ -945,6 +957,10 @@ export default function BrowseJobsPage() {
                   {/* Application Count Badge */}
                   <span className="inline-flex items-center px-2 py-0.5 bg-gray-700 rounded-full text-xs text-gray-300 font-medium">
                     {job.applicationCount} applications
+                  </span>
+                  {/* Positions Available Badge */}
+                  <span className="inline-flex items-center px-2 py-0.5 bg-yellow-900/20 rounded-lg text-xs text-yellow-400 font-semibold border border-yellow-500/20">
+                    {Math.max(0, (job.positions_available || 1) - (job.positions_filled || 0))} open
                   </span>
                    {/* Sponsored Badge (internal, if desired) */}
                   {job.is_sponsored && (

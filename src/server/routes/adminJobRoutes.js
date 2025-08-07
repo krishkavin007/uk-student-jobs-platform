@@ -40,6 +40,9 @@ router.get('/', authenticateAdminJWT, async (req, res) => {
                 ja.hourly_pay as salary,
                 ja.job_description as description,
                 ja.created_at as "postedDate",
+                ja.positions_available,
+                ja.positions_filled,
+                (ja.positions_available - ja.positions_filled) as positions_remaining,
                 COALESCE(application_counts.count, 0) as "applicantsCount"
             FROM job_applications ja
             LEFT JOIN users u ON ja.posted_by_user_id = u.user_id
@@ -67,7 +70,10 @@ router.get('/', authenticateAdminJWT, async (req, res) => {
             applicantsCount: parseInt(row.applicantsCount) || 0,
             postedDate: row.postedDate,
             salary: row.salary ? `£${row.salary}/hr` : 'Not specified',
-            description: row.description
+            description: row.description,
+            positions_available: row.positions_available || 1,
+            positions_filled: row.positions_filled || 0,
+            positions_remaining: row.positions_remaining || (row.positions_available || 1) - (row.positions_filled || 0)
         }));
 
         // Return paginated response with metadata
@@ -111,6 +117,9 @@ router.get('/:id', authenticateAdminJWT, async (req, res) => {
                 ja.job_description as description,
                 ja.created_at as "postedDate",
                 ja.posted_by_user_id as "employer_id",
+                ja.positions_available,
+                ja.positions_filled,
+                (ja.positions_available - ja.positions_filled) as positions_remaining,
                 COALESCE(application_counts.count, 0) as "applicantsCount"
             FROM job_applications ja
             LEFT JOIN users u ON ja.posted_by_user_id = u.user_id
@@ -159,6 +168,9 @@ router.get('/:id', authenticateAdminJWT, async (req, res) => {
             salary: job.salary ? `£${job.salary}/hr` : 'Not specified',
             description: job.description,
             employer_id: job.employer_id,
+            positions_available: job.positions_available || 1,
+            positions_filled: job.positions_filled || 0,
+            positions_remaining: job.positions_remaining || (job.positions_available || 1) - (job.positions_filled || 0),
             applicants: applicantsResult.rows.map(app => ({
                 user_id: app.user_id,
                 user_username: app.user_username,
@@ -177,24 +189,7 @@ router.get('/:id', authenticateAdminJWT, async (req, res) => {
             moderation_notes: []
         };
 
-        console.log('--- DEBUG: Sending detailed job response');
-        console.log('--- DEBUG: Applicants data:', applicantsResult.rows);
-        console.log('--- DEBUG: First applicant applied_at:', applicantsResult.rows[0]?.applied_at);
-        console.log('--- DEBUG: First applicant applied_at type:', typeof applicantsResult.rows[0]?.applied_at);
-        console.log('--- DEBUG: All applicant applied_at values:', applicantsResult.rows.map(app => ({ 
-            user_id: app.user_id, 
-            applied_at: app.applied_at, 
-            applied_at_type: typeof app.applied_at 
-        })));
-        
-        // Test query to check if applied_at exists in database
-        const testQuery = await pool.query(`
-            SELECT student_id, applied_at, application_status 
-            FROM student_applications 
-            WHERE job_id = $1 
-            LIMIT 1
-        `, [id]);
-        console.log('--- DEBUG: Test query result:', testQuery.rows);
+
         res.json(detailedJob);
     } catch (err) {
         console.error('Error fetching job details for admin:', err.stack);
@@ -233,8 +228,9 @@ router.put('/:id/status', authenticateAdminJWT, async (req, res) => {
 
         console.log('--- DEBUG: Updating job status to:', dbStatus);
 
+        // Special handling for reactivating filled jobs - don't reset positions_filled
         const result = await pool.query(
-            'UPDATE job_applications SET job_status = $1 WHERE job_id = $2 RETURNING job_id',
+            'UPDATE job_applications SET job_status = $1 WHERE job_id = $2 RETURNING job_id, positions_available, positions_filled',
             [dbStatus, id]
         );
 

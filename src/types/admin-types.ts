@@ -32,6 +32,9 @@ export interface Job {
   postedDate: string;
   salary?: string;
   description: string;
+  positions_available?: number;
+  positions_filled?: number;
+  positions_remaining?: number;
   // Keep original fields for backward compatibility
   job_id?: number;
   job_title?: string;

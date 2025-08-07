@@ -35,7 +35,10 @@ router.get('/', async (req, res) => {
         const result = await pool.query(`
             SELECT 
                 ja.*,
-                COALESCE(application_counts.count, 0) as application_count
+                COALESCE(application_counts.count, 0) as application_count,
+                ja.positions_available,
+                ja.positions_filled,
+                (ja.positions_available - ja.positions_filled) as positions_remaining
             FROM job_applications ja
             LEFT JOIN (
                 SELECT 
@@ -46,6 +49,7 @@ router.get('/', async (req, res) => {
             ) application_counts ON ja.job_id = application_counts.job_id
             WHERE ja.job_status = 'active' 
             AND (ja.expires_at IS NULL OR ja.expires_at > NOW())
+            AND ja.positions_filled < ja.positions_available
             ORDER BY ja.is_sponsored DESC, ja.created_at DESC
         `);
         res.json(result.rows);
@@ -238,6 +242,180 @@ router.post('/fix-rejected-applications', authenticateUser, async (req, res) => 
 
 
 
+// PUT - Employer sends hire offer to student
+router.put('/applications/:applicationId/send-hire-offer', authenticateUser, async (req, res) => {
+    const { applicationId } = req.params;
+    const employerId = req.session.userId;
+
+    try {
+        // Get user type from session or database
+        const userResult = await pool.query('SELECT user_type FROM users WHERE user_id = $1', [employerId]);
+        if (userResult.rows.length === 0) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+        
+        // Verify this is an employer
+        if (userResult.rows[0].user_type !== 'employer') {
+            return res.status(403).json({ error: 'Only employers can send hire offers' });
+        }
+
+        // Get application details and verify employer owns the job
+        const applicationResult = await pool.query(`
+            SELECT sa.*, ja.posted_by_user_id, ja.job_title, ja.job_id
+            FROM student_applications sa
+            JOIN job_applications ja ON sa.job_id = ja.job_id
+            WHERE sa.application_id = $1
+        `, [applicationId]);
+
+        if (applicationResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Application not found' });
+        }
+
+        const application = applicationResult.rows[0];
+
+        // Verify employer owns this job
+        if (application.posted_by_user_id !== employerId) {
+            return res.status(403).json({ error: 'You can only send hire offers for your own jobs' });
+        }
+
+        // Check if application is in valid state for hire offer
+        console.log('--- DEBUG: Application status:', application.application_status);
+        console.log('--- DEBUG: Full application data:', application);
+        
+        if (application.application_status !== 'applied') {
+            return res.status(400).json({ 
+                error: `Can only send hire offers to applied students. Current status: ${application.application_status}` 
+            });
+        }
+
+        // Update application status to pending hire offer
+        await pool.query(`
+            UPDATE student_applications 
+            SET application_status = 'pending_hire_offer'
+            WHERE application_id = $1
+        `, [applicationId]);
+
+        res.json({ 
+            message: 'Hire offer sent successfully',
+            applicationId: applicationId,
+            status: 'pending_hire_offer'
+        });
+
+    } catch (err) {
+        console.error('Error sending hire offer:', err);
+        res.status(500).json({ error: 'Failed to send hire offer' });
+    }
+});
+
+// PUT - Student responds to employer hire offer
+router.put('/applications/:applicationId/respond-hire-offer', authenticateUser, async (req, res) => {
+    const { applicationId } = req.params;
+    const { action } = req.body; // 'accept' or 'decline'
+    const studentId = req.session.userId;
+
+    try {
+        // Get user type from session or database
+        const userResult = await pool.query('SELECT user_type FROM users WHERE user_id = $1', [studentId]);
+        if (userResult.rows.length === 0) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+        
+        // Verify this is a student
+        if (userResult.rows[0].user_type !== 'student') {
+            return res.status(403).json({ error: 'Only students can respond to hire offers' });
+        }
+
+        // Get application details and verify student owns the application
+        const applicationResult = await pool.query(`
+            SELECT sa.*, ja.posted_by_user_id, ja.job_title, ja.job_id, ja.positions_available, ja.positions_filled
+            FROM student_applications sa
+            JOIN job_applications ja ON sa.job_id = ja.job_id
+            WHERE sa.application_id = $1 AND sa.student_id = $2
+        `, [applicationId, studentId]);
+
+        if (applicationResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Application not found or you do not have permission' });
+        }
+
+        const application = applicationResult.rows[0];
+
+        // Check if application is in valid state for response
+        if (application.application_status !== 'pending_hire_offer') {
+            return res.status(400).json({ error: 'No pending hire offer found for this application' });
+        }
+
+        // Begin transaction
+        await pool.query('BEGIN');
+
+        try {
+            if (action === 'accept') {
+                // Student accepts the hire offer
+                await pool.query(`
+                    UPDATE student_applications 
+                    SET application_status = 'hired', student_outcome = 'hired'
+                    WHERE application_id = $1
+                `, [applicationId]);
+
+                // Increment positions_filled for the job
+                const updateResult = await pool.query(`
+                    UPDATE job_applications 
+                    SET positions_filled = positions_filled + 1
+                    WHERE job_id = $1
+                    RETURNING positions_available, positions_filled
+                `, [application.job_id]);
+
+                // If job is now fully filled, mark it as filled
+                const { positions_available, positions_filled } = updateResult.rows[0];
+                if (positions_filled >= positions_available) {
+                    await pool.query(`
+                        UPDATE job_applications 
+                        SET job_status = 'filled'
+                        WHERE job_id = $1
+                    `, [application.job_id]);
+                }
+
+                // Commit transaction
+                await pool.query('COMMIT');
+
+                res.json({ 
+                    message: 'Hire offer accepted successfully',
+                    applicationId: applicationId,
+                    status: 'hired'
+                });
+
+            } else if (action === 'decline') {
+                // Student declines the hire offer
+                await pool.query(`
+                    UPDATE student_applications 
+                    SET application_status = 'declined', student_outcome = 'declined'
+                    WHERE application_id = $1
+                `, [applicationId]);
+
+                // Commit transaction
+                await pool.query('COMMIT');
+
+                res.json({ 
+                    message: 'Hire offer declined',
+                    applicationId: applicationId,
+                    status: 'declined'
+                });
+
+            } else {
+                await pool.query('ROLLBACK');
+                return res.status(400).json({ error: 'Invalid action. Must be "accept" or "decline"' });
+            }
+
+        } catch (err) {
+            await pool.query('ROLLBACK');
+            throw err;
+        }
+
+    } catch (err) {
+        console.error('Error responding to hire offer:', err);
+        res.status(500).json({ error: 'Failed to respond to hire offer' });
+    }
+});
+
 // PUT - Employer confirm student hire
 router.put('/applications/:applicationId/confirm-hire', authenticateUser, async (req, res) => {
     const { applicationId } = req.params;
@@ -268,18 +446,46 @@ router.put('/applications/:applicationId/confirm-hire', authenticateUser, async 
         }
 
         if (confirmed) {
-            // Employer confirmed the hire - keep status as hired
-            const result = await pool.query(
-                'UPDATE student_applications SET student_outcome = $1, application_status = $2 WHERE application_id = $3 RETURNING application_id, student_outcome, application_status',
-                ['hired', 'hired', applicationId]
-            );
+            // Begin transaction to update both application and increment positions_filled
+            await pool.query('BEGIN');
+            
+            try {
+                // Employer confirmed the hire - keep status as hired
+                const result = await pool.query(
+                    'UPDATE student_applications SET student_outcome = $1, application_status = $2 WHERE application_id = $3 RETURNING application_id, student_outcome, application_status, job_id',
+                    ['hired', 'hired', applicationId]
+                );
 
-            console.log(`--- DEBUG: Employer ${userIdFromSession} confirmed hire for application ${applicationId}. ---`);
-            res.json({ 
-                message: 'Hire confirmed successfully', 
-                outcome: result.rows[0].student_outcome,
-                applicationStatus: result.rows[0].application_status
-            });
+                // Increment positions_filled for the job
+                const jobUpdate = await pool.query(
+                    'UPDATE job_applications SET positions_filled = positions_filled + 1 WHERE job_id = $1 RETURNING positions_filled, positions_available',
+                    [result.rows[0].job_id]
+                );
+
+                // Check if job should be automatically marked as filled
+                const { positions_filled, positions_available } = jobUpdate.rows[0];
+                if (positions_filled >= positions_available) {
+                    await pool.query(
+                        'UPDATE job_applications SET job_status = $1 WHERE job_id = $2',
+                        ['filled', result.rows[0].job_id]
+                    );
+                    console.log(`--- DEBUG: Job ${result.rows[0].job_id} automatically marked as filled (${positions_filled}/${positions_available} positions) ---`);
+                }
+
+                await pool.query('COMMIT');
+
+                console.log(`--- DEBUG: Employer ${userIdFromSession} confirmed hire for application ${applicationId}. Position ${positions_filled}/${positions_available} filled. ---`);
+                res.json({ 
+                    message: 'Hire confirmed successfully', 
+                    outcome: result.rows[0].student_outcome,
+                    applicationStatus: result.rows[0].application_status,
+                    positionsFilled: positions_filled,
+                    positionsAvailable: positions_available
+                });
+            } catch (err) {
+                await pool.query('ROLLBACK');
+                throw err;
+            }
         } else {
             // Employer declined the hire - set to rejected
             const result = await pool.query(
@@ -530,7 +736,8 @@ router.post('/', authenticateUser, async (req, res) => {
         contact_phone,
         contact_email,
         is_sponsored,
-        expires_at
+        expires_at,
+        positions_available
     } = req.body;
     
     console.log('--- DEBUG: job_category received:', job_category);
@@ -552,6 +759,14 @@ router.post('/', authenticateUser, async (req, res) => {
         return res.status(400).json({ error: 'Title, description, contact name, contact email, and user ID are required.' });
     }
 
+    // Validate positions_available
+    const numPositions = parseInt(positions_available) || 1;
+    if (numPositions < 1 || numPositions > 50) {
+        return res.status(400).json({
+            error: 'positions_available must be between 1 and 50'
+        });
+    }
+
     try {
         // Calculate expiry date based on sponsor status
         const now = new Date();
@@ -569,18 +784,18 @@ router.post('/', authenticateUser, async (req, res) => {
             `INSERT INTO job_applications (
                 job_title, job_description, job_category, job_location, hourly_pay,
                 hours_per_week, contact_name, contact_phone, contact_email,
-                is_sponsored, posted_by_user_id, expires_at, job_status
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-            RETURNING job_id, job_title`,
+                is_sponsored, posted_by_user_id, expires_at, job_status, positions_available, positions_filled
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            RETURNING job_id, job_title, positions_available`,
             [
                 job_title, job_description, job_category || null, job_location || null,
                 hourly_pay || null, hours_per_week || null, contact_name, contact_phone || null,
                 contact_email, is_sponsored || false, posted_by_user_id,
-                calculatedExpiryDate, 'active'
+                calculatedExpiryDate, 'active', numPositions, 0
                 // --- REMOVED: company_logo from values ---
             ]
         );
-        console.log(`--- DEBUG: New job posted: ${result.rows[0].job_title} (ID: ${result.rows[0].job_id}) ---`);
+        console.log(`--- DEBUG: New job posted: ${result.rows[0].job_title} (ID: ${result.rows[0].job_id}) with ${numPositions} positions ---`);
         res.status(201).json({ message: 'Job posted successfully!', job: result.rows[0] });
     } catch (err) {
         console.error('--- ERROR: Error posting job:', err.stack);
@@ -616,9 +831,9 @@ router.put('/:id/fill', authenticateUser, async (req, res) => {
             return res.status(403).json({ error: 'Forbidden: You can only mark jobs you posted as filled unless you are an admin.' });
         }
 
-        // Update job status to filled
+        // Update job status to filled (don't change positions_filled - keep actual confirmed hires)
         const result = await pool.query(
-            'UPDATE job_applications SET job_status = $1 WHERE job_id = $2 RETURNING job_id, job_title',
+            'UPDATE job_applications SET job_status = $1 WHERE job_id = $2 RETURNING job_id, job_title, positions_available, positions_filled',
             ['filled', id]
         );
 
@@ -638,8 +853,13 @@ router.put('/:id/fill', authenticateUser, async (req, res) => {
             ['declined', 'rejected', id]
         );
 
-        console.log(`--- DEBUG: Job ID ${id} marked as filled. Updated ${studentUpdateResult.rows.length} student applications to declined. ---`);
-        res.json({ message: 'Job marked as filled successfully', job: result.rows[0] });
+        console.log(`--- DEBUG: Job ID ${id} marked as filled (${result.rows[0].positions_filled}/${result.rows[0].positions_available} positions). Updated ${studentUpdateResult.rows.length} student applications to declined. ---`);
+        res.json({ 
+            message: 'Job marked as filled successfully', 
+            job: result.rows[0],
+            positionsFilled: result.rows[0].positions_filled,
+            positionsAvailable: result.rows[0].positions_available
+        });
 
     } catch (err) {
         console.error('--- ERROR: Error marking job as filled:', err.stack);
@@ -823,7 +1043,7 @@ router.put('/:id', authenticateUser, async (req, res) => {
     const {
         job_title, job_description, job_category, job_location, hourly_pay,
         hours_per_week, contact_name, contact_phone, contact_email,
-        is_sponsored, expires_at, job_status // Allow job_status update
+        is_sponsored, expires_at, job_status, positions_available // Allow job_status update
     } = req.body;
 
     let updateFields = [];
@@ -894,14 +1114,53 @@ router.put('/:id', authenticateUser, async (req, res) => {
             updateFields.push(`job_status = $${paramIndex++}`);
             queryParams.push(job_status);
         }
+        if (positions_available !== undefined) {
+            const numPositions = parseInt(positions_available) || 1;
+
+            
+            if (numPositions >= 1 && numPositions <= 50) {
+                // Check current positions_filled to prevent reducing below filled count
+                const currentJob = await pool.query('SELECT positions_filled FROM job_applications WHERE job_id = $1', [id]);
+                const currentFilled = currentJob.rows[0]?.positions_filled || 0;
+                
+                if (numPositions >= currentFilled) {
+                    updateFields.push(`positions_available = $${paramIndex++}`);
+                    queryParams.push(numPositions);
+                } else {
+                    return res.status(400).json({ 
+                        error: `Cannot reduce positions to ${numPositions}. You already have ${currentFilled} people hired.` 
+                    });
+                }
+            } else {
+                return res.status(400).json({ error: 'Positions must be between 1 and 50' });
+            }
+        }
+
+        // Check if we need to reactivate a filled job when positions are increased
+        if (positions_available !== undefined) {
+            const currentJob = await pool.query('SELECT job_status, positions_filled, positions_available FROM job_applications WHERE job_id = $1', [id]);
+            if (currentJob.rows.length > 0) {
+                const job = currentJob.rows[0];
+                const newPositions = parseInt(positions_available) || 1;
+                
+                // If job is currently filled but new positions > filled positions, reactivate it
+                if (job.job_status === 'filled' && newPositions > job.positions_filled) {
+                    updateFields.push(`job_status = $${paramIndex++}`);
+                    queryParams.push('active');
+                }
+            }
+        }
 
         if (updateFields.length === 0) {
             console.log(`--- DEBUG: No valid fields for update for job ID ${id}.`);
             return res.status(400).json({ message: 'No valid fields provided for update.' });
         }
 
+        console.log(`--- DEBUG: Updating job ${id} with fields: ${updateFields.join(', ')} ---`);
+        console.log(`--- DEBUG: Query params: ${JSON.stringify(queryParams)} ---`);
+
         const result = await pool.query(
-            `UPDATE job_applications SET ${updateFields.join(', ')} WHERE job_id = $1 RETURNING job_id, job_title`,
+            `UPDATE job_applications SET ${updateFields.join(', ')} WHERE job_id = $1 RETURNING job_id, job_title, positions_available, positions_filled`,
             queryParams
         );
 
@@ -979,7 +1238,29 @@ router.get('/user/:userId', authenticateUser, async (req, res) => {
             console.log(`--- DEBUG: Moved ${updateExpiredJobs.rowCount} expired jobs to post history for user ID ${userId}. ---`);
         }
 
-        const result = await pool.query('SELECT * FROM job_applications WHERE posted_by_user_id = $1 ORDER BY created_at DESC', [userId]);
+        const result = await pool.query(`
+            SELECT 
+                ja.*,
+                COALESCE(application_counts.count, 0) as application_count,
+                ja.positions_available,
+                ja.positions_filled,
+                (ja.positions_available - ja.positions_filled) as positions_remaining,
+                CASE 
+                    WHEN ja.positions_filled >= ja.positions_available THEN 'fully_filled'
+                    WHEN ja.positions_filled > 0 THEN 'partially_filled'
+                    ELSE 'no_hires'
+                END AS position_status
+            FROM job_applications ja
+            LEFT JOIN (
+                SELECT 
+                    job_id,
+                    COUNT(*) as count
+                FROM student_applications
+                GROUP BY job_id
+            ) application_counts ON ja.job_id = application_counts.job_id
+            WHERE ja.posted_by_user_id = $1 
+            ORDER BY ja.created_at DESC
+        `, [userId]);
         res.json(result.rows);
     } catch (err) {
         console.error('--- ERROR: Error fetching jobs by user ID:', err.stack);
