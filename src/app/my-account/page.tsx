@@ -3,7 +3,7 @@
 
 import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 // Shadcn UI components (assuming they are set up with a modern theme)
 import { Button } from "@/components/ui/button"
@@ -93,7 +93,31 @@ function MyAccountContent() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [activeView, setActiveView] = useState<"overview" | "profile" | "activity" | "credits" | "billing" | "settings">("overview"); // Changed from activeTab to activeView
+  const [activeView, setActiveView] = useState<"overview" | "profile" | "activity" | "credits" | "billing" | "settings">("overview");
+
+  // Hash-based navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      const validViews = ["overview", "profile", "activity", "credits", "billing", "settings"];
+      if (validViews.includes(hash as any)) {
+        setActiveView(hash as any);
+      }
+    };
+
+    // Set initial view from hash
+    handleHashChange();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleViewChange = (view: "overview" | "profile" | "activity" | "credits" | "billing" | "settings") => {
+    setActiveView(view);
+    window.history.pushState(null, '', `#${view}`);
+  };
 
   // Profile fields state
   const [editedFirstName, setEditedFirstName] = useState<string>('');
@@ -174,7 +198,7 @@ function MyAccountContent() {
   const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?\d{3}$/;
 
   const router = useRouter();
-  const searchParams = useSearchParams();
+
 
   useEffect(() => {
     console.log("🚀 Loaded user data in /my-account:", user);
@@ -193,23 +217,14 @@ function MyAccountContent() {
       setEditedEmail(user.user_email || '');
       setEditedUserCity(user.user_city || '');
 
-      const urlTab = searchParams?.get('tab');
-      if (urlTab) {
-        // Map old tab names to new view names
-        if (urlTab === 'profile') setActiveView('profile');
-        else if (urlTab === 'activity') setActiveView('activity');
-        else if (urlTab === 'billing') setActiveView('billing');
-        else if (urlTab === 'credits') setActiveView('credits');
-        else if (urlTab === 'settings') setActiveView('settings');
-        else setActiveView('overview'); // Default to overview
-      }
 
-      if (user.user_type === "student" && urlTab === 'credits' && !localStorage.getItem(`proPackPurchased_${user.user_id}`)) {
+
+      if (user.user_type === "student" && !localStorage.getItem(`proPackPurchased_${user.user_id}`)) {
           setUserCredits(prev => prev + 8);
           localStorage.setItem(`proPackPurchased_${user.user_id}`, 'true');
       }
     }
-  }, [user, isLoading, router, searchParams]);
+  }, [user, isLoading, router]);
 
   // Fetch posted jobs for employers
     const fetchPostedJobs = async () => {
@@ -1195,7 +1210,7 @@ Thank you for using StudentJobs UK!
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
             <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-4 lg:mb-0">Your Account Dashboard</h1>
-            <NavigationSegment currentView={activeView} setView={setActiveView} userType={user.user_type} />
+            <NavigationSegment currentView={activeView} setView={handleViewChange} userType={user.user_type} />
           </div>
 
           {activeView === "overview" && (
@@ -1261,7 +1276,7 @@ Thank you for using StudentJobs UK!
                       <h3 className="text-xl font-bold text-white mb-2">Your Applications</h3>
                       <p className="text-gray-400 text-sm mb-4">Track your job applications and their current status</p>
                       <button
-                        onClick={() => setActiveView("activity")}
+                        onClick={() => handleViewChange("activity")}
                         className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-purple-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
                         aria-label="View all job applications"
                       >
@@ -1299,7 +1314,7 @@ Thank you for using StudentJobs UK!
                       <h3 className="text-xl font-bold text-white mb-2">Available Credits</h3>
                       <p className="text-gray-400 text-sm mb-4">For revealing employer contact details</p>
                       <button
-                        onClick={() => setActiveView("credits")}
+                        onClick={() => handleViewChange("credits")}
                         className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-green-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900"
                         aria-label="Manage credits and purchase more"
                       >
@@ -1333,7 +1348,7 @@ Thank you for using StudentJobs UK!
                       <h3 className="text-xl font-bold text-white mb-2">Your Job Postings</h3>
                       <p className="text-gray-400 text-sm mb-4">Manage your active and completed job listings</p>
                       <button
-                        onClick={() => setActiveView("activity")}
+                        onClick={() => handleViewChange("activity")}
                         className="w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-orange-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-900"
                         aria-label="Manage job postings"
                       >
@@ -1365,7 +1380,7 @@ Thank you for using StudentJobs UK!
                       <h3 className="text-xl font-bold text-white mb-2">Billing & Invoices</h3>
                       <p className="text-gray-400 text-sm mb-4">View payment history and manage billing</p>
                       <button
-                        onClick={() => setActiveView("billing")}
+                        onClick={() => handleViewChange("billing")}
                         className="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-teal-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-gray-900"
                         aria-label="View billing and payment history"
                       >
@@ -1396,9 +1411,9 @@ Thank you for using StudentJobs UK!
                     </div>
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">Account Settings</h3>
-                  <p className="text-gray-400 text-sm mb-4">Update preferences, password, or delete account</p>
+                  <p className="text-gray-400 text-sm mb-4">Account & Privacy Settings</p>
                   <button
-                    onClick={() => setActiveView("settings")}
+                    onClick={() => handleViewChange("settings")}
                     className="w-full px-4 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-pink-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-900"
                     aria-label="Go to account settings"
                   >
