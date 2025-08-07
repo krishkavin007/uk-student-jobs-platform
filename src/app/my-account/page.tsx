@@ -3409,6 +3409,7 @@ Thank you for using StudentJobs UK!
                           applicant.status === 'hired' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
                           applicant.status === 'rejected' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
                           applicant.status === 'cancelled' ? 'bg-gray-500/20 border-gray-500/30 text-gray-400' :
+                          applicant.status === 'pending_hire_offer' ? 'bg-orange-500/20 border-orange-500/30 text-orange-400' :
                           'bg-blue-500/20 border-blue-500/30 text-blue-400'
                         }`}>
                           <span className="text-sm font-semibold flex items-center gap-2">
@@ -3417,6 +3418,7 @@ Thank you for using StudentJobs UK!
                              applicant.status === 'hired' ? 'Hired' :
                              applicant.status === 'rejected' ? 'Declined' :
                              applicant.status === 'cancelled' ? 'Cancelled' :
+                             applicant.status === 'pending_hire_offer' ? 'Offer Pending' :
                              applicant.status}
                             {applicant.status === 'hired' && applicant.confirmed && (
                               <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
