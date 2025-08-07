@@ -1055,31 +1055,53 @@ Thank you for using StudentJobs UK!
   userType: User["user_type"];
 }) => {
   const tabBase =
-    "px-4 py-2 rounded-md transition duration-200 text-gray-200 hover:bg-gray-700";
+    "px-4 py-2 rounded-lg transition-all duration-200 text-gray-300 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800";
 
   return (
-    <div className="flex flex-wrap justify-center bg-gray-800 rounded-lg p-1.5 space-x-1 mb-8 shadow-inner max-w-fit mx-auto">
+    <nav 
+      className="flex flex-wrap justify-center bg-gray-800 rounded-xl p-1.5 space-x-1 shadow-inner max-w-fit mx-auto lg:mx-0"
+      role="tablist"
+      aria-label="Account navigation"
+    >
       <Button
         onClick={() => setView("overview")}
         className={`${tabBase} ${
-          currentView === "overview" ? "bg-gray-700 text-white" : "bg-transparent"
+          currentView === "overview" 
+            ? "bg-blue-600 text-white shadow-lg ring-2 ring-blue-500/50" 
+            : "bg-transparent hover:text-white"
         }`}
+        role="tab"
+        aria-selected={currentView === "overview"}
+        aria-controls="overview-panel"
+        id="overview-tab"
       >
         Overview
       </Button>
       <Button
         onClick={() => setView("profile")}
         className={`${tabBase} ${
-          currentView === "profile" ? "bg-gray-700 text-white" : "bg-transparent"
+          currentView === "profile" 
+            ? "bg-blue-600 text-white shadow-lg ring-2 ring-blue-500/50" 
+            : "bg-transparent hover:text-white"
         }`}
+        role="tab"
+        aria-selected={currentView === "profile"}
+        aria-controls="profile-panel"
+        id="profile-tab"
       >
         Profile
       </Button>
       <Button
         onClick={() => setView("activity")}
         className={`${tabBase} ${
-          currentView === "activity" ? "bg-gray-700 text-white" : "bg-transparent"
+          currentView === "activity" 
+            ? "bg-blue-600 text-white shadow-lg ring-2 ring-blue-500/50" 
+            : "bg-transparent hover:text-white"
         }`}
+        role="tab"
+        aria-selected={currentView === "activity"}
+        aria-controls="activity-panel"
+        id="activity-tab"
       >
         {userType === "student" ? "My Applications" : "My Postings"}
       </Button>
@@ -1087,8 +1109,14 @@ Thank you for using StudentJobs UK!
         <Button
           onClick={() => setView("credits")}
           className={`${tabBase} ${
-            currentView === "credits" ? "bg-gray-700 text-white" : "bg-transparent"
+            currentView === "credits" 
+              ? "bg-blue-600 text-white shadow-lg ring-2 ring-blue-500/50" 
+              : "bg-transparent hover:text-white"
           }`}
+          role="tab"
+          aria-selected={currentView === "credits"}
+          aria-controls="credits-panel"
+          id="credits-tab"
         >
           Credits
         </Button>
@@ -1096,20 +1124,32 @@ Thank you for using StudentJobs UK!
       <Button
         onClick={() => setView("billing")}
         className={`${tabBase} ${
-          currentView === "billing" ? "bg-gray-700 text-white" : "bg-transparent"
+          currentView === "billing" 
+            ? "bg-blue-600 text-white shadow-lg ring-2 ring-blue-500/50" 
+            : "bg-transparent hover:text-white"
         }`}
+        role="tab"
+        aria-selected={currentView === "billing"}
+        aria-controls="billing-panel"
+        id="billing-tab"
       >
         Billing
       </Button>
       <Button
         onClick={() => setView("settings")}
         className={`${tabBase} ${
-          currentView === "settings" ? "bg-gray-700 text-white" : "bg-transparent"
+          currentView === "settings" 
+            ? "bg-blue-600 text-white shadow-lg ring-2 ring-blue-500/50" 
+            : "bg-transparent hover:text-white"
         }`}
+        role="tab"
+        aria-selected={currentView === "settings"}
+        aria-controls="settings-panel"
+        id="settings-tab"
       >
         Settings
       </Button>
-    </div>
+    </nav>
   );
 };
 
@@ -1153,69 +1193,222 @@ Thank you for using StudentJobs UK!
 
       <main className="flex-1 p-6 md:p-10">
         <div className="mx-auto max-w-6xl">
-                     <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-8 text-center">Your Account Dashboard</h1>
-
-          <NavigationSegment currentView={activeView} setView={setActiveView} userType={user.user_type} />
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-4 lg:mb-0">Your Account Dashboard</h1>
+            <NavigationSegment currentView={activeView} setView={setActiveView} userType={user.user_type} />
+          </div>
 
           {activeView === "overview" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
-                <h3 className="text-2xl font-bold text-white mb-2">Welcome Back, {user.user_first_name || user.user_username}!</h3>
-                <p className="text-gray-400 mb-20">You are logged in as a {user.user_type}.</p>
-                <Button onClick={() => setActiveView("profile")} className="bg-blue-600 hover:bg-blue-500 text-white">
-                  View Profile
-                </Button>
-              </Card>
+            <div 
+              className="space-y-6"
+              role="tabpanel"
+              id="overview-panel"
+              aria-labelledby="overview-tab"
+            >
+              {/* Compact Welcome Header */}
+              <section 
+                className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 border border-gray-700 shadow-xl"
+                aria-label="Welcome section"
+              >
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
+                    aria-label={`${user.user_first_name || user.user_username} profile avatar`}
+                  >
+                    <div className="text-white text-lg font-bold uppercase">
+                      {user.user_first_name?.[0]}{user.user_last_name?.[0] || user.user_username?.[0]}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-white">
+                      Welcome back, {user.user_first_name || user.user_username}!
+                    </h2>
+                    <p className="text-sm text-gray-400">
+                      Logged in as <span className="text-blue-400">{user.user_type}</span>
+                    </p>
+                  </div>
+                </div>
+              </section>
 
-              {user.user_type === "student" ? (
-                <>
-                  <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
-                    <h3 className="text-2xl font-bold text-white mb-2">Your Applications</h3>
-                                            <p className="text-5xl font-extrabold text-purple-500 mb-4">{appliedJobs.filter(job => job.studentOutcome === 'pending').length}</p>
-                    <p className="text-gray-400 mb-4">Active applications.</p>
-                    <Button onClick={() => setActiveView("activity")} className="bg-purple-600 hover:bg-purple-500 text-white">
-                      View Applications
-                    </Button>
-                  </Card>
-                  <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
-                    <h3 className="text-2xl font-bold text-white mb-2">Available Credits</h3>
-<Badge className="text-5xl py-3 px-6 text-white font-extrabold mb-4 animate-pulse bg-transparent border-none shadow-none hover:bg-transparent hover:border-none hover:shadow-none hover:text-white">
-                      {userCredits}
-                    </Badge>
-                    <p className="text-gray-400 mb-4">For revealing employer contact details.</p>
-                    <Button onClick={() => setActiveView("credits")} className="bg-green-600 hover:bg-green-500 text-white">
-                      Manage Credits
-                    </Button>
-                  </Card>
-                </>
-              ) : (
-                <>
-                  <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
-                    <h3 className="text-2xl font-bold text-white mb-2">Your Job Postings</h3>
-                                            <p className="text-5xl font-extrabold text-orange-500 mb-4">{postedJobs.filter(job => job.status === "active").length}</p>
-                                          <p className="text-gray-400 mb-4">Active job listings.</p>
-                    <Button onClick={() => setActiveView("activity")} className="bg-orange-600 hover:bg-orange-500 text-white">
-                      Manage Postings
-                    </Button>
-                  </Card>
-                  <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gray-800 border-gray-700">
-                    <h3 className="text-2xl font-bold text-white mb-2">Billing & Invoices</h3>
-                    <p className="text-5xl font-extrabold text-teal-500 mb-4">{employerBillingHistory.length}</p>
-                    <p className="text-gray-400 mb-4">Total transactions recorded.</p>
-                    <Button onClick={() => setActiveView("billing")} className="bg-teal-600 hover:bg-teal-500 text-white">
-                      View Billing
-                    </Button>
-                  </Card>
-                </>
-              )}
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {user.user_type === "student" ? (
+                  <>
+                    {/* Applications Card */}
+                    <article 
+                      className="group bg-gradient-to-br from-purple-900/20 via-gray-900 to-gray-800 rounded-3xl p-6 border border-purple-500/20 shadow-xl hover:shadow-purple-500/10 transition-all duration-300 hover:scale-[1.02] focus-within:ring-2 focus-within:ring-purple-500"
+                      aria-label="Job applications overview"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div 
+                          className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg"
+                          aria-hidden="true"
+                        >
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div className="text-right">
+                          <div 
+                            className="text-4xl font-bold text-purple-400 mb-1"
+                            aria-label={`${appliedJobs.filter(job => job.studentOutcome === 'applied').length} active applications`}
+                          >
+                            {appliedJobs.filter(job => job.studentOutcome === 'applied').length}
+                          </div>
+                          <div className="text-xs text-purple-300 font-medium">ACTIVE</div>
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">Your Applications</h3>
+                      <p className="text-gray-400 text-sm mb-4">Track your job applications and their current status</p>
+                      <button
+                        onClick={() => setActiveView("activity")}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-purple-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                        aria-label="View all job applications"
+                      >
+                        <span>View Applications</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </article>
 
-             <Card className="flex flex-col items-center justify-center p-6 text-center shadow-lg hover:shadow-xl transition-shadow duration-300 lg:col-span-1 bg-gray-800 border-gray-700">
-  <h3 className="text-2xl font-bold text-white mb-2">Account Settings</h3>
-  <p className="text-gray-400 mb-4">Update preferences, password, or delete account.</p>
-  <Button onClick={() => setActiveView("settings")} className="bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-opacity-75">
-    Go to Settings
-  </Button>
-</Card>
+                    {/* Credits Card */}
+                    <article 
+                      className="group bg-gradient-to-br from-green-900/20 via-gray-900 to-gray-800 rounded-3xl p-6 border border-green-500/20 shadow-xl hover:shadow-green-500/10 transition-all duration-300 hover:scale-[1.02] focus-within:ring-2 focus-within:ring-green-500"
+                      aria-label="Credits overview"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div 
+                          className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg"
+                          aria-hidden="true"
+                        >
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                        </div>
+                        <div className="text-right">
+                          <div 
+                            className="text-4xl font-bold text-green-400 mb-1 animate-pulse"
+                            aria-label={`${userCredits} credits available`}
+                          >
+                            {userCredits}
+                          </div>
+                          <div className="text-xs text-green-300 font-medium">CREDITS</div>
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">Available Credits</h3>
+                      <p className="text-gray-400 text-sm mb-4">For revealing employer contact details</p>
+                      <button
+                        onClick={() => setActiveView("credits")}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-green-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                        aria-label="Manage credits and purchase more"
+                      >
+                        <span>Manage Credits</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </article>
+                  </>
+                ) : (
+                  <>
+                    {/* Job Postings Card */}
+                    <article 
+                      className="group bg-gradient-to-br from-orange-900/20 via-gray-900 to-gray-800 rounded-3xl p-6 border border-orange-500/20 shadow-xl hover:shadow-orange-500/10 transition-all duration-300 hover:scale-[1.02] focus-within:ring-2 focus-within:ring-orange-500"
+                      aria-label="Job postings overview"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg" aria-hidden="true">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                          </svg>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-4xl font-bold text-orange-400 mb-1" aria-label={`${postedJobs.filter(job => job.status === "active").length} active job postings`}>
+                            {postedJobs.filter(job => job.status === "active").length}
+                          </div>
+                          <div className="text-xs text-orange-300 font-medium">ACTIVE</div>
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">Your Job Postings</h3>
+                      <p className="text-gray-400 text-sm mb-4">Manage your active and completed job listings</p>
+                      <button
+                        onClick={() => setActiveView("activity")}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-orange-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                        aria-label="Manage job postings"
+                      >
+                        <span>Manage Postings</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </article>
+
+                    {/* Billing Card */}
+                    <article 
+                      className="group bg-gradient-to-br from-teal-900/20 via-gray-900 to-gray-800 rounded-3xl p-6 border border-teal-500/20 shadow-xl hover:shadow-teal-500/10 transition-all duration-300 hover:scale-[1.02] focus-within:ring-2 focus-within:ring-teal-500"
+                      aria-label="Billing overview"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg" aria-hidden="true">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-4xl font-bold text-teal-400 mb-1" aria-label={`${employerBillingHistory.length} total transactions`}>
+                            {employerBillingHistory.length}
+                          </div>
+                          <div className="text-xs text-teal-300 font-medium">TRANSACTIONS</div>
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">Billing & Invoices</h3>
+                      <p className="text-gray-400 text-sm mb-4">View payment history and manage billing</p>
+                      <button
+                        onClick={() => setActiveView("billing")}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-500 hover:to-teal-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-teal-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                        aria-label="View billing and payment history"
+                      >
+                        <span>View Billing</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </article>
+                  </>
+                )}
+
+                {/* Account Settings Card */}
+                <article 
+                  className="group bg-gradient-to-br from-pink-900/20 via-gray-900 to-gray-800 rounded-3xl p-6 border border-pink-500/20 shadow-xl hover:shadow-pink-500/10 transition-all duration-300 hover:scale-[1.02] md:col-span-2 lg:col-span-1 focus-within:ring-2 focus-within:ring-pink-500"
+                  aria-label="Account settings overview"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg" aria-hidden="true">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-pink-400 mb-1" aria-hidden="true">⚙️</div>
+                      <div className="text-xs text-pink-300 font-medium">SETTINGS</div>
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Account Settings</h3>
+                  <p className="text-gray-400 text-sm mb-4">Update preferences, password, or delete account</p>
+                  <button
+                    onClick={() => setActiveView("settings")}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-pink-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                    aria-label="Go to account settings"
+                  >
+                    <span>Go to Settings</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </article>
+              </div>
             </div>
           )}
 
