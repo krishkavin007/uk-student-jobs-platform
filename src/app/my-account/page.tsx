@@ -1220,159 +1220,210 @@ Thank you for using StudentJobs UK!
           )}
 
           {activeView === "profile" && (
-            <Card className="shadow-lg bg-gray-800 border-gray-700">
-              <CardHeader className="border-b border-gray-700 pb-4">
+            <div className="bg-gray-900 rounded-3xl shadow-2xl border border-gray-800 overflow-hidden">
+              {/* Modern Header */}
+              <div className="bg-gray-800 p-6 border-b border-gray-700 rounded-t-3xl">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-3xl font-bold text-white">Your Profile</CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Manage your personal details and contact information.
-                    </CardDescription>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white mb-1">Your Profile</h2>
+                      <p className="text-gray-400 text-sm">Manage your personal details and contact information</p>
+                    </div>
                   </div>
-                  <Button
-                    variant={isEditingProfile ? "outline" : "default"}
+                  <button
                     onClick={() => setIsEditingProfile(!isEditingProfile)}
-className={isEditingProfile ? "border border-gray-600 bg-gray-700 text-white hover:brightness-110 transition duration-150" : "bg-blue-600 hover:bg-blue-500 text-white transition duration-150"}
+                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 text-sm ${
+                      isEditingProfile 
+                        ? "bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600 hover:border-gray-500" 
+                        : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-lg hover:shadow-blue-500/25"
+                    }`}
                   >
-                    {isEditingProfile ? "Cancel Edit" : "Edit Profile"}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 space-y-8">
-                <div className="flex items-center gap-8">
-                  <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-blue-400 bg-gray-700 flex items-center justify-center flex-shrink-0">
-                    {(user.user_image) ? (
-                       console.log("DEBUG: user.user_image value in component:", user.user_image),
-                      <img
-                        src={user.user_image}
-                        alt="Profile Image"
-                        className="w-full h-full object-cover"
-                      />
+                    {isEditingProfile ? (
+                      <>
+                        <svg className="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Cancel Edit
+                      </>
                     ) : (
-                      <div className="text-gray-500 text-5xl font-bold uppercase">
-                        {user.user_first_name?.[0]}{user.user_last_name?.[0]}
-                      </div>
+                      <>
+                        <svg className="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Profile
+                      </>
                     )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Content Section */}
+              <div className="p-6 space-y-8">
+                {/* Profile Information - Optimized Layout */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-center lg:justify-start gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <h3 className="text-lg font-semibold text-white">Profile Information</h3>
                   </div>
-                  {isEditingProfile && (
-                    <div className="">
-                      <Label htmlFor="profileImage" className="block text-sm font-medium text-gray-300 mb-2">Upload New Profile Image</Label>
-                      <Input
-                        id="user.user_image"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="block w-full text-sm py-2 text-gray-300 file:mr-4 file:py-0.01 file:px-6  file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-800 file:text-blue-200 hover:file:bg-blue-700 cursor-pointer bg-gray-700 border-gray-600"
-                      />
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+                    {/* Profile Picture Column */}
+                    <div className="flex flex-col items-center lg:items-center space-y-4">
+                      <div className="relative w-36 h-36 rounded-2xl overflow-hidden border-2 border-gray-700 bg-gray-800 flex items-center justify-center shadow-lg">
+                        {(user.user_image) ? (
+                          <img
+                            src={user.user_image}
+                            alt="Profile Image"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-gray-400 text-4xl font-bold uppercase">
+                            {user.user_first_name?.[0]}{user.user_last_name?.[0]}
+                          </div>
+                        )}
+                      </div>
+                      {isEditingProfile && (
+                        <div className="space-y-2 w-full">
+                          <label className="text-sm font-semibold text-white block text-center">Upload New Image</label>
+                          <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 hover:border-blue-500/50 transition-colors cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              className="w-full p-2 bg-transparent text-gray-300 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-blue-600 file:text-white file:hover:bg-blue-500 file:cursor-pointer cursor-pointer text-xs"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 text-center">JPG, PNG, GIF (max 5MB)</p>
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Form Fields - Three Columns */}
+                    <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 lg:-mt-6">
+                      {/* First Name */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-white">First Name</label>
+                        <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
+                          <input
+                            value={isEditingProfile ? editedFirstName : user.user_first_name || ''}
+                            onChange={(e) => setEditedFirstName(e.target.value)}
+                            disabled={!isEditingProfile}
+                            className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+                            placeholder="Enter your first name..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Last Name */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-white">Last Name</label>
+                        <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
+                          <input
+                            value={isEditingProfile ? editedLastName : user.user_last_name || ''}
+                            onChange={(e) => setEditedLastName(e.target.value)}
+                            disabled={!isEditingProfile}
+                            className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+                            placeholder="Enter your last name..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Email Address */}
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-sm font-semibold text-white">Email Address</label>
+                        <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
+                          <input
+                            type="email"
+                            value={isEditingProfile ? editedEmail : user.user_email || ''}
+                            onChange={(e) => setEditedEmail(e.target.value)}
+                            disabled={!isEditingProfile}
+                            className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+                            placeholder="Enter your email address..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Phone Number */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-white">Phone Number</label>
+                        <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
+                          <input
+                            value={isEditingProfile ? editedContactPhoneNumber : user.contact_phone_number || ''}
+                            onChange={(e) => setEditedContactPhoneNumber(e.target.value)}
+                            disabled={!isEditingProfile}
+                            className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+                            placeholder="Enter your phone number..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* City */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-white">City</label>
+                        <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
+                          <input
+                            value={isEditingProfile ? editedUserCity : user.user_city || ''}
+                            onChange={(e) => setEditedUserCity(e.target.value)}
+                            disabled={!isEditingProfile}
+                            className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+                            placeholder="e.g., Manchester"
+                          />
+                        </div>
+                      </div>
+
+                      {/* University/Business Name */}
+                      {user.user_type === "student" ? (
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-sm font-semibold text-white">University/College</label>
+                          <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
+                            <input
+                              value={isEditingProfile ? editedUniversityCollege : user.university_college || ''}
+                              onChange={(e) => setEditedUniversityCollege(e.target.value)}
+                              disabled={!isEditingProfile}
+                              className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+                              placeholder="Enter your university or college..."
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-sm font-semibold text-white">Business Name</label>
+                          <div className={`bg-gray-800/50 rounded-xl border border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
+                            <input
+                              value={isEditingProfile ? editedOrganisationName : user.organisation_name || ''}
+                              onChange={(e) => setEditedOrganisationName(e.target.value)}
+                              disabled={!isEditingProfile}
+                              className="w-full p-3 bg-transparent text-gray-100 placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
+                              placeholder="Enter your business name..."
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex items-center justify-between p-4 bg-green-900/20 border border-green-700 rounded-lg">
-                    <span className="text-sm font-medium text-green-300">Email Status</span>
-                    <Badge className="bg-green-900 text-green-300 px-3 py-1 rounded-full text-xs">
-                      ✓ Verified
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-green-900/20 border border-green-700 rounded-lg">
-                    <span className="text-sm font-medium text-green-300">Phone Status</span>
-                    <Badge className="bg-green-900 text-green-300 px-3 py-1 rounded-full text-xs">
-                      ✓ Verified
-                    </Badge>
-                  </div>
-                </div>
-
-                <Separator className="my-6 bg-gray-700" />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName" className="text-sm font-medium text-gray-300">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={isEditingProfile ? editedFirstName : user.user_first_name || ''}
-                      onChange={(e) => setEditedFirstName(e.target.value)}
-                      disabled={!isEditingProfile}
-                      className="rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName" className="text-sm font-medium text-gray-300">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={isEditingProfile ? editedLastName : user.user_last_name || ''}
-                      onChange={(e) => setEditedLastName(e.target.value)}
-                      disabled={!isEditingProfile}
-                      className="rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500"
-                    />
-                  </div>
-                  <div className="space-y-2 col-span-1 md:col-span-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-300">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={isEditingProfile ? editedEmail : user.user_email || ''}
-                      onChange={(e) => setEditedEmail(e.target.value)}
-                      disabled={!isEditingProfile}
-                      className="rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm font-medium text-gray-300">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      value={isEditingProfile ? editedContactPhoneNumber : user.contact_phone_number || ''}
-                      onChange={(e) => setEditedContactPhoneNumber(e.target.value)}
-                      disabled={!isEditingProfile}
-                      className="rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city" className="text-sm font-medium text-gray-300">City</Label>
-                    <Input
-                      id="city"
-                      placeholder="e.g., Manchester"
-                      value={isEditingProfile ? editedUserCity : user.user_city || ''}
-                      onChange={(e) => setEditedUserCity(e.target.value)}
-                      disabled={!isEditingProfile}
-                      className="rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500"
-                    />
-                  </div>
-
-                  {user.user_type === "student" ? (
-                    <div className="space-y-2 col-span-1 md:col-span-2">
-                      <Label htmlFor="university" className="text-sm font-medium text-gray-300">University/College</Label>
-                      <Input
-                        id="university"
-                        value={isEditingProfile ? editedUniversityCollege : user.university_college || ''}
-                        onChange={(e) => setEditedUniversityCollege(e.target.value)}
-                        disabled={!isEditingProfile}
-                        className="rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500"
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-2 col-span-1 md:col-span-2">
-                      <Label htmlFor="businessName" className="text-sm font-medium text-gray-300">Business Name</Label>
-                      <Input
-                        id="businessName"
-                        value={isEditingProfile ? editedOrganisationName : user.organisation_name || ''}
-                        onChange={(e) => setEditedOrganisationName(e.target.value)}
-                        disabled={!isEditingProfile}
-                        className="rounded-md border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200 placeholder:text-gray-500"
-                      />
-                    </div>
-                  )}
-                </div>
-
+                {/* Save Button */}
                 {isEditingProfile && (
-                  <div className="flex justify-end gap-3 mt-8">
-                    <Button onClick={handleSaveProfile} className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-md transition-colors duration-200 text-white">
+                  <div className="flex justify-end pt-4">
+                    <button
+                      onClick={handleSaveProfile}
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-blue-500/25 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                       Save Changes
-                    </Button>
+                    </button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
 
           {activeView === "activity" && (
