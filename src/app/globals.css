@@ -63,8 +63,21 @@
   * {
     @apply border-border;
   }
+  
+  html {
+    @apply bg-gray-950;
+    background-color: rgb(3 7 18) !important; /* Ensure dark background everywhere */
+  }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gray-950 text-foreground;
+    background-color: rgb(3 7 18) !important; /* Prevent white background on scroll bounce */
+    overflow-x: hidden; /* Prevent horizontal scroll issues */
+  }
+  
+  /* Prevent white background during page transitions and scroll bounce */
+  #__next {
+    @apply bg-gray-950;
+    background-color: rgb(3 7 18) !important;
   }
 }
-
