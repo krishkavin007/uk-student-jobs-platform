@@ -1274,7 +1274,7 @@ Thank you for using StudentJobs UK!
                         </div>
                       </div>
                       <h3 className="text-xl font-bold text-white mb-2">Your Applications</h3>
-                      <p className="text-gray-400 text-sm mb-4">Track your job applications and their current status</p>
+                      <p className="text-gray-400 text-sm mb-4">Track your job applications and status</p>
                       <button
                         onClick={() => handleViewChange("activity")}
                         className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-purple-500/25 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
@@ -1410,7 +1410,7 @@ Thank you for using StudentJobs UK!
                       <div className="text-xs text-pink-300 font-medium">SETTINGS</div>
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Account Settings</h3>
+                  <h3 className="text-xl font-bold text-white mb-3">Account Settings</h3>
                   <p className="text-gray-400 text-sm mb-4">Account & Privacy Settings</p>
                   <button
                     onClick={() => handleViewChange("settings")}
