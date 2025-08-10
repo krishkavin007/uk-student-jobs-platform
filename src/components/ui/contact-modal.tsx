@@ -18,15 +18,25 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
+    // Honeypot field - should remain empty
+    website: ''
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Honeypot check - if website field is filled, it's likely a bot
+    if (formData.website) {
+      console.log('Bot detected via honeypot field in contact modal');
+      setOpen(false);
+      return; // Silently reject without showing error
+    }
+
     // Handle form submission
     alert('Thank you for your message! We\'ll get back to you within 24 hours.')
     setOpen(false)
-    setFormData({ name: '', email: '', subject: '', message: '' })
+    setFormData({ name: '', email: '', subject: '', message: '', website: '' })
   }
 
   return (
@@ -103,6 +113,20 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
               required
               // MODIFIED: Textarea to match login page inputs
               className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
+            />
+          </div>
+
+          {/* Honeypot field - hidden from users, bots will fill this */}
+          <div style={{ display: 'none' }}>
+            <label htmlFor="website-contact">Website URL (leave blank)</label>
+            <Input
+              id="website-contact"
+              name="website"
+              type="text"
+              value={formData.website}
+              onChange={(e) => setFormData({...formData, website: e.target.value})}
+              autoComplete="off"
+              tabIndex={-1}
             />
           </div>
 

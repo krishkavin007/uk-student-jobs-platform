@@ -14,10 +14,19 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  // Honeypot field - should remain empty
+  const [website, setWebsite] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+
+    // Honeypot check - if website field is filled, it's likely a bot
+    if (website) {
+      console.log('Bot detected via honeypot field on forgot password');
+      setIsLoading(false);
+      return; // Silently reject without showing error
+    }
 
     // Simulate password reset process
     setTimeout(() => {
@@ -117,6 +126,21 @@ export default function ForgotPasswordPage() {
                       className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500" 
                     />
                   </div>
+
+                  {/* Honeypot field - hidden from users, bots will fill this */}
+                  <div style={{ display: 'none' }}>
+                    <label htmlFor="website-forgot">Website URL (leave blank)</label>
+                    <Input
+                      id="website-forgot"
+                      name="website"
+                      type="text"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                      autoComplete="off"
+                      tabIndex={-1}
+                    />
+                  </div>
+
                   <Button
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700"

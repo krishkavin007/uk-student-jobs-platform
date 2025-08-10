@@ -42,6 +42,8 @@ export default function SignupPage() {
     businessName: "", // This will be mapped to organisation_name in payload
     city: "", // ADDED: city to formData state
     agreeToTerms: false,
+    // Honeypot field - should remain empty
+    website: "",
   })
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('');
@@ -71,6 +73,13 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
     setIsLoading(true);
     setMessage('');
     setError('');
+
+    // Honeypot check - if website field is filled, it's likely a bot
+    if (formData.website) {
+      console.log('Bot detected via honeypot field');
+      setIsLoading(false);
+      return; // Silently reject without showing error
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
@@ -331,6 +340,20 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                       <p className="text-xs text-slate-500 dark:text-gray-400">Use your university email for verification</p>
                     </div>
 
+                    {/* Honeypot field - hidden from users, bots will fill this */}
+                    <div style={{ display: 'none' }}>
+                      <label htmlFor="website-student">Website URL (leave blank)</label>
+                      <Input
+                        id="website-student"
+                        name="website"
+                        type="text"
+                        value={formData.website}
+                        onChange={(e) => handleInputChange("website", e.target.value)}
+                        autoComplete="off"
+                        tabIndex={-1}
+                      />
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="phone" className="text-slate-700 dark:text-gray-200">Phone Number</Label>
                       <Input
@@ -462,6 +485,20 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                         onChange={(e) => handleInputChange("email", e.target.value)}
                         required
                         className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
+                      />
+                    </div>
+
+                    {/* Honeypot field - hidden from users, bots will fill this */}
+                    <div style={{ display: 'none' }}>
+                      <label htmlFor="website-employer">Website URL (leave blank)</label>
+                      <Input
+                        id="website-employer"
+                        name="website"
+                        type="text"
+                        value={formData.website}
+                        onChange={(e) => handleInputChange("website", e.target.value)}
+                        autoComplete="off"
+                        tabIndex={-1}
                       />
                     </div>
 
