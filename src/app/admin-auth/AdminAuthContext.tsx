@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation';
 interface AdminUser {
     admin_id: string;
     username: string;
+    admin_email: string;
+    first_name?: string;
+    last_name?: string;
     role: string; // e.g., 'admin', 'super_admin'
 }
 
@@ -56,6 +59,9 @@ const fetchAdminUser = useCallback(async () => {
             const normalizedUser: AdminUser = {
                 admin_id: data.admin.admin_id, // Access data.admin directly
                 username: data.admin.username,
+                admin_email: data.admin.admin_email,
+                first_name: data.admin.first_name,
+                last_name: data.admin.last_name,
                 role: data.admin.role,
             };
 

@@ -77,10 +77,32 @@ router.post('/login', async (req, res) => {
 });
 
 // Admin Check - for verifying admin session/token
-router.get('/admin-check', authenticateAdminJWT, (req, res) => {
+router.get('/admin-check', authenticateAdminJWT, async (req, res) => {
     console.log('--- DEBUG: Admin /admin-check endpoint hit. Admin token is valid.');
-    // @ts-ignore
-    res.status(200).json({ message: 'Admin authenticated', admin: req.adminUser });
+    
+    try {
+        // @ts-ignore
+        const adminId = req.adminUser.admin_id;
+        
+        // Fetch complete admin user data from database
+        const result = await pool.query(
+            'SELECT admin_id, username, admin_email, first_name, last_name, role, is_active, admin_roles, access_level, created_at, updated_at, last_login_at FROM admin_users WHERE admin_id = $1',
+            [adminId]
+        );
+        
+        if (result.rows.length === 0) {
+            console.log('--- DEBUG: Admin user not found in database during admin-check');
+            return res.status(401).json({ error: 'Admin user not found' });
+        }
+        
+        const adminUser = result.rows[0];
+        console.log('--- DEBUG: Complete admin user data fetched:', adminUser);
+        
+        res.status(200).json({ message: 'Admin authenticated', admin: adminUser });
+    } catch (err) {
+        console.error('--- ERROR: Error fetching admin user data during admin-check:', err.stack);
+        res.status(500).json({ error: 'Internal server error during admin check' });
+    }
 });
 
 // Get currently logged-in admin's profile
@@ -186,6 +208,84 @@ router.post('/admin-users', authenticateAdminJWT, authorizeAdmin(['super_admin']
     }
 });
 
+
+// Update Current Admin's Profile (with password verification)
+router.put('/profile', authenticateAdminJWT, async (req, res) => {
+    const { first_name, last_name, admin_email, new_password, current_password } = req.body;
+    
+    // @ts-ignore
+    const adminId = req.adminUser.admin_id;
+    
+    console.log(`--- DEBUG: Admin profile update attempt for admin ID: ${adminId} ---`);
+    
+    // Only require current password if changing password
+    const isChangingPassword = new_password && new_password.trim() !== '';
+    
+    if (isChangingPassword && !current_password) {
+        return res.status(400).json({ error: 'Current password is required to change password' });
+    }
+    
+    try {
+        // Only verify current password if changing password
+        if (isChangingPassword) {
+            const adminResult = await pool.query(
+                'SELECT password_hash FROM admin_users WHERE admin_id = $1',
+                [adminId]
+            );
+            
+            if (adminResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Admin user not found' });
+            }
+            
+            const isPasswordValid = await bcrypt.compare(current_password, adminResult.rows[0].password_hash);
+            
+            if (!isPasswordValid) {
+                console.log('--- DEBUG: Admin profile update failed: Incorrect current password.');
+                return res.status(401).json({ error: 'Current password is incorrect' });
+            }
+        }
+        
+        // Prepare update fields
+        let updateQuery = `UPDATE admin_users SET 
+            first_name = COALESCE($1, first_name),
+            last_name = COALESCE($2, last_name),
+            admin_email = COALESCE($3, admin_email),
+            updated_at = CURRENT_TIMESTAMP`;
+        
+        let queryParams = [first_name, last_name, admin_email];
+        
+        // If new password is provided, hash it and include in update
+        if (isChangingPassword) {
+            const hashedNewPassword = await bcrypt.hash(new_password, 10);
+            updateQuery += `, password_hash = $${queryParams.length + 1}`;
+            queryParams.push(hashedNewPassword);
+        }
+        
+        updateQuery += ` WHERE admin_id = $${queryParams.length + 1} 
+            RETURNING admin_id, username, admin_email, first_name, last_name, role, is_active, admin_roles, access_level, created_at, updated_at, last_login_at`;
+        
+        queryParams.push(adminId);
+        
+        const result = await pool.query(updateQuery, queryParams);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Admin user not found' });
+        }
+        
+        console.log(`--- DEBUG: Admin profile updated successfully for admin ID: ${adminId} ---`);
+        res.json({ 
+            message: 'Profile updated successfully',
+            admin: result.rows[0]
+        });
+        
+    } catch (err) {
+        console.error(`--- ERROR: Error updating admin profile for ID ${adminId}:`, err.stack);
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'Email already exists' });
+        }
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
 
 // Update Admin User (PUT /api/admin/admin-users/:id)
 router.put('/admin-users/:id', authenticateAdminJWT, authorizeAdmin(['super_admin', 'admin']), async (req, res) => {

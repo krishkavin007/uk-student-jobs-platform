@@ -78,6 +78,8 @@ export interface AdminUser {
   admin_id: string;
   username: string;
   admin_email: string;
+  first_name?: string;
+  last_name?: string;
   role: string;
   is_active: boolean;
   admin_roles: string[];

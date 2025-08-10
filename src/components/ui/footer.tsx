@@ -3,10 +3,17 @@
 import Link from "next/link";
 import { ContactModal } from "./contact-modal";
 import { useAuth } from "@/app/context/AuthContext";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
   const { user } = useAuth();
+  const pathname = usePathname();
   const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
+
+  // Don't render footer on admin dashboard
+  if (pathname === '/admin-dashboard') {
+    return null;
+  }
 
   return (
     <footer className="w-full py-6 bg-slate-100 dark:bg-gray-900 text-slate-900 dark:text-white relative" role="contentinfo">

@@ -41,6 +41,7 @@ import { ViewAdminUserModal } from '@/components/admin/ViewAdminUserModal';
 import { ViewUserModal } from '@/components/admin/ViewUserModal';
 // Import the new AddUserModal
 import { AddUserModal } from "@/components/admin/AddUserModal"; // Import AddUserModal
+import { AdminAccountSettingsModal } from "@/components/ui/admin-account-settings";
 
 // --- UPDATED IMPORTS FOR AUTHENTICATION ---
 import { useRouter } from "next/navigation";
@@ -50,7 +51,7 @@ import { useAdminAuth } from '@/app/admin-auth/AdminAuthContext';
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, logout } = useAdminAuth();
+  const { isAuthenticated, isLoading, logout, adminUser } = useAdminAuth();
 
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -72,6 +73,9 @@ export default function Home() {
 
   // NEW: State for the Add User Modal (for normal users)
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false); // NEW STATE
+  
+  // State for Admin Account Settings Modal
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
 
   // State for Overview tab data
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -600,14 +604,7 @@ const getAdminUsers = useCallback(async () => {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Construct a dummy user object for the header if authenticated
-  const adminUser: User | null = isAuthenticated ? {
-    user_id: 'admin-user-id',
-    user_username: 'Admin',
-    user_email: 'admin@example.com',
-    user_type: 'admin',
-    registration_date: new Date().toISOString(), // Use registration_date to match User type
-  } : null;
+  // Use the real authenticated admin user data
 
 
   // Render nothing or a loading spinner while authentication status is being checked
@@ -637,6 +634,7 @@ const getAdminUsers = useCallback(async () => {
         adminDashboardMode={true}
         user={adminUser}
         logout={logout}
+        onAccountSettingsOpen={() => setIsAccountSettingsOpen(true)}
       />
 
       {/* Main content area - added pt-16 to push content below the fixed header */}
@@ -1274,6 +1272,13 @@ const getAdminUsers = useCallback(async () => {
 
       {/* View User Modal */}
       <ViewUserModal users={users} />
+
+      {/* Admin Account Settings Modal */}
+      <AdminAccountSettingsModal
+        isOpen={isAccountSettingsOpen}
+        onClose={() => setIsAccountSettingsOpen(false)}
+        adminUser={adminUser}
+      />
     </div>
   );
 }
