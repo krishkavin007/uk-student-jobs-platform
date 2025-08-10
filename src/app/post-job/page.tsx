@@ -5,7 +5,6 @@ import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Logo } from "@/components/ui/logo"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ContactModal } from "@/components/ui/contact-modal";
 import { Header } from '@/components/ui/header';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -178,7 +176,7 @@ function PostJobContent() {
 
 
     try {
-      // 1. Prepare Job Payload
+      // 1) Prepare Job Payload (without posted_by_user_id yet)
       const jobPayload: JobPayload = {
         job_title: formData.title,
         job_category: formData.category,
@@ -188,19 +186,13 @@ function PostJobContent() {
         positions_available: positions,
         job_description: formData.description,
         is_sponsored: formData.sponsored,
-        // Use user data if logged in, otherwise use form data for contact
         contact_name: user ? `${user.user_first_name || ''} ${user.user_last_name || ''}`.trim() : `${formData.firstName} ${formData.lastName}`.trim(),
         contact_phone: user ? (user.contact_phone_number || '') : formData.phoneNumber,
         contact_email: user ? (user.user_email || '') : formData.email,
       };
 
-      // Define a variable to hold the user ID that will be used for posting the job
-      let postedByUserId = user?.user_id; // Initialize with current user's ID if logged in
-
-      // 2. Handle Employer Account Creation (if not logged in)
+      // 2) If not logged in, store employer registration data for after payment
       if (!user && !isAuthLoading) {
-        console.log("LOG A1: Attempting to create new employer account...");
-
         const employerRegistrationDataForBackend: EmployerRegistrationPayload = {
           user_first_name: formData.firstName,
           user_last_name: formData.lastName,
@@ -211,85 +203,20 @@ function PostJobContent() {
           user_type: 'employer',
           password: formData.password,
         };
-
-        console.log("LOG A2: Sending registration data:", employerRegistrationDataForBackend);
-
-        const registerResponse = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(employerRegistrationDataForBackend),
-        });
-
-        console.log("LOG A3: Registration fetch response object:", registerResponse);
-
-        if (!registerResponse.ok) {
-          const errorData = await registerResponse.json();
-          const errorMessage = errorData.message || errorData.error || 'Failed to create employer account.';
-          console.error("LOG A4: Registration failed with error:", errorMessage, errorData);
-          throw new Error(errorMessage);
-        }
-
-        const registerResponseData = await registerResponse.json();
-        console.log("LOG A5: Employer account created successfully:", registerResponseData);
-
-        // CRITICAL CHANGE: Get the user_id directly from the registration response
-        // This ensures we have the ID immediately for job posting without waiting for state re-render
-        postedByUserId = registerResponseData.user?.user_id; // <--- ADDED/MODIFIED LINE
-
-        await refreshUser(); // This updates the global context state for subsequent renders
-        console.log("LOG A6: Auth context re-fetched after registration.");
+        sessionStorage.setItem('employerRegistration', JSON.stringify(employerRegistrationDataForBackend));
       }
 
-      // 3. Post the Job (This will now run AFTER account creation if needed, or directly if logged in)
-      console.log("LOG B1: Attempting to post job...");
+      // 3) Store job payload to complete after payment
+      sessionStorage.setItem('jobToPost', JSON.stringify(jobPayload));
 
-      // Use the postedByUserId variable that now correctly contains the ID (either existing or new)
-      const finalJobPayload = {
-        ...jobPayload,
-        posted_by_user_id: postedByUserId // <--- MODIFIED LINE
-      };
-
-      if (!finalJobPayload.posted_by_user_id) {
-        throw new Error("User ID is missing. Cannot post job.");
-      }
-
-      console.log("LOG B2: Sending job payload:", finalJobPayload);
-
-      const jobPostResponse = await fetch('/api/job', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(finalJobPayload),
-      });
-
-      console.log("LOG B3: Job post fetch response object:", jobPostResponse);
-
-
-      if (!jobPostResponse.ok) {
-        const errorData = await jobPostResponse.json();
-        const errorMessage = errorData.message || errorData.error || 'Failed to post job.';
-        console.error("LOG B4: Job posting failed with error:", errorMessage, errorData);
-        throw new Error(errorMessage);
-      }
-
-      const jobResponseData = await jobPostResponse.json();
-      console.log("LOG B5: Job posted successfully:", jobResponseData);
-
-      alert(`Job posted successfully!`);
-
-      // Redirect to account page or job list
-      router.push('/my-account');
-      console.log("LOG B6: Redirecting to /my-account.");
+      // 4) Redirect to payment page; amount based on sponsored
+      const sponsoredParam = formData.sponsored ? 'true' : 'false';
+      router.push(`/pay?type=post_job&sponsored=${sponsoredParam}`);
 
     } catch (err: unknown) {
-      console.error("LOG C1: Error in job posting flow (full error object):", err);
+      console.error("LOG C1: Error preparing job/payment flow:", err);
       setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
-    } finally {
       setIsLoading(false);
-      console.log("LOG C3: Loading state set to false.");
     }
   };
 
@@ -320,7 +247,7 @@ function PostJobContent() {
   return (
     // Outer container for the entire page, providing the main background color and relative positioning
     // This div will ensure the bg-gray-950 covers the entire height and prevent white space below the footer.
-    <div className="min-h-screen bg-gray-950 relative">
+    <div className="min-h-screen bg-zinc-50 dark:bg-gray-950 relative">
 
       {/* Fixed background for blobs. This div will stay in place when content scrolls. */}
       {/* It uses z-0 to be behind everything else, but is visible because the main content below is z-10 or higher. */}
@@ -349,50 +276,50 @@ function PostJobContent() {
           isLoading={isAuthLoading}
           logout={logout}
           currentPage="post-job"
-          className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0"
+          className="fixed top-0 left-0 right-0 z-[9999] bg-white border-b border-zinc-200 text-gray-900 dark:bg-gray-900/80 dark:border-gray-800 dark:text-white"
         />
 
         {/* Actual page content, starting below the fixed header */}
-        <div className="container mx-auto px-4 py-8 max-w-4xl pt-[120px]">
+        <div className="container mx-auto px-4 py-8 max-w-4xl pt-[120px] pb-24 md:pb-16">
           <div className="mb-8">
-            <h1 className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500 mb-2">
+            <h1 className="text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-700 to-pink-700 dark:from-purple-400 dark:to-pink-500 mb-2">
               Post a Part-Time Job
             </h1>
-            <p className="text-gray-300">Connect with talented students in your area</p>
+            <p className="text-zinc-600 dark:text-gray-300">Connect with talented students in your area</p>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-3">
             {/* Main Form */}
             <div className="lg:col-span-2">
-              <Card className="bg-gray-900 border border-gray-800 text-gray-100">
+              <Card className="bg-white border border-zinc-200 text-gray-900 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100">
                 <CardHeader>
-                  <CardTitle className="text-gray-100">Job Details</CardTitle>
-                  <CardDescription className="text-gray-300">
+                  <CardTitle className="text-gray-900 dark:text-gray-100">Job Details</CardTitle>
+                  <CardDescription className="text-zinc-600 dark:text-gray-300">
                     Fill in the details about your part-time position
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="title" className="text-gray-200">Job Title *</Label>
+                      <Label htmlFor="title" className="text-zinc-800 dark:text-gray-200">Job Title *</Label>
                       <Input
                         id="title"
                         placeholder="e.g., Barista - Weekend Shifts"
                         value={formData.title}
                         onChange={(e) => handleInputChange("title", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="category" className="text-gray-200">Category *</Label>
+                        <Label htmlFor="category" className="text-zinc-800 dark:text-gray-200">Category *</Label>
                         <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
-                          <SelectTrigger className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500">
+                          <SelectTrigger className="bg-white text-gray-900 border-zinc-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
-                        <SelectContent className="bg-gray-800 text-gray-100 border-gray-700">
+                        <SelectContent className="bg-white text-gray-900 border-zinc-300 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
                           <SelectItem value="Hospitality">Hospitality</SelectItem>
                           <SelectItem value="Retail">Retail</SelectItem>
                           <SelectItem value="Tutoring">Tutoring</SelectItem>
@@ -406,21 +333,21 @@ function PostJobContent() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="location" className="text-gray-200">Job Location *</Label>
+                        <Label htmlFor="location" className="text-zinc-800 dark:text-gray-200">Job Location *</Label>
                         <Input
                           id="location"
                           placeholder="e.g., Manchester City Centre"
                           value={formData.location}
                           onChange={(e) => handleInputChange("location", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="hourlyPay" className="text-gray-200">Hourly Pay (£) *</Label>
+                        <Label htmlFor="hourlyPay" className="text-zinc-800 dark:text-gray-200">Hourly Pay (£) *</Label>
                         <Input
                           id="hourlyPay"
                           type="number"
@@ -430,23 +357,23 @@ function PostJobContent() {
                           value={formData.hourlyPay}
                           onChange={(e) => handleInputChange("hourlyPay", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
-                        <p className="text-xs text-gray-400">Minimum wage: £10.42/hour</p>
+                        <p className="text-xs text-zinc-500 dark:text-gray-400">Minimum wage: £10.42/hour</p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="hoursPerWeek" className="text-gray-200">Hours per Week *</Label>
+                        <Label htmlFor="hoursPerWeek" className="text-zinc-800 dark:text-gray-200">Hours per Week *</Label>
                         <Input
                           id="hoursPerWeek"
                           placeholder="e.g., 10-15 or 20"
                           value={formData.hoursPerWeek}
                           onChange={(e) => handleInputChange("hoursPerWeek", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="positionsAvailable" className="text-gray-200">Positions Available *</Label>
+                        <Label htmlFor="positionsAvailable" className="text-zinc-800 dark:text-gray-200">Positions Available *</Label>
                         <Input
                           id="positionsAvailable"
                           type="number"
@@ -456,36 +383,36 @@ function PostJobContent() {
                           value={formData.positionsAvailable}
                           onChange={(e) => handleInputChange("positionsAvailable", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
-                        <p className="text-xs text-gray-400">Number of people you want to hire</p>
+                        <p className="text-xs text-zinc-500 dark:text-gray-400">Number of people you want to hire</p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="description" className="text-gray-200">Job Description *</Label>
+                      <Label htmlFor="description" className="text-zinc-800 dark:text-gray-200">Job Description *</Label>
                       <Textarea
                         id="description"
                         placeholder="Describe the role, responsibilities, and what kind of student you're looking for..."
-                        className="min-h-32 bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="min-h-32 bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         value={formData.description}
                         onChange={(e) => handleInputChange("description", e.target.value)}
                         required
                       />
                     </div>
 
-                    <Separator className="bg-gray-700" />
+                    <Separator className="bg-zinc-200 dark:bg-gray-700" />
 
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-100">Contact Information & Account Creation</h3>
-                      <p className="text-sm text-gray-400">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Contact Information & Account Creation</h3>
+                      <p className="text-sm text-zinc-600 dark:text-gray-400">
                         This information will be used for your employer account.
                         {user ? " Your account details will be used." : " Create an employer account to manage your jobs."}
                       </p>
 
                       <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                              <Label htmlFor="firstName" className="text-gray-200">First Name *</Label>
+                              <Label htmlFor="firstName" className="text-zinc-800 dark:text-gray-200">First Name *</Label>
                               <Input
                                   id="firstName"
                                   placeholder="Your first name"
@@ -493,11 +420,11 @@ function PostJobContent() {
                                   onChange={(e) => handleInputChange("firstName", e.target.value)}
                                   required
                                   disabled={!!user}
-                                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500 disabled:bg-gray-700 disabled:text-gray-400"
+                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
                               />
                           </div>
                           <div className="space-y-2">
-                              <Label htmlFor="lastName" className="text-gray-200">Last Name *</Label>
+                              <Label htmlFor="lastName" className="text-zinc-800 dark:text-gray-200">Last Name *</Label>
                               <Input
                                   id="lastName"
                                   placeholder="Your last name"
@@ -505,13 +432,13 @@ function PostJobContent() {
                                   onChange={(e) => handleInputChange("lastName", e.target.value)}
                                   required
                                   disabled={!!user}
-                                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500 disabled:bg-gray-700 disabled:text-gray-400"
+                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
                               />
                           </div>
                       </div>
 
                       <div className="space-y-2">
-                          <Label htmlFor="email" className="text-gray-200">Email *</Label>
+                          <Label htmlFor="email" className="text-zinc-800 dark:text-gray-200">Email *</Label>
                           <Input
                               id="email"
                               type="email"
@@ -520,13 +447,13 @@ function PostJobContent() {
                               onChange={(e) => handleInputChange("email", e.target.value)}
                               required
                               disabled={!!user}
-                              className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500 disabled:bg-gray-700 disabled:text-gray-400"
+                              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
                           />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                              <Label htmlFor="phoneNumber" className="text-gray-200">Phone Number *</Label>
+                              <Label htmlFor="phoneNumber" className="text-zinc-800 dark:text-gray-200">Phone Number *</Label>
                               <Input
                                   id="phoneNumber"
                                   type="tel"
@@ -535,11 +462,11 @@ function PostJobContent() {
                                   onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                                   required
                                   disabled={!!user}
-                                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500 disabled:bg-gray-700 disabled:text-gray-400"
+                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
                               />
                           </div>
                           <div className="space-y-2">
-                              <Label htmlFor="city" className="text-gray-200">City *</Label>
+                              <Label htmlFor="city" className="text-zinc-800 dark:text-gray-200">City *</Label>
                               <Input
                                   id="city"
                                   placeholder="e.g., London"
@@ -547,13 +474,13 @@ function PostJobContent() {
                                   onChange={(e) => handleInputChange("city", e.target.value)}
                                   required
                                   disabled={!!user}
-                                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500 disabled:bg-gray-700 disabled:text-gray-400"
+                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
                               />
                           </div>
                       </div>
 
                       <div className="space-y-2">
-                          <Label htmlFor="organisationName" className="text-gray-200">Business/Organisation Name *</Label>
+                          <Label htmlFor="organisationName" className="text-zinc-800 dark:text-gray-200">Business/Organisation Name *</Label>
                           <Input
                               id="organisationName"
                               placeholder="e.g., My Cafe Ltd."
@@ -561,7 +488,7 @@ function PostJobContent() {
                               onChange={(e) => handleInputChange("organisationName", e.target.value)}
                               required
                               disabled={!!user}
-                              className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500 disabled:bg-gray-700 disabled:text-gray-400"
+                              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
                           />
                       </div>
 
@@ -570,7 +497,7 @@ function PostJobContent() {
                       {!user && (
                         <>
                           <div className="space-y-2">
-                            <Label htmlFor="password" className="text-gray-200">Password *</Label>
+                            <Label htmlFor="password" className="text-zinc-800 dark:text-gray-200">Password *</Label>
                             <Input
                               id="password"
                               type="password"
@@ -578,11 +505,11 @@ function PostJobContent() {
                               value={formData.password}
                               onChange={(e) => handleInputChange("password", e.target.value)}
                               required
-                              className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="confirmPassword" className="text-gray-200">Confirm Password *</Label>
+                            <Label htmlFor="confirmPassword" className="text-zinc-800 dark:text-gray-200">Confirm Password *</Label>
                             <Input
                               id="confirmPassword"
                               type="password"
@@ -590,7 +517,7 @@ function PostJobContent() {
                               value={formData.confirmPassword}
                               onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                               required
-                              className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                             />
                           </div>
                           {/* ADDED: Terms and Conditions Checkbox for non-logged-in users */}
@@ -601,13 +528,13 @@ function PostJobContent() {
                               onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
                               className="border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
                             />
-                            <label htmlFor="postJobTerms" className="text-sm text-gray-300">
+                            <label htmlFor="postJobTerms" className="text-sm text-zinc-700 dark:text-gray-300">
                               I agree to the{" "}
-                              <Link href="/terms" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
+                              <Link href="/terms" className="text-blue-700 hover:underline dark:text-blue-400" target="_blank" rel="noopener noreferrer">
                                 Terms & Conditions
                               </Link>{" "}
                               and{" "}
-                              <Link href="/privacy" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
+                              <Link href="/privacy" className="text-blue-700 hover:underline dark:text-blue-400" target="_blank" rel="noopener noreferrer">
                                 Privacy Policy
                               </Link>
                             </label>
@@ -617,29 +544,29 @@ function PostJobContent() {
 
                     </div>
 
-                    <Separator className="bg-gray-700" />
+                    <Separator className="bg-zinc-200 dark:bg-gray-700" />
 
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-100">Visibility Options</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Visibility Options</h3>
 
-                      <div className="flex items-start space-x-3">
-                        <Checkbox
-                          id="sponsored"
-                          checked={formData.sponsored}
-                          onCheckedChange={(checked) => handleInputChange("sponsored", checked as boolean)}
-                          className="border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
-                        />
-                        <div className="space-y-1">
-                          <label htmlFor="sponsored" className="text-sm font-medium cursor-pointer text-gray-200">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="sponsored"
+                            checked={formData.sponsored}
+                            onCheckedChange={(checked) => handleInputChange("sponsored", checked as boolean)}
+                            className="border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                          />
+                          <label htmlFor="sponsored" className="text-sm font-medium cursor-pointer text-gray-900 dark:text-gray-200">
                             Make this a Sponsored Job (+£4)
-                            <Badge variant="secondary" className="ml-2 bg-yellow-900/50 text-yellow-300 border border-yellow-700">
-                              Recommended
-                            </Badge>
+                            <Badge variant="secondary" className="ml-2 bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-700 hover:bg-yellow-100 hover:text-yellow-800 hover:border-yellow-300 dark:hover:bg-yellow-900/50 dark:hover:text-yellow-300 dark:hover:border-yellow-700 transition transform hover:scale-[1.03] hover:shadow-md dark:hover:shadow-md">
+                                Recommended
+                              </Badge>
                           </label>
-                          <p className="text-sm text-gray-400">
-                            Sponsored jobs appear at the top of search results and get 3x more views
-                          </p>
                         </div>
+                        <p className="text-sm text-zinc-600 dark:text-gray-400 ml-9">
+                          Sponsored jobs appear at the top of search results and get 3x more views
+                        </p>
                       </div>
                     </div>
 
@@ -656,7 +583,7 @@ function PostJobContent() {
                       {isLoading ? "Processing..." : `Post Job - £${postingCost}`}
                     </Button>
 
-                    <p className="text-xs text-gray-400 text-center">
+                    <p className="text-xs text-zinc-700 dark:text-gray-400 text-center">
                       Secure payment processed by Stripe. You'll receive a receipt via email.
                     </p>
                   </form>
@@ -666,38 +593,38 @@ function PostJobContent() {
 
             {/* Pricing Sidebar */}
             <div className="lg:col-span-1">
-              <Card className="sticky top-[100px] bg-gray-900 border-2 border-blue-700 text-gray-100">
+              <Card className="sticky top-[100px] bg-white border-2 border-blue-200 text-gray-900 dark:bg-gray-900 dark:border-blue-700 dark:text-gray-100">
                 <CardHeader>
-                  <CardTitle className="text-gray-100">Pricing Summary</CardTitle>
+                  <CardTitle className="text-gray-900 dark:text-gray-100">Pricing Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="max-h-[200px] overflow-y-auto pr-2">
                     <div className="space-y-3">
-                      <div className="flex justify-between items-center text-gray-200">
+                      <div className="flex justify-between items-center text-gray-900 dark:text-gray-200">
                         <span>Basic Job Post</span>
                         <span>£1.00</span>
                       </div>
 
                       {formData.sponsored && (
-                        <div className="flex justify-between items-center text-yellow-400">
+                        <div className="flex justify-between items-center text-yellow-700 dark:text-yellow-300">
                           <span>Sponsored Upgrade</span>
                           <span>£4.00</span>
                         </div>
                       )}
 
-                      <Separator className="bg-gray-700" />
+                      <Separator className="bg-zinc-200 dark:bg-gray-700" />
 
-                      <div className="flex justify-between items-center font-semibold text-lg text-gray-100">
+                      <div className="flex justify-between items-center font-semibold text-lg text-gray-900 dark:text-gray-100">
                         <span>Total</span>
                         <span>£{postingCost}.00</span>
                       </div>
                     </div>
 
-                    <div className="space-y-3 text-sm text-gray-400 mt-4">
+                    <div className="space-y-3 text-sm text-zinc-600 dark:text-gray-400 mt-4">
                       {formData.sponsored && (
                         <>
-                          <div className="text-yellow-400">⭐ Top of search results</div>
-                          <div className="text-yellow-400">⭐ 3x more visibility</div>
+                          <div className="text-yellow-700 dark:text-yellow-300">⭐ Top of search results</div>
+                          <div className="text-yellow-700 dark:text-yellow-300">⭐ 3x more visibility</div>
                         </>
                       )}
                     </div>
@@ -705,12 +632,11 @@ function PostJobContent() {
                 </CardContent>
               </Card>
 
-              <Card className="mt-4 bg-gray-900 border-2 border-purple-700 text-gray-100">
+              <Card className="hidden md:block mt-4 bg-white border-2 border-purple-200 text-gray-900 dark:bg-gray-900 dark:border-purple-700 dark:text-gray-100">
                 <CardHeader>
-                  <CardTitle className="text-lg text-gray-100">Why Post on StudentJobs UK?</CardTitle>
+                  <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Why Post on StudentJobs UK?</CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm space-y-2 text-gray-300">
-                  <div>• Access to verified UK students</div>
+                <CardContent className="text-sm space-y-2 text-zinc-600 dark:text-gray-300">
                   <div>• Students actively seeking part-time work</div>
                   <div>• Flexible workers who understand study schedules</div>
                   <div>• Direct contact with applicants</div>
@@ -721,49 +647,8 @@ function PostJobContent() {
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="w-full py-6 bg-gray-900 text-gray-300 mt-16 relative">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="grid gap-8 lg:grid-cols-4">
-              <div>
-                <h3 className="font-bold text-lg mb-4 text-white">StudentJobs UK</h3>
-                <p className="text-gray-400 text-sm">
-                  Connecting UK students with flexible part-time opportunities.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3 text-indigo-400">For Students</h4>
-                <nav className="flex flex-col space-y-2 text-sm">
-                  <Link href="/browse-jobs" className="text-gray-400 hover:text-indigo-300">Browse Jobs</Link>
-                  <Link href="/how-it-works" className="text-gray-400 hover:text-indigo-300">How It Works</Link>
-                  <Link href="/student-guide" className="text-gray-400 hover:text-indigo-300">Student Guide</Link>
-                </nav>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3 text-indigo-300">For Employers</h4>
-                <nav className="flex flex-col space-y-2 text-sm">
-                  <Link href="/post-job" className="text-gray-400 hover:text-indigo-200">Post a Job</Link>
-                  <Link href="/pricing" className="text-gray-400 hover:text-indigo-200">Pricing</Link>
-                  <Link href="/employer-guide" className="text-gray-400 hover:text-indigo-200">Employer Guide</Link>
-                </nav>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3 text-purple-300">Legal</h4>
-                <nav className="flex flex-col space-y-2 text-sm">
-                  <Link href="/privacy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
-                  <Link href="/terms" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>
-                  <Link href="/refund-policy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Refund Policy</Link>
-                  <ContactModal>
-                    <button className="text-gray-400 hover:text-purple-200 text-left px-0 py-0 text-sm font-medium">Contact Us</button>
-                  </ContactModal>
-                </nav>
-              </div>
-            </div>
-            <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
-              © 2025 StudentJobs UK. All rights reserved.
-            </div>
-          </div>
-        </footer>
+        {/* Global footer is included via RootLayout */}
+
       </div>
     </div>
   )

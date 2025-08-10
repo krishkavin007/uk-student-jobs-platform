@@ -35,12 +35,12 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
         {children}
       </DialogTrigger>
       {/* MODIFIED: DialogContent to match the Card styling from the login page */}
-      <DialogContent className="sm:max-w-md bg-gray-900 border border-gray-800 text-gray-100">
+      <DialogContent className="sm:max-w-md bg-white border border-zinc-200 text-gray-900 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100">
         <DialogHeader>
           {/* MODIFIED: DialogTitle to match CardTitle */}
-          <DialogTitle className="text-gray-100">Contact Us</DialogTitle>
+          <DialogTitle className="text-gray-900 dark:text-gray-100">Contact Us</DialogTitle>
           {/* MODIFIED: DialogDescription to match CardDescription */}
-          <DialogDescription className="text-gray-300">
+          <DialogDescription className="text-zinc-600 dark:text-gray-300">
             {isLoggedIn
               ? "Send us your question or feedback"
               : "Get in touch with our support team"
@@ -53,19 +53,19 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
             <>
               <div>
                 {/* MODIFIED: Label to match login page labels */}
-                <Label htmlFor="name" className="text-gray-200">Name</Label>
+                <Label htmlFor="name" className="text-zinc-800 dark:text-gray-200">Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   required
                   // MODIFIED: Input to match login page inputs
-                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                 />
               </div>
               <div>
                 {/* MODIFIED: Label to match login page labels */}
-                <Label htmlFor="email" className="text-gray-200">Email</Label>
+                <Label htmlFor="email" className="text-zinc-800 dark:text-gray-200">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -73,7 +73,7 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   required
                   // MODIFIED: Input to match login page inputs
-                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                 />
               </div>
             </>
@@ -81,20 +81,20 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
 
           <div>
             {/* MODIFIED: Label to match login page labels */}
-            <Label htmlFor="subject" className="text-gray-200">Subject</Label>
+            <Label htmlFor="subject" className="text-zinc-800 dark:text-gray-200">Subject</Label>
             <Input
               id="subject"
               value={formData.subject}
               onChange={(e) => setFormData({...formData, subject: e.target.value})}
               required
               // MODIFIED: Input to match login page inputs
-              className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
             />
           </div>
 
           <div>
             {/* MODIFIED: Label to match login page labels */}
-            <Label htmlFor="message" className="text-gray-200">Message</Label>
+            <Label htmlFor="message" className="text-zinc-800 dark:text-gray-200">Message</Label>
             <Textarea
               id="message"
               rows={4}
@@ -102,7 +102,7 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
               onChange={(e) => setFormData({...formData, message: e.target.value})}
               required
               // MODIFIED: Textarea to match login page inputs
-              className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
             />
           </div>
 
@@ -112,7 +112,7 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              className="bg-gray-800 border-gray-700 text-gray-100 hover:bg-gray-700 hover:text-gray-50"
+              className="bg-white border-zinc-300 text-gray-700 hover:bg-zinc-50 hover:text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-50"
             >
               Cancel
             </Button>

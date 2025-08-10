@@ -5,7 +5,6 @@ import { useState, useMemo, useEffect, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/ui/header";
-import { ContactModal } from "@/components/ui/contact-modal";
 import { useAuth } from "@/app/context/AuthContext";
 import Tilt from "react-parallax-tilt";
 import { motion, AnimatePresence } from "framer-motion";
@@ -72,8 +71,8 @@ const sectionPop = {
 
 // Component for custom list items
 const ListItem = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex items-start gap-2 text-base text-gray-300">
-    <Check className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+  <div className="flex items-start gap-2 text-base text-zinc-600 dark:text-gray-300">
+    <Check className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
     <span>{children}</span>
   </div>
 );
@@ -85,13 +84,13 @@ export default function StudentGuidePage() {
   const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 font-sans antialiased">
+    <div className="min-h-screen bg-zinc-50 text-gray-900 font-sans antialiased dark:bg-gray-950 dark:text-gray-100">
       <Header
         user={user}
         isLoading={authLoading}
         logout={logout}
         pricingHref={pricingHref}
-        className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 text-gray-100"
+        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-zinc-200 text-gray-900 dark:bg-gray-900/80 dark:border-gray-800 dark:text-gray-100"
       />
 
       <motion.main
@@ -109,27 +108,27 @@ export default function StudentGuidePage() {
           <div className="text-center mb-12">
             <motion.h1
               variants={titleVariants}
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 mb-4"
+              className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-800 dark:from-blue-400 dark:to-purple-600 mb-4"
             >
               Student Guide
             </motion.h1>
             <motion.p
               variants={titleVariants}
-              className="mt-4 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto"
+              className="mt-4 text-lg md:text-xl text-zinc-600 dark:text-gray-400 max-w-2xl mx-auto"
             >
               Everything you need to know about working while studying in the UK
             </motion.p>
           </div>
 
           {/* Legal Requirements */}
-          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8 border border-gray-800">
-            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-8 text-center md:text-left">
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-white rounded-2xl shadow-lg p-6 md:p-8 border border-zinc-200 dark:bg-gray-900 dark:border-gray-800">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-700 dark:from-blue-400 dark:to-purple-500 mb-8 text-center md:text-left">
               Legal Requirements & Work Rights
             </h2>
             <div className="grid md:grid-cols-2 gap-8 mb-8">
-              <div className="bg-gray-950 rounded-xl p-4 border border-gray-800">
-                <h3 className="text-lg font-semibold mb-3 text-blue-400">UK/EU Students</h3>
-                <div className="space-y-2">
+              <div className="bg-zinc-50 rounded-xl p-4 border border-zinc-200 dark:bg-gray-950 dark:border-gray-800">
+                <h3 className="text-lg font-semibold mb-3 text-blue-600 dark:text-blue-400">UK/EU Students</h3>
+                <div className="space-y-2 text-zinc-600 dark:text-gray-300">
                   <ListItem>No restrictions on working hours</ListItem>
                   <ListItem>Can work during term-time and holidays</ListItem>
                   <ListItem>Entitled to minimum wage (£10.42/hour for 18+)</ListItem>
@@ -137,9 +136,9 @@ export default function StudentGuidePage() {
                 </div>
               </div>
 
-              <div className="bg-gray-950 rounded-xl p-4 border border-gray-800">
-                <h3 className="text-lg font-semibold mb-3 text-purple-400">International Students (Tier 4/Student Visa)</h3>
-                <div className="space-y-2">
+              <div className="bg-zinc-50 rounded-xl p-4 border border-zinc-200 dark:bg-gray-950 dark:border-gray-800">
+                <h3 className="text-lg font-semibold mb-3 text-purple-600 dark:text-purple-400">International Students (Tier 4/Student Visa)</h3>
+                <div className="space-y-2 text-zinc-600 dark:text-gray-300">
                   <ListItem>Maximum 20 hours per week during term-time</ListItem>
                   <ListItem>Can work full-time (40 hours) during official university holidays</ListItem>
                   <ListItem>Must have &#34;work permitted&#34; stamp in passport or visa</ListItem>
@@ -151,23 +150,23 @@ export default function StudentGuidePage() {
               </div>
             </div>
 
-            <div className="bg-amber-900/20 border border-amber-700 rounded-xl p-4">
-              <h4 className="font-semibold text-amber-300 mb-2">Important:</h4>
-              <p className="text-amber-200 text-base">
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 dark:bg-amber-900/20 dark:border-amber-700">
+              <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">Important:</h4>
+              <p className="text-amber-700 dark:text-amber-200 text-base">
                 Always check your specific visa conditions. Working more than permitted hours can affect your visa status and future applications.
               </p>
             </div>
           </motion.section>
 
           {/* Job Search Tips */}
-          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gray-850 rounded-2xl shadow-md p-6 md:p-8 border border-gray-700">
-            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-teal-500 mb-8 text-center md:text-left">
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-white rounded-2xl shadow-md p-6 md:p-8 border border-zinc-200 dark:bg-gray-900 dark:border-gray-800">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-teal-700 dark:from-green-400 dark:to-teal-500 mb-8 text-center md:text-left">
               Job Search Tips
             </h2>
             <div className="grid gap-8 md:grid-cols-2">
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-green-400">Building Your Profile</h3>
-                <div className="space-y-2 border-l-2 border-green-500 pl-4"> {/* Subtle left border */}
+                <h3 className="text-lg font-semibold mb-3 text-green-600 dark:text-green-400">Building Your Profile</h3>
+                <div className="space-y-2 border-l-2 border-green-500 pl-4 text-zinc-600 dark:text-gray-300">
                   <ListItem>Use a professional email address</ListItem>
                   <ListItem>Include your university and course</ListItem>
                   <ListItem>Mention your availability clearly</ListItem>
@@ -177,8 +176,8 @@ export default function StudentGuidePage() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-red-400">Finding the Right Jobs</h3>
-                <div className="space-y-2 border-l-2 border-red-500 pl-4"> {/* Subtle left border */}
+                <h3 className="text-lg font-semibold mb-3 text-red-600 dark:text-red-400">Finding the Right Jobs</h3>
+                <div className="space-y-2 border-l-2 border-red-500 pl-4 text-zinc-600 dark:text-gray-300">
                   <ListItem>Filter by location to save commute time</ListItem>
                   <ListItem>Look for &#34;student-friendly&#34; employers</ListItem>
                   <ListItem>Consider jobs near your university</ListItem>
@@ -191,16 +190,16 @@ export default function StudentGuidePage() {
 
           {/* Popular Student Jobs */}
           <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-500 mb-8 text-center md:text-left">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-orange-600 to-red-700 dark:from-orange-400 dark:to-red-500 mb-8 text-center md:text-left">
               Popular Student Jobs
             </h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <Link href="/browse-jobs">
                 <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
-                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
-                    <h3 className="font-semibold mb-2 text-white">Hospitality</h3>
-                    <p className="text-base text-gray-400 mb-2">Restaurants, cafes, pubs</p>
-                    <div className="space-y-1">
+                  <div className="bg-white rounded-xl p-4 border border-zinc-200 h-full dark:bg-gray-900 dark:border-gray-800">
+                    <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Hospitality</h3>
+                    <p className="text-base text-zinc-600 dark:text-gray-400 mb-2">Restaurants, cafes, pubs</p>
+                    <div className="space-y-1 text-zinc-600 dark:text-gray-300">
                       <ListItem>Flexible evening/weekend shifts</ListItem>
                       <ListItem>Tips supplement wages</ListItem>
                       <ListItem>Great for social skills</ListItem>
@@ -211,10 +210,10 @@ export default function StudentGuidePage() {
 
               <Link href="/browse-jobs">
                 <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
-                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
-                    <h3 className="font-semibold mb-2 text-white">Retail</h3>
-                    <p className="text-base text-gray-400 mb-2">Shops, supermarkets</p>
-                    <div className="space-y-1">
+                  <div className="bg-white rounded-xl p-4 border border-zinc-200 h-full dark:bg-gray-900 dark:border-gray-800">
+                    <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Retail</h3>
+                    <p className="text-base text-zinc-600 dark:text-gray-400 mb-2">Shops, supermarkets</p>
+                    <div className="space-y-1 text-zinc-600 dark:text-gray-300">
                       <ListItem>Weekend and evening availability</ListItem>
                       <ListItem>Customer service experience</ListItem>
                       <ListItem>Often hiring during busy periods</ListItem>
@@ -225,10 +224,10 @@ export default function StudentGuidePage() {
 
               <Link href="/browse-jobs">
                 <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
-                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
-                    <h3 className="font-semibold mb-2 text-white">Tutoring</h3>
-                    <p className="text-base text-gray-400 mb-2">Private or through agencies</p>
-                    <div className="space-y-1">
+                  <div className="bg-white rounded-xl p-4 border border-zinc-200 h-full dark:bg-gray-900 dark:border-gray-800">
+                    <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Tutoring</h3>
+                    <p className="text-base text-zinc-600 dark:text-gray-400 mb-2">Private or through agencies</p>
+                    <div className="space-y-1 text-zinc-600 dark:text-gray-300">
                       <ListItem>Higher hourly rates (£15-25)</ListItem>
                       <ListItem>Flexible scheduling</ListItem>
                       <ListItem>Use your academic strengths</ListItem>
@@ -239,10 +238,10 @@ export default function StudentGuidePage() {
 
               <Link href="/browse-jobs">
                 <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
-                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
-                    <h3 className="font-semibold mb-2 text-white">Campus Jobs</h3>
-                    <p className="text-base text-gray-400 mb-2">University employment</p>
-                    <div className="space-y-1">
+                  <div className="bg-white rounded-xl p-4 border border-zinc-200 h-full dark:bg-gray-900 dark:border-gray-800">
+                    <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Campus Jobs</h3>
+                    <p className="text-base text-zinc-600 dark:text-gray-400 mb-2">University employment</p>
+                    <div className="space-y-1 text-zinc-600 dark:text-gray-300">
                       <ListItem>No commute required</ListItem>
                       <ListItem>Understanding of student needs</ListItem>
                       <ListItem>Academic support roles</ListItem>
@@ -253,10 +252,10 @@ export default function StudentGuidePage() {
 
               <Link href="/browse-jobs">
                 <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
-                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
-                    <h3 className="font-semibold mb-2 text-white">Delivery Work</h3>
-                    <p className="text-base text-gray-400 mb-2">Food delivery, couriers</p>
-                    <div className="space-y-1">
+                  <div className="bg-white rounded-xl p-4 border border-zinc-200 h-full dark:bg-gray-900 dark:border-gray-800">
+                    <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Delivery Work</h3>
+                    <p className="text-base text-zinc-600 dark:text-gray-400 mb-2">Food delivery, couriers</p>
+                    <div className="space-y-1 text-zinc-600 dark:text-gray-300">
                       <ListItem>Flexible hours</ListItem>
                       <ListItem>Exercise while working</ListItem>
                       <ListItem>Peak time bonuses</ListItem>
@@ -267,10 +266,10 @@ export default function StudentGuidePage() {
 
               <Link href="/browse-jobs">
                 <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000} className="cursor-pointer">
-                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 h-full">
-                    <h3 className="font-semibold mb-2 text-white">Admin Support</h3>
-                    <p className="text-base text-gray-400 mb-2">Office assistance</p>
-                    <div className="space-y-1">
+                  <div className="bg-white rounded-xl p-4 border border-zinc-200 h-full dark:bg-gray-900 dark:border-gray-800">
+                    <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Admin Support</h3>
+                    <p className="text-base text-zinc-600 dark:text-gray-400 mb-2">Office assistance</p>
+                    <div className="space-y-1 text-zinc-600 dark:text-gray-300">
                       <ListItem>Professional environment</ListItem>
                       <ListItem>Transferable skills</ListItem>
                       <ListItem>Often part-time friendly</ListItem>
@@ -282,14 +281,14 @@ export default function StudentGuidePage() {
           </motion.section>
 
           {/* Money Management */}
-          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gray-900 rounded-3xl shadow-2xl p-6 md:p-8 border-t-4 border-indigo-600 border-l border-r border-b border-gray-800">
-            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500 mb-8 text-center md:text-left">
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-white rounded-3xl shadow-2xl p-6 md:p-8 border-t-4 border-indigo-600 border-l border-r border-b border-zinc-200 dark:bg-gray-900 dark:border-gray-800">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-yellow-600 to-orange-700 dark:from-yellow-400 dark:to-orange-500 mb-8 text-center md:text-left">
               Money Management & Tax
             </h2>
             <div className="space-y-8">
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-orange-400">Understanding Your Pay</h3>
-                <div className="space-y-2">
+                <h3 className="text-lg font-semibold mb-3 text-orange-600 dark:text-orange-400">Understanding Your Pay</h3>
+                <div className="space-y-2 text-zinc-600 dark:text-gray-300">
                   <ListItem>Minimum Wage: £10.42/hour (18-20), £11.44/hour (21+)</ListItem>
                   <ListItem>National Insurance: Paid automatically if earning over £12,570/year</ListItem>
                   <ListItem>Income Tax: Only pay if earning over £12,570/year</ListItem>
@@ -298,8 +297,8 @@ export default function StudentGuidePage() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-teal-400">Tax Tips for Students</h3>
-                <div className="bg-green-900/20 border border-green-700 rounded-xl p-4 space-y-2">
+                <h3 className="text-lg font-semibold mb-3 text-teal-600 dark:text-teal-400">Tax Tips for Students</h3>
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-2 dark:bg-green-900/20 dark:border-green-700">
                   <ListItem>Get a National Insurance number before starting work</ListItem>
                   <ListItem>Keep payslips for tax records</ListItem>
                   <ListItem>You can claim back overpaid tax at year-end</ListItem>
@@ -311,14 +310,14 @@ export default function StudentGuidePage() {
           </motion.section>
 
           {/* Balancing Work and Studies */}
-          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gradient-to-br from-gray-900 to-gray-950 rounded-2xl p-6 md:p-8 shadow-inner border border-gray-800">
-            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 mb-8 text-center md:text-left">
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gradient-to-br from-white to-zinc-50 rounded-2xl p-6 md:p-8 shadow-inner border border-zinc-200 dark:from-gray-900 dark:to-gray-950 dark:border-gray-800">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-700 dark:from-cyan-400 dark:to-blue-500 mb-8 text-center md:text-left">
               Balancing Work and Studies
             </h2>
             <div className="grid gap-8 md:grid-cols-2">
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-cyan-400">Time Management</h3>
-                <div className="space-y-2">
+                <h3 className="text-lg font-semibold mb-3 text-cyan-600 dark:text-cyan-400">Time Management</h3>
+                <div className="space-y-2 text-zinc-600 dark:text-gray-300">
                   <ListItem>Plan your schedule in advance</ListItem>
                   <ListItem>Block out study time and stick to it</ListItem>
                   <ListItem>Use breaks between lectures for work</ListItem>
@@ -328,8 +327,8 @@ export default function StudentGuidePage() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-pink-400">Academic Priorities</h3>
-                <div className="space-y-2">
+                <h3 className="text-lg font-semibold mb-3 text-pink-600 dark:text-pink-400">Academic Priorities</h3>
+                <div className="space-y-2 text-zinc-600 dark:text-gray-300">
                   <ListItem>Studies should always come first</ListItem>
                   <ListItem>Reduce work hours during exams</ListItem>
                   <ListItem>Find understanding employers</ListItem>
@@ -339,9 +338,9 @@ export default function StudentGuidePage() {
               </div>
             </div>
 
-            <div className="mt-8 bg-blue-900/20 border border-blue-700 rounded-xl p-4">
-              <h4 className="font-semibold text-blue-300 mb-2">Recommended Schedule:</h4>
-              <p className="text-base text-blue-200">
+            <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4 dark:bg-blue-900/20 dark:border-blue-700">
+              <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Recommended Schedule:</h4>
+              <p className="text-base text-blue-700 dark:text-blue-200">
                 Most students find 10-15 hours per week during term-time manageable. This allows for study time,
                 social activities, and rest while earning useful income.
               </p>
@@ -349,14 +348,14 @@ export default function StudentGuidePage() {
           </motion.section>
 
           {/* Safety and Rights */}
-          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-gray-850 rounded-lg shadow-lg p-6 md:p-8 border border-gray-750">
-            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-500 mb-8 text-center md:text-left">
+          <motion.section variants={sectionPop} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }} className="mb-16 bg-white rounded-lg shadow-lg p-6 md:p-8 border border-zinc-200 dark:bg-gray-900 dark:border-gray-800">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-700 dark:from-purple-400 dark:to-indigo-500 mb-8 text-center md:text-left">
               Workplace Rights & Safety
             </h2>
             <div className="space-y-8">
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-indigo-400">Your Rights as a Worker</h3>
-                <div className="space-y-2">
+                <h3 className="text-lg font-semibold mb-3 text-indigo-600 dark:text-indigo-400">Your Rights as a Worker</h3>
+                <div className="space-y-2 text-zinc-600 dark:text-gray-300">
                   <ListItem>Right to minimum wage</ListItem>
                   <ListItem>Rest breaks (20 minutes if working 6+ hours)</ListItem>
                   <ListItem>Safe working environment</ListItem>
@@ -366,8 +365,8 @@ export default function StudentGuidePage() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-red-400">Red Flags to Avoid</h3>
-                <div className="bg-red-900/20 border border-red-700 rounded-xl p-4 space-y-2">
+                <h3 className="text-lg font-semibold mb-3 text-red-600 dark:text-red-400">Red Flags to Avoid</h3>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2 dark:bg-red-900/20 dark:border-red-700">
                   <ListItem>Jobs requiring upfront payments</ListItem>
                   <ListItem>Employers asking for bank details before job offer</ListItem>
                   <ListItem>&#34;Too good to be true&#34; high pay for easy work</ListItem>
@@ -380,7 +379,7 @@ export default function StudentGuidePage() {
 
 
           {/* CTA */}
-          <section className="bg-gray-900 rounded-2xl shadow-lg border border-gray-800 py-16 px-4 text-center mt-20">
+          <section className="bg-white rounded-2xl shadow-lg border border-zinc-200 py-16 px-4 text-center mt-20 dark:bg-gray-900 dark:border-gray-800">
             <motion.div
               variants={containerStagger}
               initial="hidden"
@@ -389,13 +388,13 @@ export default function StudentGuidePage() {
             >
               <motion.h2
                 variants={titleVariants}
-                className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4"
+                className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-800 dark:from-blue-400 dark:to-purple-500 mb-4"
               >
                 Ready to Start Working?
               </motion.h2>
               <motion.p
                 variants={titleVariants}
-                className="text-gray-300 text-lg mb-10 max-w-2xl mx-auto"
+                className="text-zinc-600 dark:text-gray-300 text-lg mb-10 max-w-2xl mx-auto"
               >
                 Find student-friendly employers who understand your schedule
               </motion.p>
@@ -416,7 +415,7 @@ export default function StudentGuidePage() {
                   asChild
                   variant="outline"
                   size="lg"
-                  className="w-full sm:w-auto h-14 px-8 text-base border-2 border-indigo-600 text-indigo-400 bg-transparent hover:bg-indigo-900/50 hover:text-white font-bold rounded-full shadow-lg transform hover:scale-105 transition-transform"
+                  className="w-full sm:w-auto h-14 px-8 text-base border-2 border-indigo-600 text-indigo-600 bg-transparent hover:bg-indigo-50 hover:text-indigo-700 font-bold rounded-full shadow-lg transform hover:scale-105 transition-transform dark:text-indigo-400 dark:bg-transparent dark:hover:bg-indigo-900/50 dark:hover:text-white"
                 >
                   <Link href="/signup">Create Account</Link>
                 </Button>
@@ -425,132 +424,6 @@ export default function StudentGuidePage() {
           </section>
         </motion.div>
       </motion.main>
-
-      {/* Footer */}
-      <footer className="w-full bg-gray-900 text-gray-300 py-10 mt-1 border-t border-gray-800">
-        <div className="w-full px-4 md:px-6 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
-            <div className="col-span-full md:col-span-1 flex flex-col items-center md:items-start mb-6 md:mb-0">
-              <Link
-                href="/"
-                className="flex items-center justify-center md:justify-start space-x-2 mb-4"
-              >
-                <span className="text-2xl font-extrabold text-white">
-                  StudentJobs UK
-                </span>
-              </Link>
-              <p className="text-gray-400 text-sm max-w-xs text-center md:text-left">
-                Connecting UK students with flexible part-time opportunities.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-sm mb-3 text-indigo-400 uppercase tracking-wider">
-                For Students
-              </h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link
-                    href="/browse-jobs"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Browse Jobs
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/how-it-works"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    How It Works
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/student-guide"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Student Guide
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-base mb-3 text-indigo-300">
-                For Employers
-              </h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link
-                    href="/post-job"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Post a Job
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={pricingHref}
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/employer-guide"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Employer Guide
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-base mb-3 text-purple-300">Legal</h3>
-              <ul className="space-y-1.5 text-sm">
-                <li>
-                  <Link
-                    href="/privacy"
-                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
-                  >
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
-                  >
-                    Terms & Conditions
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/refund-policy"
-                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
-                  >
-                    Refund Policy
-                  </Link>
-                </li>
-                <li>
-                  <ContactModal>
-                    <button className="text-gray-400 hover:text-purple-200 transition-colors duration-200 text-left text-sm">
-                      Contact Us
-                    </button>
-                  </ContactModal>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-10 pt-6 text-center text-xs text-gray-500">
-            © {new Date().getFullYear()} StudentJobs UK. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

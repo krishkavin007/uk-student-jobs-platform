@@ -5,6 +5,7 @@ import "./globals.css";
 import ClientBody from "./ClientBody";
 import Script from "next/script";
 import { CookieConsent } from "../components/ui/cookie-consent";
+import { Footer } from "../components/ui/footer";
 
 // --- ADD THIS IMPORT ---
 import { AuthProvider } from './context/AuthContext';
@@ -32,8 +33,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html 
+      lang="en" 
+      className={`dark ${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
+        {/* Theme initialization script - runs before page renders */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  if (theme === 'light') {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         {/* Keep your existing head content, including any Script components */}
         {/* <Script
           crossOrigin="anonymous"
@@ -44,7 +64,10 @@ export default function RootLayout({
 
         {/* --- WRAP YOUR CLIENTBODY WITH AUTHPROVIDER --- */}
         <AuthProvider>
-          <ClientBody>{children}</ClientBody>
+          <ClientBody>
+            {children}
+            <Footer />
+          </ClientBody>
         </AuthProvider>
         {/* --- END WRAP --- */}
 

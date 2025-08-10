@@ -61,7 +61,7 @@ export function CookieConsent() {
       timestamp: new Date().toISOString()
     }
     localStorage.setItem('cookie-consent', JSON.stringify(savedPreferences))
-    setShowBanner(false)
+    // Keep banner visible; user must explicitly accept or reject after saving
     setShowPreferences(false)
   }
 
@@ -76,16 +76,16 @@ export function CookieConsent() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-gray-200 shadow-lg">
-        <Card className="max-w-6xl mx-auto p-6">
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-transparent">
+        <Card className="max-w-6xl mx-auto p-6 bg-white border border-zinc-200 text-gray-900 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100 shadow-lg">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex-1">
-              <h3 className="font-semibold text-lg mb-2">We value your privacy</h3>
-              <p className="text-sm text-gray-600 mb-4 lg:mb-0">
+              <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100">We value your privacy</h3>
+              <p className="text-sm text-zinc-700 dark:text-gray-300 mb-4 lg:mb-0">
                 We use cookies to enhance your experience, analyze site usage, and assist in our marketing efforts.
                 By clicking "Accept All", you consent to our use of cookies. You can manage your preferences or
                 learn more in our{' '}
-                <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>.
+                <a href="/privacy" className="text-blue-700 hover:underline dark:text-blue-400">Privacy Policy</a>.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 lg:ml-6">
@@ -101,11 +101,11 @@ export function CookieConsent() {
                 onClick={() => setShowPreferences(true)}
                 className="text-sm"
               >
-                Customize
+                Customise
               </Button>
               <Button
                 onClick={acceptAll}
-                className="text-sm bg-blue-600 hover:bg-blue-700"
+                className="text-sm bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Accept All
               </Button>
@@ -118,7 +118,7 @@ export function CookieConsent() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Cookie Preferences</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-zinc-600 dark:text-gray-100">
               Choose which cookies you want to accept. You can change these settings at any time.
             </DialogDescription>
           </DialogHeader>
@@ -136,7 +136,7 @@ export function CookieConsent() {
                   <Label htmlFor="necessary" className="font-medium">
                     Necessary Cookies
                   </Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-zinc-600 dark:text-gray-100">
                     Essential for the website to function properly. These cannot be disabled.
                   </p>
                 </div>
@@ -153,7 +153,7 @@ export function CookieConsent() {
                   <Label htmlFor="functional" className="font-medium">
                     Functional Cookies
                   </Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-zinc-600 dark:text-gray-100">
                     Enable enhanced functionality like chat support and social media integration.
                   </p>
                 </div>
@@ -170,7 +170,7 @@ export function CookieConsent() {
                   <Label htmlFor="analytics" className="font-medium">
                     Analytics Cookies
                   </Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-zinc-600 dark:text-gray-100">
                     Help us understand how visitors interact with our website to improve user experience.
                   </p>
                 </div>
@@ -187,7 +187,7 @@ export function CookieConsent() {
                   <Label htmlFor="marketing" className="font-medium">
                     Marketing Cookies
                   </Label>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-zinc-600 dark:text-gray-100">
                     Used to deliver relevant advertisements and track advertising effectiveness.
                   </p>
                 </div>

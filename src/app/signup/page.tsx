@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal";
 import { useAuth } from "@/app/context/AuthContext";
 
 // Define a TypeScript interface for the payload to satisfy ESLint
@@ -164,15 +163,15 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
   // MODIFIED: Loading state div background
   if (authLoading || user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950">
-        <p className="text-gray-300">Loading user state...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-slate-600 dark:text-gray-300">Loading user state...</p>
       </div>
     );
   }
 
   return (
     // MODIFIED: Outer container for the entire page, providing the main background color and relative positioning
-    <div className="min-h-screen bg-gray-950 relative">
+    <div className="min-h-screen bg-background relative">
       {/* ADDED: Fixed background for blobs */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         {/* Subtle glowing shapes for professional colorful aesthetic */}
@@ -185,37 +184,37 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
       </div>
 
       {/* FIXED HEADER (on top of everything) */}
-      <Header user={user} isLoading={authLoading} logout={logout} currentPage="signup" className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
+      <Header user={user} isLoading={authLoading} logout={logout} currentPage="signup" className="fixed top-0 left-0 right-0 z-[9999] bg-background border-b border-border" />
 
       {/* MODIFIED: Main content area, needs to be above the blobs */}
-      <div className="relative z-10 flex-grow flex items-center justify-center p-4 pt-[120px]"> {/* Added pt-[120px] to push content below fixed header */}
+      <div className="relative z-10 flex-grow flex items-center justify-center p-4 pt-[120px] md:mb-16"> {/* Added md:mb-16 for desktop breathing space above footer */}
         {/* MODIFIED: Card styles */}
-        <Card className="w-full max-w-lg bg-gray-900 border border-gray-800 text-gray-100">
+        <Card className="w-full max-w-lg bg-white text-slate-900 border border-slate-200 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center text-gray-100">Join StudentJobs UK</CardTitle>
-            <CardDescription className="text-center text-gray-300">
+            <CardTitle className="text-2xl font-bold text-center text-slate-900 dark:text-gray-100">Join StudentJobs UK</CardTitle>
+            <CardDescription className="text-center text-slate-600 dark:text-gray-300">
               Create your account to get started
             </CardDescription>
           </CardHeader>
           <CardContent>
             {/* MODIFIED: TabsList and TabsTrigger styles */}
             <Tabs value={userType} onValueChange={(value) => setUserType(value as "student" | "employer")}>
-              <TabsList className="grid w-full grid-cols-2 bg-gray-800 border-gray-700">
-              <TabsTrigger value="student" className="data-[state=active]:bg-gray-700 data-[state=active]:text-gray-50 text-gray-300 hover:text-gray-50">
+              <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
+              <TabsTrigger value="student" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 text-slate-600 dark:text-gray-300 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-300 hover:text-blue-600 dark:hover:text-blue-300">
   I'm a Student
   <Badge 
     variant="secondary" 
-    className="ml-2 bg-blue-900/50 text-blue-300 border border-blue-700 hidden sm:inline-block"
+    className="ml-2 bg-blue-100 text-blue-600 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700 hidden sm:inline-block"
   >
     Job Seeker
   </Badge>
 </TabsTrigger>
 
-<TabsTrigger value="employer" className="data-[state=active]:bg-gray-700 data-[state=active]:text-gray-50 text-gray-300 hover:text-gray-50">
+<TabsTrigger value="employer" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 text-slate-600 dark:text-gray-300 data-[state=active]:text-green-600 dark:data-[state=active]:text-green-300 hover:text-green-600 dark:hover:text-green-300">
   I'm an Employer
   <Badge 
     variant="secondary" 
-    className="ml-2 bg-green-900/50 text-green-300 border border-green-700 hidden sm:inline-block"
+    className="ml-2 bg-green-100 text-green-600 border border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700 hidden sm:inline-block"
   >
     Job Poster
   </Badge>
@@ -227,7 +226,7 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                 {/* MODIFIED: Google signup button styles */}
                 <Button
                   variant="outline"
-                  className="w-full mb-4 bg-gray-800 border-gray-700 text-gray-100 hover:bg-gray-700 hover:text-gray-50"
+                  className="w-full mb-4 bg-white border-slate-300 text-slate-900 hover:bg-slate-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
                   onClick={handleGoogleSignup}
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -254,18 +253,18 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                 <div className="relative mb-4">
                   <div className="absolute inset-0 flex items-center">
                     {/* MODIFIED: Separator color */}
-                    <Separator className="w-full bg-gray-700" />
+                    <Separator className="w-full bg-slate-200 dark:bg-gray-700" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     {/* MODIFIED: Separator text color and background */}
-                    <span className="bg-gray-900 px-2 text-gray-400">Or continue with email</span>
+                    <span className="bg-white dark:bg-gray-900 px-2 text-slate-500 dark:text-gray-400">Or continue with email</span>
                   </div>
                 </div>
 
                 {/* Display messages for success or error */}
                 {/* MODIFIED: Message colors */}
-                {message && <p className="text-green-400 text-center mb-2">{message}</p>}
-                {error && <p className="text-red-400 text-center mb-2">{error}</p>}
+                {message && <p className="text-green-600 dark:text-green-400 text-center mb-2">{message}</p>}
+                {error && <p className="text-red-600 dark:text-red-400 text-center mb-2">{error}</p>}
 
                 <TabsContent value="student" className="mt-0">
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -273,53 +272,53 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         {/* MODIFIED: Label and Input styles */}
-                        <Label htmlFor="firstName" className="text-gray-200">First Name</Label>
+                        <Label htmlFor="firstName" className="text-slate-700 dark:text-gray-200">First Name</Label>
                         <Input
                           id="firstName"
                           value={formData.firstName}
                           onChange={(e) => handleInputChange("firstName", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-gray-200">Last Name</Label>
+                        <Label htmlFor="lastName" className="text-slate-700 dark:text-gray-200">Last Name</Label>
                         <Input
                           id="lastName"
                           value={formData.lastName}
                           onChange={(e) => handleInputChange("lastName", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="university" className="text-gray-200">University/College</Label>
+                      <Label htmlFor="university" className="text-slate-700 dark:text-gray-200">University/College</Label>
                       <Input
                         id="university"
                         placeholder="e.g., University of Manchester"
                         value={formData.university}
                         onChange={(e) => handleInputChange("university", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="city" className="text-gray-200">City</Label> {/* ADDED City input for Student */}
+                      <Label htmlFor="city" className="text-slate-700 dark:text-gray-200">City</Label> {/* ADDED City input for Student */}
                       <Input
                         id="city"
                         placeholder="e.g., Manchester"
                         value={formData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-gray-200">Student Email</Label>
+                      <Label htmlFor="email" className="text-slate-700 dark:text-gray-200">Student Email</Label>
                       <Input
                         id="email"
                         type="email"
@@ -327,13 +326,13 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                         value={formData.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
-                      <p className="text-xs text-gray-400">Use your university email for verification</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400">Use your university email for verification</p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-gray-200">Phone Number</Label>
+                      <Label htmlFor="phone" className="text-slate-700 dark:text-gray-200">Phone Number</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -342,32 +341,32 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
-                      <p className="text-xs text-gray-400">Required for verification</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400">Required for verification</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="password" className="text-gray-200">Password</Label>
+                        <Label htmlFor="password" className="text-slate-700 dark:text-gray-200">Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={formData.password}
                           onChange={(e) => handleInputChange("password", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-gray-200">Confirm Password</Label>
+                        <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-gray-200">Confirm Password</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={formData.confirmPassword}
                           onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                     </div>
@@ -378,16 +377,16 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                         id="terms"
                         checked={formData.agreeToTerms}
                         onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
-                        className="border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                        className="border-slate-400 dark:border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
                       />
-                      <label htmlFor="terms" className="text-sm text-gray-300">
+                      <label htmlFor="terms" className="text-sm text-slate-600 dark:text-gray-300">
                         I agree to the{" "}
                         {/* MODIFIED: Link colors */}
-                        <Link href="/terms" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
+                        <Link href="/terms" className="text-blue-600 hover:underline dark:text-blue-400" target="_blank" rel="noopener noreferrer">
                           Terms & Conditions
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
+                        <Link href="/privacy" className="text-blue-600 hover:underline dark:text-blue-400" target="_blank" rel="noopener noreferrer">
                           Privacy Policy
                         </Link>
                       </label>
@@ -408,53 +407,53 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                     {/* Employer Form Order: First Name, Last Name, Business/Organisation Name, City, Email, Phone Number, Password, Confirm Password */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-gray-200">First Name</Label>
+                        <Label htmlFor="firstName" className="text-slate-700 dark:text-gray-200">First Name</Label>
                         <Input
                           id="firstName"
                           value={formData.firstName}
                           onChange={(e) => handleInputChange("firstName", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-gray-200">Last Name</Label>
+                        <Label htmlFor="lastName" className="text-slate-700 dark:text-gray-200">Last Name</Label>
                         <Input
                           id="lastName"
                           value={formData.lastName}
                           onChange={(e) => handleInputChange("lastName", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="businessName" className="text-gray-200">Business/Organisation Name</Label>
+                      <Label htmlFor="businessName" className="text-slate-700 dark:text-gray-200">Business/Organisation Name</Label>
                       <Input
                         id="businessName"
                         placeholder="e.g., Local Coffee Shop Ltd"
                         value={formData.businessName}
                         onChange={(e) => handleInputChange("businessName", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="city" className="text-gray-200">City</Label> {/* ADDED City input for Employer */}
+                      <Label htmlFor="city" className="text-slate-700 dark:text-gray-200">City</Label> {/* ADDED City input for Employer */}
                       <Input
                         id="city"
                         placeholder="e.g., London"
                         value={formData.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-gray-200">Business Email</Label>
+                      <Label htmlFor="email" className="text-slate-700 dark:text-gray-200">Business Email</Label>
                       <Input
                         id="email"
                         type="email"
@@ -462,12 +461,12 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                         value={formData.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-gray-200">Phone Number</Label>
+                      <Label htmlFor="phone" className="text-slate-700 dark:text-gray-200">Phone Number</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -476,32 +475,32 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
                         required
-                        className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                        className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                       />
-                      <p className="text-xs text-gray-400">Required for verification</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400">Required for verification</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="password" className="text-gray-200">Password</Label>
+                        <Label htmlFor="password" className="text-slate-700 dark:text-gray-200">Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={formData.password}
                           onChange={(e) => handleInputChange("password", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-gray-200">Confirm Password</Label>
+                        <Label htmlFor="confirmPassword" className="text-slate-700 dark:text-gray-200">Confirm Password</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={formData.confirmPassword}
                           onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                           required
-                          className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                          className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                         />
                       </div>
                     </div>
@@ -511,15 +510,15 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                         id="terms"
                         checked={formData.agreeToTerms}
                         onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
-                        className="border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                        className="border-slate-400 dark:border-gray-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
                       />
-                      <label htmlFor="terms" className="text-sm text-gray-300">
+                      <label htmlFor="terms" className="text-sm text-slate-600 dark:text-gray-300">
                         I agree to the{" "}
-                        <Link href="/terms" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
+                        <Link href="/terms" className="text-blue-600 hover:underline dark:text-blue-400" target="_blank" rel="noopener noreferrer">
                           Terms & Conditions
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
+                        <Link href="/privacy" className="text-blue-600 hover:underline dark:text-blue-400" target="_blank" rel="noopener noreferrer">
                           Privacy Policy
                         </Link>
                       </label>
@@ -527,7 +526,7 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
 
                     <Button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-green-600 hover:bg-green-700"
                       disabled={isLoading || !formData.agreeToTerms}
                     >
                       {isLoading ? "Creating Account..." : "Create Employer Account"}
@@ -536,9 +535,9 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
                 </TabsContent>
 
                 <div className="text-center mt-4">
-                  <div className="text-sm text-gray-400"> {/* MODIFIED: Text color */}
+                  <div className="text-sm text-slate-600 dark:text-gray-400"> {/* MODIFIED: Text color */}
                     Already have an account?{" "}
-                    <Link href="/login" className="text-blue-400 hover:underline"> {/* MODIFIED: Link color */}
+                    <Link href="/login" className="text-blue-600 hover:underline dark:text-blue-400"> {/* MODIFIED: Link color */}
                       Sign in
                     </Link>
                   </div>
@@ -548,50 +547,6 @@ const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?
           </CardContent>
         </Card>
       </div>
-
-      {/* MODIFIED: Footer styles */}
-      <footer className="w-full py-6 bg-gray-900 text-gray-300 mt-16 relative">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-8 lg:grid-cols-4">
-            <div>
-              <h3 className="font-bold text-lg mb-4 text-white">StudentJobs UK</h3>
-              <p className="text-gray-400 text-sm">
-                Connecting UK students with flexible part-time opportunities.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-indigo-400">For Students</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/browse-jobs" className="text-gray-400 hover:text-indigo-300">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-400 hover:text-indigo-300">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-400 hover:text-indigo-300">Student Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-indigo-300">For Employers</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/post-job" className="text-gray-400 hover:text-indigo-200">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-400 hover:text-indigo-200">Pricing</Link>
-                <Link href="/employer-guide" className="text-gray-400 hover:text-indigo-200">Employer Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-purple-300">Legal</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Refund Policy</Link>
-                <ContactModal>
-                    <button className="text-gray-400 hover:text-purple-200 text-left px-0 py-0 text-sm font-medium">Contact Us</button>
-                </ContactModal>
-              </nav>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
-            © 2025 StudentJobs UK. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

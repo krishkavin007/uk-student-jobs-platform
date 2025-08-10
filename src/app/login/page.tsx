@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal";
 import { useAuth } from "@/app/context/AuthContext";
 import { Eye, EyeOff } from "lucide-react"; // Import Eye and EyeOff icons
 
@@ -122,32 +121,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 relative">
+    <div className="min-h-screen bg-background relative">
       <div className="fixed inset-0 z-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#4a007f] to-[#004a7f] opacity-40 blur-[100px]" style={{ transform: 'translate(-40%, -40%)' }}></div>
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-gradient-to-tl from-[#007f4a] to-[#4a7f00] opacity-35 blur-[90px]" style={{ transform: 'translate(40%, 40%)' }}></div>
         <div className="absolute top-1/2 left-1/2 w-[450px] h-[450px] rounded-full bg-gradient-to-tr from-[#7f4a00] to-[#7f004a] opacity-5 blur-[80px]" style={{ transform: 'translate(-50%, -50%)' }}></div>
       </div>
 
-      <Header user={user} isLoading={isLoading} logout={() => {}} currentPage="login" className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
+      <Header user={user} isLoading={isLoading} logout={() => {}} currentPage="login" className="fixed top-0 left-0 right-0 z-[9999] bg-background border-b border-border" />
 
-      <div className="relative z-10 flex-grow flex items-center justify-center p-4 pt-[120px]">
-        <Card className="w-full max-w-md bg-gray-900 border border-gray-800 text-gray-100">
+      <div className="relative z-10 flex-grow flex items-center justify-center p-4 pt-[120px] md:mb-16">
+        <Card className="w-full max-w-md bg-white text-slate-900 border border-slate-200 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100">
           <CardHeader className="space-y-1">
             <div className="text-center mb-4">
-              <Link href="/" className="font-bold text-2xl text-gray-100">
+              <Link href="/" className="font-bold text-2xl text-slate-900 dark:text-gray-100">
                 StudentJobs UK
               </Link>
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-gray-100">Welcome back</CardTitle>
-            <CardDescription className="text-center text-gray-300">
+            <CardTitle className="text-2xl font-bold text-center text-slate-900 dark:text-gray-100">Welcome back</CardTitle>
+            <CardDescription className="text-center text-slate-600 dark:text-gray-300">
               Sign in to your StudentJobs UK account
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
               variant="outline"
-              className="w-full bg-gray-800 border-gray-700 text-gray-100 hover:bg-gray-700 hover:text-gray-50"
+              className="w-full bg-white border-slate-300 text-slate-900 hover:bg-slate-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
               onClick={handleGoogleLogin}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -173,16 +172,16 @@ export default function LoginPage() {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full bg-gray-700" />
+                <Separator className="w-full bg-slate-200 dark:bg-gray-700" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-gray-900 px-2 text-gray-400">Or continue with email</span>
+                <span className="bg-white px-2 text-slate-500 dark:bg-gray-900 dark:text-gray-400">Or continue with email</span>
               </div>
             </div>
 
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-200">Email</Label>
+                <Label htmlFor="email" className="text-slate-700 dark:text-gray-200">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -190,11 +189,11 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500"
+                  className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-200">Password</Label>
+                <Label htmlFor="password" className="text-slate-700 dark:text-gray-200">Password</Label>
                 {/* Password input with toggle icon */}
                 <div className="relative">
                   <Input
@@ -203,12 +202,12 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500 pr-10" // Add padding-right for icon
+                    className="bg-white text-slate-900 border-slate-300 placeholder:text-slate-400 pr-10 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500" // Add padding-right for icon
                   />
                   <button
                     type="button" // Important: Prevent form submission
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200 focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-700 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
@@ -227,29 +226,29 @@ export default function LoginPage() {
                   id="rememberMe"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                  className="h-4 w-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                 />
-                <Label htmlFor="rememberMe" className="text-gray-300 cursor-pointer">
+                <Label htmlFor="rememberMe" className="text-slate-600 dark:text-gray-300 cursor-pointer">
                   Remember me
                 </Label>
               </div>
 
               {error && (
-                <p className="text-red-400 text-sm text-center">{error}</p>
+                <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
               )}
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground dark:bg-blue-600 dark:hover:bg-blue-700" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
             <div className="text-center space-y-2">
-              <Link href="/forgot-password" className="text-blue-400 hover:underline">
+              <Link href="/forgot-password" className="text-blue-600 hover:underline dark:text-blue-400">
                 Forgot your password?
               </Link>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-slate-600 dark:text-gray-400">
                 Don't have an account?{" "}
-                <Link href="/signup" className="text-blue-400 hover:underline">
+                <Link href="/signup" className="text-blue-600 hover:underline dark:text-blue-400">
                   Sign up
                 </Link>
               </div>
@@ -257,49 +256,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
-
-      <footer className="w-full py-6 bg-gray-900 text-gray-300 mt-16 relative">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-8 lg:grid-cols-4">
-            <div>
-              <h3 className="font-bold text-lg mb-4 text-white">StudentJobs UK</h3>
-              <p className="text-gray-400 text-sm">
-                Connecting UK students with flexible part-time opportunities.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-indigo-400">For Students</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/browse-jobs" className="text-gray-400 hover:text-indigo-300">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-400 hover:text-indigo-300">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-400 hover:text-indigo-300">Student Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-indigo-300">For Employers</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/post-job" className="text-gray-400 hover:text-indigo-200">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-400 hover:text-indigo-200">Pricing</Link>
-                <Link href="/employer-guide" className="text-gray-400 hover:text-indigo-200">Employer Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-purple-300">Legal</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Refund Policy</Link>
-                <ContactModal>
-                    <button className="text-gray-400 hover:text-purple-200 text-left px-0 py-0 text-sm font-medium">Contact Us</button>
-                </ContactModal>
-              </nav>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
-            © 2025 StudentJobs UK. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

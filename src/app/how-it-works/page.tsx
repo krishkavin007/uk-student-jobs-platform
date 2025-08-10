@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/ui/header";
-import { ContactModal } from "@/components/ui/contact-modal";
 import { useAuth } from "@/app/context/AuthContext";
 import Tilt from "react-parallax-tilt";
 import { motion, AnimatePresence } from "framer-motion";
@@ -81,14 +80,14 @@ export default function HowItWorksPage() {
     user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 font-sans antialiased">
+    <div className="min-h-screen bg-white text-slate-900 dark:bg-gray-950 dark:text-gray-100 font-sans antialiased">
       {/* Header */}
       <Header
         user={user}
         isLoading={isLoading}
         logout={logout}
         pricingHref={pricingHref}
-        className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 text-gray-100"
+        className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border"
       />
 
       <motion.main
@@ -106,13 +105,13 @@ export default function HowItWorksPage() {
         >
           <motion.h1
             variants={titleVariants}
-            className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600"
+            className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-800 dark:from-blue-400 dark:to-purple-600"
           >
             How StudentJobs UK Works
           </motion.h1>
           <motion.p
             variants={titleVariants}
-            className="mt-4 text-lg md:text-xl text-gray-400 max-w-2xl mx-auto"
+            className="mt-4 text-lg md:text-xl text-slate-600 dark:text-gray-400 max-w-2xl mx-auto"
           >
             Simple, effective steps to connect UK students with flexible
             part-time jobs.
@@ -120,10 +119,10 @@ export default function HowItWorksPage() {
         </motion.section>
 
         {/* --- Toggle Switch for Student/Employer (Updated Style) --- */}
-        <div className="mt-10 flex justify-center items-center space-x-2 p-1.5 bg-gray-800 rounded-full w-fit mx-auto shadow-inner">
+        <div className="mt-10 flex justify-center items-center space-x-2 p-1.5 bg-slate-200 dark:bg-gray-800 rounded-full w-fit mx-auto shadow-inner">
           <button
             onClick={() => setActiveTab('student')}
-            className={`px-6 py-2.5 text-base font-bold rounded-full transition-colors relative ${activeTab === 'student' ? 'text-white' : 'text-gray-400 hover:text-gray-200'
+            className={`px-6 py-2.5 text-base font-bold rounded-full transition-colors relative ${activeTab === 'student' ? 'text-white' : 'text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200'
               }`}
           >
             {activeTab === 'student' && (
@@ -137,7 +136,7 @@ export default function HowItWorksPage() {
           </button>
           <button
             onClick={() => setActiveTab('employer')}
-            className={`px-6 py-2.5 text-base font-bold rounded-full transition-colors relative ${activeTab === 'employer' ? 'text-white' : 'text-gray-400 hover:text-gray-200'
+            className={`px-6 py-2.5 text-base font-bold rounded-full transition-colors relative ${activeTab === 'employer' ? 'text-white' : 'text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200'
               }`}
           >
             {activeTab === 'employer' && (
@@ -165,9 +164,8 @@ export default function HowItWorksPage() {
               <motion.h2
                 variants={titleVariants}
                 initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.5 }}
-                className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-green-500 mb-12"
+                animate="visible"
+                className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-green-700 dark:from-teal-400 dark:to-green-500 mb-12"
               >
                 For Students: Find Your Perfect Part-Time Role
               </motion.h2>
@@ -175,23 +173,22 @@ export default function HowItWorksPage() {
               <motion.div
                 variants={containerStagger}
                 initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
+                animate="visible"
                 className="grid gap-8 md:grid-cols-3"
               >
                 <motion.div variants={cardPop}>
                   <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000}>
-                    <Card className="bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-800 h-full flex flex-col">
+                    <Card className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-gray-800 h-full flex flex-col">
                       <CardHeader className="p-0 text-center">
                         <div className="w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                           1
                         </div>
-                        <CardTitle className="text-xl font-bold text-white mb-2">
+                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                           Sign Up & Verify
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0 text-center flex-grow">
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-slate-600 dark:text-gray-400 text-sm">
                           Create your account using your university email address
                           (.ac.uk) and verify your phone number. This ensures you're
                           a genuine student.
@@ -203,17 +200,17 @@ export default function HowItWorksPage() {
 
                 <motion.div variants={cardPop}>
                   <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000}>
-                    <Card className="bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-800 h-full flex flex-col">
+                    <Card className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-gray-800 h-full flex flex-col">
                       <CardHeader className="p-0 text-center">
                         <div className="w-14 h-14 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                           2
                         </div>
-                        <CardTitle className="text-xl font-bold text-white mb-2">
+                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                           Browse & Filter
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0 text-center flex-grow">
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-slate-600 dark:text-gray-400 text-sm">
                           Search through hundreds of part-time jobs. Filter by
                           location, category, and work period (term-time vs
                           holidays) to find opportunities that fit your schedule.
@@ -225,17 +222,17 @@ export default function HowItWorksPage() {
 
                 <motion.div variants={cardPop}>
                   <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000}>
-                    <Card className="bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-800 h-full flex flex-col">
+                    <Card className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-gray-800 h-full flex flex-col">
                       <CardHeader className="p-0 text-center">
                         <div className="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                           3
                         </div>
-                        <CardTitle className="text-xl font-bold text-white mb-2">
+                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                           Apply for £1
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0 text-center flex-grow">
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-slate-600 dark:text-gray-400 text-sm">
                           Found a job you like? Pay just £1 to reveal the employer's
                           contact details and apply directly. Your payment ensures
                           serious applications.
@@ -251,9 +248,8 @@ export default function HowItWorksPage() {
                 <motion.h2
                   variants={titleVariants}
                   initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true, amount: 0.5 }}
-                  className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-red-500 mb-12"
+                  animate="visible"
+                  className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-red-700 dark:from-pink-400 dark:to-red-500 mb-12"
                 >
                   Student FAQs
                 </motion.h2>
@@ -287,15 +283,15 @@ export default function HowItWorksPage() {
                       initial="hidden"
                       whileInView="visible"
                       viewport={{ once: true, amount: 0.5 }}
-                      className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800"
+                      className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md border border-slate-200 dark:border-gray-800"
                     >
                       <CardHeader className="p-0 mb-3">
-                        <CardTitle className="text-xl font-bold text-white">
+                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
                           {faq.title}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0">
-                        <p className="text-gray-300 text-base">{faq.content}</p>
+                        <p className="text-slate-600 dark:text-gray-300 text-base">{faq.content}</p>
                       </CardContent>
                     </motion.div>
                   ))}
@@ -316,9 +312,8 @@ export default function HowItWorksPage() {
               <motion.h2
                 variants={titleVariants}
                 initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.5 }}
-                className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-500 mb-12"
+                animate="visible"
+                className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-orange-700 dark:from-red-400 dark:to-orange-500 mb-12"
               >
                 For Employers: Recruit Ideal Part-Time Talent
               </motion.h2>
@@ -326,23 +321,22 @@ export default function HowItWorksPage() {
               <motion.div
                 variants={containerStagger}
                 initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
+                animate="visible"
                 className="grid gap-8 md:grid-cols-3"
               >
                 <motion.div variants={cardPop}>
                   <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000}>
-                    <Card className="bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-800 h-full flex flex-col">
+                    <Card className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-gray-800 h-full flex flex-col">
                       <CardHeader className="p-0 text-center">
                         <div className="w-14 h-14 bg-yellow-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                           1
                         </div>
-                        <CardTitle className="text-xl font-bold text-white mb-2">
+                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                           Post Your Job
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0 text-center flex-grow">
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-slate-600 dark:text-gray-400 text-sm">
                           Create an account and post your part-time job vacancy.
                           Choose between a Basic (£1) or Sponsored (£5) listing for
                           enhanced visibility.
@@ -354,17 +348,17 @@ export default function HowItWorksPage() {
 
                 <motion.div variants={cardPop}>
                   <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000}>
-                    <Card className="bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-800 h-full flex flex-col">
+                    <Card className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-gray-800 h-full flex flex-col">
                       <CardHeader className="p-0 text-center">
                         <div className="w-14 h-14 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                           2
                         </div>
-                        <CardTitle className="text-xl font-bold text-white mb-2">
+                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                           Reach UK Students
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0 text-center flex-grow">
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-slate-600 dark:text-gray-400 text-sm">
                           Your job goes live to thousands of verified UK university
                           students actively seeking flexible work to fit their
                           studies.
@@ -376,17 +370,17 @@ export default function HowItWorksPage() {
 
                 <motion.div variants={cardPop}>
                   <Tilt glareEnable={true} glareMaxOpacity={0.05} scale={1.02} perspective={1000}>
-                    <Card className="bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-800 h-full flex flex-col">
+                    <Card className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-gray-800 h-full flex flex-col">
                       <CardHeader className="p-0 text-center">
                         <div className="w-14 h-14 bg-cyan-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                           3
                         </div>
-                        <CardTitle className="text-xl font-bold text-white mb-2">
+                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                           Receive Applications
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0 text-center flex-grow">
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-slate-600 dark:text-gray-400 text-sm">
                           Interested students pay a small fee to access your contact
                           details, ensuring you receive applications from serious
                           and motivated candidates.
@@ -404,7 +398,7 @@ export default function HowItWorksPage() {
                   initial="hidden"
                   whileInView="visible"
                   viewport={{ once: true, amount: 0.5 }}
-                  className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-red-500 mb-12"
+                  className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-red-700 dark:from-pink-400 dark:to-red-500 mb-12"
                 >
                   Employer FAQs
                 </motion.h2>
@@ -438,15 +432,15 @@ export default function HowItWorksPage() {
                       initial="hidden"
                       whileInView="visible"
                       viewport={{ once: true, amount: 0.5 }}
-                      className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800"
+                      className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md border border-slate-200 dark:border-gray-800"
                     >
                       <CardHeader className="p-0 mb-3">
-                        <CardTitle className="text-xl font-bold text-white">
+                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
                           {faq.title}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0">
-                        <p className="text-gray-300 text-base">{faq.content}</p>
+                        <p className="text-slate-600 dark:text-gray-300 text-base">{faq.content}</p>
                       </CardContent>
                     </motion.div>
                   ))}
@@ -463,7 +457,7 @@ export default function HowItWorksPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
-            className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-12"
+            className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-800 dark:from-blue-400 dark:to-purple-500 mb-12"
           >
             Why Choose StudentJobs UK?
           </motion.h2>
@@ -476,84 +470,84 @@ export default function HowItWorksPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             <motion.div variants={cardPop}>
-              <div className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 h-full flex flex-col">
-                <div className="flex items-center justify-center w-12 h-12 bg-indigo-900/50 text-indigo-400 rounded-full mb-4">
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md border border-slate-200 dark:border-gray-800 h-full flex flex-col">
+                <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full mb-4">
                   <GraduationCap className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                   Student-Centric
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-slate-600 dark:text-gray-400 text-sm">
                   Jobs are curated to respect student working hour limits (20 hrs
                   term-time, 40 hrs holidays), offering flexible opportunities.
                 </p>
               </div>
             </motion.div>
             <motion.div variants={cardPop}>
-              <div className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 h-full flex flex-col">
-                <div className="flex items-center justify-center w-12 h-12 bg-indigo-900/50 text-indigo-400 rounded-full mb-4">
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md border border-slate-200 dark:border-gray-800 h-full flex flex-col">
+                <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full mb-4">
                   <ShieldCheckIcon className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                   Verified & Quality
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-slate-600 dark:text-gray-400 text-sm">
                   All employers are verified, and job postings are moderated to
                   ensure legitimacy and a high standard of opportunities.
                 </p>
               </div>
             </motion.div>
             <motion.div variants={cardPop}>
-              <div className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 h-full flex flex-col">
-                <div className="flex items-center justify-center w-12 h-12 bg-indigo-900/50 text-indigo-400 rounded-full mb-4">
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md border border-slate-200 dark:border-gray-800 h-full flex flex-col">
+                <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full mb-4">
                   <BadgeCent className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                   Cost-Effective Access
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-slate-600 dark:text-gray-400 text-sm">
                   Students pay just £1 per application, and employers £1-£5 per
                   post, making it affordable for everyone.
                 </p>
               </div>
             </motion.div>
             <motion.div variants={cardPop}>
-              <div className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 h-full flex flex-col">
-                <div className="flex items-center justify-center w-12 h-12 bg-indigo-900/50 text-indigo-400 rounded-full mb-4">
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md border border-slate-200 dark:border-gray-800 h-full flex flex-col">
+                <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full mb-4">
                   <Handshake className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                   Direct Connections
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-slate-600 dark:text-gray-400 text-sm">
                   Students connect directly with employers, eliminating middlemen
                   and speeding up the hiring process.
                 </p>
               </div>
             </motion.div>
             <motion.div variants={cardPop}>
-              <div className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 h-full flex flex-col">
-                <div className="flex items-center justify-center w-12 h-12 bg-indigo-900/50 text-indigo-400 rounded-full mb-4">
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md border border-slate-200 dark:border-gray-800 h-full flex flex-col">
+                <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full mb-4">
                   <Globe className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                   UK-Wide Reach
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-slate-600 dark:text-gray-400 text-sm">
                   Connecting students and employers across the United Kingdom,
                   providing a broad range of opportunities.
                 </p>
               </div>
             </motion.div>
             <motion.div variants={cardPop}>
-              <div className="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 h-full flex flex-col">
-                <div className="flex items-center justify-center w-12 h-12 bg-indigo-900/50 text-indigo-400 rounded-full mb-4">
+              <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md border border-slate-200 dark:border-gray-800 h-full flex flex-col">
+                <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full mb-4">
                   <Lightbulb className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                   Innovation in Hiring
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-slate-600 dark:text-gray-400 text-sm">
                   We streamline the part-time job market, making it easier for
                   students to find work and businesses to find student talent.
                 </p>
@@ -569,7 +563,7 @@ export default function HowItWorksPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.5 }}
-            className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500 mb-12"
+            className="text-3xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-yellow-600 to-orange-700 dark:from-yellow-400 dark:to-orange-500 mb-12"
           >
             Understanding Student Work Hours
           </motion.h2>
@@ -579,13 +573,13 @@ export default function HowItWorksPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
-            className="bg-gray-900 rounded-2xl shadow-xl border border-gray-800 p-8 grid md:grid-cols-2 gap-8"
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-slate-200 dark:border-gray-800 p-8 grid md:grid-cols-2 gap-8"
           >
             <div>
-              <h3 className="font-bold text-2xl text-blue-400 mb-4 flex items-center gap-3">
-                <HourglassIcon className="h-7 w-7 text-blue-400" /> During Term-Time
+              <h3 className="font-bold text-2xl text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-3">
+                <HourglassIcon className="h-7 w-7 text-blue-600 dark:text-blue-400" /> During Term-Time
               </h3>
-              <ul className="space-y-3 text-gray-300 text-base">
+              <ul className="space-y-3 text-slate-600 dark:text-gray-300 text-base">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-1" />
                   <span>Maximum 20 hours per week.</span>
@@ -605,10 +599,10 @@ export default function HowItWorksPage() {
               </ul>
             </div>
             <div>
-              <h3 className="font-bold text-2xl text-purple-400 mb-4 flex items-center gap-3">
-                <RepeatIcon className="h-7 w-7 text-purple-400" /> During University Holidays
+              <h3 className="font-bold text-2xl text-purple-600 dark:text-purple-400 mb-4 flex items-center gap-3">
+                <RepeatIcon className="h-7 w-7 text-purple-600 dark:text-purple-400" /> During University Holidays
               </h3>
-              <ul className="space-y-3 text-gray-300 text-base">
+              <ul className="space-y-3 text-slate-600 dark:text-gray-300 text-base">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-1" />
                   <span>Up to 40 hours per week (full-time).</span>
@@ -631,7 +625,7 @@ export default function HowItWorksPage() {
         </section>
 
         {/* --- CTA Section --- */}
-        <section className="bg-gray-900 rounded-2xl shadow-lg border border-gray-800 max-w-7xl mx-auto py-16 px-4 text-center mt-20">
+        <section className="bg-slate-100 dark:bg-gray-900 rounded-2xl shadow-lg border border-slate-200 dark:border-gray-800 max-w-7xl mx-auto py-16 px-4 text-center mt-20">
           <motion.div
             variants={containerStagger}
             initial="hidden"
@@ -640,13 +634,13 @@ export default function HowItWorksPage() {
           >
             <motion.h2
               variants={titleVariants}
-              className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4"
+              className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-800 dark:from-blue-400 dark:to-purple-500 mb-4"
             >
               Ready to Connect with Student Talent?
             </motion.h2>
             <motion.p
               variants={titleVariants}
-              className="text-gray-300 text-lg mb-10 max-w-2xl mx-auto"
+              className="text-slate-600 dark:text-gray-300 text-lg mb-10 max-w-2xl mx-auto"
             >
               Whether you're a student looking for flexible work or an employer
               seeking bright, motivated part-time staff, StudentJobs UK is for you.
@@ -669,7 +663,7 @@ export default function HowItWorksPage() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto h-14 px-8 text-base border-2 border-indigo-600 text-indigo-400 bg-transparent hover:bg-indigo-900/50 hover:text-white font-bold rounded-full shadow-lg transform hover:scale-105 transition-transform"
+                className="w-full sm:w-auto h-14 px-8 text-base border-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-transparent hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:text-indigo-700 dark:hover:text-white font-bold rounded-full shadow-lg transform hover:scale-105 transition-transform"
               >
                 <Link href="/browse-jobs">Browse Latest Jobs</Link>
               </Button>
@@ -677,133 +671,6 @@ export default function HowItWorksPage() {
           </motion.div>
         </section>
       </motion.main>
-
-      {/* --- Footer --- */}
-      <footer className="w-full bg-gray-900 text-gray-300 py-10 mt-20 border-t border-gray-800">
-        <div className="w-full px-4 md:px-6 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
-            <div className="col-span-full md:col-span-1 flex flex-col items-center md:items-start mb-6 md:mb-0">
-              <Link
-                href="/"
-                className="flex items-center justify-center md:justify-start space-x-2 mb-4"
-              >
-                <span className="text-2xl font-extrabold text-white">
-                  StudentJobs UK
-                </span>
-              </Link>
-              <p className="text-gray-400 text-sm max-w-xs text-center md:text-left">
-                Connecting UK students with flexible part-time opportunities.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-sm mb-3 text-indigo-400 uppercase tracking-wider">
-                For Students
-              </h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link
-                    href="/browse-jobs"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Browse Jobs
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/how-it-works"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    How It Works
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/student-guide"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Student Guide
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-base mb-3 text-indigo-300">
-                For Employers
-              </h3>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <Link
-                    href="/post-job"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Post a Job
-                  </Link>
-                </li>
-                <li>
-                  {/* Dynamically set pricing link for employers based on user type in the footer */}
-                  <Link
-                    href={pricingHref} // Use the same pricingHref calculated above
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/employer-guide"
-                    className="text-gray-400 hover:text-indigo-300 transition-colors duration-200"
-                  >
-                    Employer Guide
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-base mb-3 text-purple-300">Legal</h3>
-              <ul className="space-y-1.5 text-sm">
-                <li>
-                  <Link
-                    href="/privacy"
-                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
-                  >
-                    Privacy Policy
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/terms"
-                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
-                  >
-                    Terms & Conditions
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/refund-policy"
-                    className="text-gray-400 hover:text-purple-200 transition-colors duration-200"
-                  >
-                    Refund Policy
-                  </Link>
-                </li>
-                <li>
-                  <ContactModal>
-                    <button className="text-gray-400 hover:text-purple-200 transition-colors duration-200 text-left text-sm">
-                      Contact Us
-                    </button>
-                  </ContactModal>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-10 pt-6 text-center text-xs text-gray-500">
-            © {new Date().getFullYear()} StudentJobs UK. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

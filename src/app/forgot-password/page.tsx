@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal"
+// Removed ContactModal import; global footer contains contact
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
 
   return (
     // MODIFIED: Outer container for the entire page, providing the main background color and relative positioning
-    <div className="min-h-screen bg-gray-950 relative">
+    <div className="min-h-screen bg-zinc-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 relative">
       {/* ADDED: Fixed background for blobs */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         {/* Subtle glowing shapes for professional colorful aesthetic */}
@@ -42,22 +42,22 @@ export default function ForgotPasswordPage() {
       </div>
 
       {/* FIXED HEADER (on top of everything) */}
-      <Header showAuth={false} className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0" />
+      <Header showAuth={false} className="fixed top-0 left-0 right-0 z-[9999] bg-white text-gray-900 border-b border-zinc-200 dark:bg-gray-900 dark:text-white dark:border-gray-800" />
 
       {/* MODIFIED: Main content area, needs to be above the blobs */}
-      <div className="relative z-10 flex-grow flex items-center justify-center px-4 pt-[120px] pb-16">
+      <div className="relative z-10 flex-grow flex items-center justify-center px-4 pt-[120px] pb-24 md:pb-16">
         {/* MODIFIED: Card styles */}
-        <Card className="w-full max-w-md bg-gray-900 border border-gray-800 text-gray-100">
+        <Card className="w-full max-w-md bg-white border border-zinc-200 text-gray-900 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100">
           <CardHeader className="space-y-1">
             <div className="text-center mb-4">
-              <Link href="/" className="font-bold text-2xl text-gray-100"> {/* MODIFIED: Link text color */}
+              <Link href="/" className="font-bold text-2xl text-gray-900 dark:text-gray-100"> {/* Link text colour */}
                 StudentJobs UK
               </Link>
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-gray-100"> {/* MODIFIED: Title text color */}
+            <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100"> {/* Title text colour */}
               {isSubmitted ? "Check your email" : "Reset your password"}
             </CardTitle>
-            <CardDescription className="text-center text-gray-300"> {/* MODIFIED: Description text color */}
+            <CardDescription className="text-center text-zinc-600 dark:text-gray-300"> {/* Description text colour */}
               {isSubmitted
                 ? "We've sent a password reset link to your email address"
                 : "Enter your email address and we'll send you a link to reset your password"
@@ -69,16 +69,16 @@ export default function ForgotPasswordPage() {
               <>
                 <div className="text-center space-y-4">
                   {/* MODIFIED: Success icon background and color */}
-                  <div className="mx-auto w-16 h-16 bg-green-900 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-green-100 dark:bg-green-900">
+                    <svg className="w-8 h-8 text-green-700 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-gray-300"> {/* MODIFIED: Text color */}
+                    <p className="text-zinc-700 dark:text-gray-300"> {/* Text colour */}
                       We've sent a password reset email to <strong>{email}</strong>
                     </p>
-                    <p className="text-sm text-gray-400 mt-2"> {/* MODIFIED: Text color */}
+                    <p className="text-sm text-zinc-500 dark:text-gray-400 mt-2"> {/* Text colour */}
                       Didn't receive the email? Check your spam folder or try again.
                     </p>
                   </div>
@@ -92,7 +92,7 @@ export default function ForgotPasswordPage() {
                       setEmail("")
                     }}
                     variant="outline"
-                    className="w-full bg-gray-800 border-gray-700 text-gray-100 hover:bg-gray-700 hover:text-gray-50"
+                    className="w-full bg-white border-zinc-300 text-gray-900 hover:bg-zinc-50 hover:text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700"
                   >
                     Try different email
                   </Button>
@@ -105,7 +105,7 @@ export default function ForgotPasswordPage() {
               <>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-gray-200">Email address</Label> {/* MODIFIED: Label text color */}
+                    <Label htmlFor="email" className="text-gray-700 dark:text-gray-200">Email address</Label> {/* Label text colour */}
                     <Input
                       id="email"
                       type="email"
@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       // MODIFIED: Input styles
-                      className="bg-gray-800 text-gray-100 border-gray-700 placeholder:text-gray-500" 
+                      className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500" 
                     />
                   </div>
                   <Button
@@ -127,15 +127,15 @@ export default function ForgotPasswordPage() {
                 </form>
 
                 <div className="text-center space-y-2">
-                  <div className="text-sm text-gray-400"> {/* MODIFIED: Text color */}
+                  <div className="text-sm text-zinc-600 dark:text-gray-400"> {/* Text colour */}
                     Remember your password?{" "}
-                    <Link href="/login" className="text-blue-400 hover:underline"> {/* MODIFIED: Link color */}
+                    <Link href="/login" className="text-blue-700 hover:underline dark:text-blue-400"> {/* Link colour */}
                       Sign in
                     </Link>
                   </div>
-                  <div className="text-sm text-gray-400"> {/* MODIFIED: Text color */}
+                  <div className="text-sm text-zinc-600 dark:text-gray-400"> {/* Text colour */}
                     Don't have an account?{" "}
-                    <Link href="/signup" className="text-blue-400 hover:underline"> {/* MODIFIED: Link color */}
+                    <Link href="/signup" className="text-blue-700 hover:underline dark:text-blue-400"> {/* Link colour */}
                       Sign up
                     </Link>
                   </div>
@@ -146,52 +146,7 @@ export default function ForgotPasswordPage() {
         </Card>
       </div>
 
-      {/* MODIFIED: Footer styles */}
-      <footer className="w-full py-6 bg-gray-900 text-gray-300 mt-16 relative">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-8 lg:grid-cols-4">
-            <div>
-              <h3 className="font-bold text-lg mb-4 text-white">StudentJobs UK</h3>
-              <p className="text-gray-400 text-sm">
-                Connecting UK students with flexible part-time opportunities.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-indigo-400">For Students</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/browse-jobs" className="text-gray-400 hover:text-indigo-300">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-400 hover:text-indigo-300">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-400 hover:text-indigo-300">Student Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-indigo-300">For Employers</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/post-job" className="text-gray-400 hover:text-indigo-200">Post a Job</Link>
-                <Link href="/pricing" className="text-gray-400 hover:text-indigo-200">Pricing</Link>
-                <Link href="/employer-guide" className="text-gray-400 hover:text-indigo-200">Employer Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 text-purple-300">Legal</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-400 hover:text-purple-200" target="_blank" rel="noopener noreferrer">Refund Policy</Link>
-                <ContactModal>
-                  {/* MODIFIED: Contact Us button styles */}
-                  <button className="text-gray-400 hover:text-purple-200 text-left px-0 py-0 text-sm font-medium">
-                    Contact Us
-                  </button>
-                </ContactModal>
-              </nav>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-500">
-            © 2025 StudentJobs UK. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      {/* Global footer is included via RootLayout */}
     </div>
   )
 }

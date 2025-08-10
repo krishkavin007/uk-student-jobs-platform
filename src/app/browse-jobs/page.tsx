@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/ui/header"
-import { ContactModal } from "@/components/ui/contact-modal"
+import { Footer } from "@/components/ui/footer"
 import { Building2Icon, GlobeIcon, ClockIcon } from "lucide-react"
 
 import { useAuth } from "@/app/context/AuthContext"
@@ -87,26 +87,26 @@ const JOBS_PER_PAGE = 15;
 
 // --- Loading Skeleton Component ---
 const LoadingSkeleton = () => (
-  <div className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 animate-pulse">
+  <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-zinc-200 dark:border-gray-700 animate-pulse">
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
       <div className="flex-grow">
-        <div className="h-7 bg-gray-700 rounded w-4/5 mb-3"></div>
-        <div className="h-5 bg-gray-700 rounded w-3/5 mb-3"></div>
+        <div className="h-7 bg-gray-300 dark:bg-gray-700 rounded w-4/5 mb-3"></div>
+        <div className="h-5 bg-gray-300 dark:bg-gray-700 rounded w-3/5 mb-3"></div>
         <div className="flex gap-2 mt-2">
-          <div className="h-6 bg-gray-700 rounded-full w-24"></div>
-          <div className="h-6 bg-gray-700 rounded-full w-28"></div>
+          <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-24"></div>
+          <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded-full w-28"></div>
         </div>
       </div>
       <div className="text-right mt-4 sm:mt-0">
-        <div className="h-7 bg-gray-700 rounded w-28 ml-auto"></div>
-        <div className="h-5 bg-gray-700 rounded w-24 ml-auto mt-1"></div>
+        <div className="h-7 bg-gray-300 dark:bg-gray-700 rounded w-28 ml-auto"></div>
+        <div className="h-5 bg-gray-300 dark:bg-gray-700 rounded w-24 ml-auto mt-1"></div>
       </div>
     </div>
     <div className="flex flex-wrap gap-3 mt-4">
-      <div className="h-11 bg-gray-700 rounded-lg w-36"></div>
-      <div className="h-11 bg-gray-700 rounded-lg w-32"></div>
-      <div className="h-11 bg-gray-700 rounded-lg w-44"></div>
-      <div className="h-11 bg-gray-700 rounded-lg w-28"></div>
+      <div className="h-11 bg-gray-300 dark:bg-gray-700 rounded-lg w-36"></div>
+      <div className="h-11 bg-gray-300 dark:bg-gray-700 rounded-lg w-32"></div>
+      <div className="h-11 bg-gray-300 dark:bg-gray-700 rounded-lg w-44"></div>
+      <div className="h-11 bg-gray-300 dark:bg-gray-700 rounded-lg w-28"></div>
     </div>
   </div>
 );
@@ -152,10 +152,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[999] transition-opacity duration-300">
-      <div ref={modalContentRef} className="bg-gray-900 p-8 rounded-3xl shadow-3xl max-w-4xl w-full mx-4 my-8 relative flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300 transform scale-100 opacity-100">
+      <div ref={modalContentRef} className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-3xl max-w-4xl w-full mx-4 my-8 relative flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300 transform scale-100 opacity-100">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors duration-200 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 active:scale-90"
+          className="absolute top-5 right-5 p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors duration-200 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 active:scale-90"
           aria-label="Close job details"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
@@ -163,9 +163,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
           </svg>
         </button>
 
-        <div className="mb-6 pb-6 border-b border-gray-700 pr-12">
+        <div className="mb-6 pb-6 border-b border-zinc-200 dark:border-gray-700 pr-12">
           <div className="flex items-center flex-wrap gap-2 mb-3">
-            <h2 className="text-3xl font-extrabold text-white leading-tight">
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white leading-tight">
               {job.job_title}
             </h2>
             {job.is_sponsored && (
@@ -178,37 +178,37 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
             )}
             <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
               job.hoursType === 'holiday'
-                ? 'bg-purple-900 text-purple-300'
-                : 'bg-gray-700 text-gray-200'
+                ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
             } shadow-sm`}>
               {job.hoursType === 'holiday' ? 'Holiday Work' : 'Term-Time'}
             </span>
           </div>
-          <p className="text-lg text-gray-300 mb-2 flex items-center gap-2">
-            <Building2Icon className="h-5 w-5 text-gray-400" />
-            {job.contact_name} <GlobeIcon className="h-5 w-5 text-gray-400" />
+          <p className="text-lg text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <Building2Icon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            {job.contact_name} <GlobeIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             {job.job_location}
           </p>
-          <div className="text-lg font-bold text-green-400 mb-2">£{job.hourly_pay}<span className="text-base font-medium">/hr</span></div>
-          <div className="text-md text-gray-300 mb-4 flex items-center gap-2">
+          <div className="text-lg font-bold text-green-600 dark:text-green-400 mb-2">£{job.hourly_pay}<span className="text-base font-medium">/hr</span></div>
+          <div className="text-md text-gray-600 dark:text-gray-300 mb-4 flex items-center gap-2">
             <ClockIcon className="h-4 w-4" />
             {job.hours_per_week} hours/week
           </div>
           <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
-            <span className="px-3 py-1 text-sm bg-blue-900 text-blue-300 rounded-full font-medium shadow-sm">
+            <span className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium shadow-sm">
               {job.job_category}
             </span>
-            <span className="text-sm text-gray-400 flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-400">
+            <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-500 dark:text-gray-400">
                 <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 .174.45l3.5 4.499a.75.75 0 0 0 1.14-.948L13.5 12.579V6Z" clipRule="evenodd" />
               </svg>
               Posted {job.postedDate}
             </span>
             <div className="flex items-center gap-3">
-              <div className="flex items-center px-3 py-1 bg-gray-700 rounded-full text-sm text-gray-300 font-medium shadow-sm">
+              <div className="flex items-center px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300 font-medium shadow-sm">
                 {job.applicationCount} applications
               </div>
-              <div className="px-3 py-1 bg-yellow-900/20 rounded-lg text-sm text-yellow-400 font-semibold border border-yellow-500/20">
+              <div className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg text-sm text-yellow-800 dark:text-yellow-400 font-semibold border border-yellow-300 dark:border-yellow-500/20">
                 {Math.max(0, (job.positions_available || 1) - (job.positions_filled || 0))} open
               </div>
             </div>
@@ -216,13 +216,13 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
         </div>
 
         <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
-          <h3 className="font-bold text-xl text-white mb-3">Full Job Description</h3>
-          <div className="text-gray-300 leading-relaxed text-base prose dark:prose-invert">
+          <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-3">Full Job Description</h3>
+          <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-base prose dark:prose-invert">
             <p dangerouslySetInnerHTML={{ __html: job.job_description.replace(/\n/g, '<br />') }} />
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-700 flex flex-wrap gap-4 justify-center sm:justify-start">
+        <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-gray-700 flex flex-wrap gap-4 justify-center sm:justify-start">
           <button
             onClick={() => onApply(job)}
             className={`px-6 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-md text-lg font-semibold ${
@@ -232,7 +232,7 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
                 ? 'bg-purple-600 text-white hover:bg-purple-700 cursor-not-allowed opacity-90'
                 : user && appliedJobs.has(job.job_id)
                 ? 'bg-green-700 text-white hover:bg-green-800 cursor-not-allowed opacity-90'
-                : 'bg-blue-700 text-white hover:bg-blue-800'
+                : 'bg-blue-600 text-white hover:bg-blue-600 hover:scale-105'
             }`}
             disabled={!!user && (appliedJobs.has(job.job_id) || applicationsStatus.get(job.job_id)?.status === 'declined' || applicationsStatus.get(job.job_id)?.status === 'hired')}
           >
@@ -253,8 +253,8 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
               onClick={() => onRevealPhone(job.job_id)}
               className={`px-6 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-sm ${
                 revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
-                  ? 'border-green-600 bg-green-900 text-green-300 cursor-not-allowed opacity-90'
-                  : 'border-gray-600 hover:bg-gray-800 text-gray-200'
+                  ? 'border-green-500 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 cursor-not-allowed opacity-90'
+                  : 'border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200'
               }`}
               disabled={revealedPhones.has(job.job_id) || (!!user && appliedJobs.has(job.job_id))}
             >
@@ -278,11 +278,7 @@ export default function BrowseJobsPage() {
   const router = useRouter()
   const { user, isLoading: isAuthLoading, logout } = useAuth();
   
-  // Ensure the 'dark' class is present on the html element for global Tailwind dark mode awareness
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-    // No cleanup needed as we want it to stay dark
-  }, []);
+  // No longer forcing dark mode - let theme toggle handle it
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
@@ -721,7 +717,7 @@ export default function BrowseJobsPage() {
     // to account for the fixed header's height.
     // Assuming your header's height is around 80px based on common designs.
     // Changed bg-gray-950 to bg-[rgb(7,8,21)] for the main page background.
-    <div className="pt-[80px] min-h-screen bg-[rgb(7,8,21)] text-white font-sans antialiased overflow-x-hidden relative">
+    <div className="pt-[80px] min-h-screen bg-background text-foreground font-sans antialiased overflow-x-hidden relative">
       <Header
         user={user}
         logout={logout}
@@ -729,7 +725,7 @@ export default function BrowseJobsPage() {
         pricingHref={pricingHref}
         currentPage="browse-jobs"
         // Apply the same explicit styling as app/page.tsx Header
-        className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0"
+        className="fixed top-0 left-0 right-0 z-[9999] bg-background border-b border-border"
         // The isDarkMode prop is not needed for the Header's background anymore based on its internal styling
       />
 
@@ -737,17 +733,17 @@ export default function BrowseJobsPage() {
           For example, the browse-jobs content: */}
       <div className="container mx-auto px-4 py-8">
         <div className="mb-12 text-center pt-4">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight tracking-tight">
-            Your Next <span className="text-blue-400">Part-Time Opportunity</span> Awaits!
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white mb-4 leading-tight tracking-tight">
+            Your Next <span className="text-blue-600 dark:text-blue-400">Part-Time Opportunity</span> Awaits!
           </h1>
         </div>
 
         {/* Filter Section */}
-        <div className="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700 mb-10 transition-all duration-300">
-          <h2 className="text-2xl font-bold text-white mb-6">Refine Your Job Search</h2>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-zinc-200 dark:border-gray-700 mb-10 transition-all duration-300">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Refine Your Job Search</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
             <div className="flex flex-col">
-              <label htmlFor="search" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-700 dark:text-gray-300 mb-2">
                 Search Jobs
               </label>
               <input
@@ -756,11 +752,11 @@ export default function BrowseJobsPage() {
                 placeholder="e.g., barista, retail assistant..."
                 value={searchTerm}
                 onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
-                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400 transition-all duration-200"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
               />
             </div>
             <div className="flex flex-col">
-              <label htmlFor="location" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Location
               </label>
               <input
@@ -769,18 +765,18 @@ export default function BrowseJobsPage() {
                 placeholder="e.g., London, Manchester..."
                 value={locationFilter}
                 onChange={(e) => handleFilterChange(setLocationFilter, e.target.value)}
-                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400 transition-all duration-200"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
               />
             </div>
             <div className="flex flex-col">
-              <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category
               </label>
               <select
                 id="category"
                 value={categoryFilter}
                 onChange={(e) => handleFilterChange(setCategoryFilter, e.target.value)}
-                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white appearance-none pr-8 transition-all duration-200"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none pr-8 transition-all duration-200"
               >
                 <option value="">All categories</option>
                 <option value="Hospitality">Hospitality</option>
@@ -795,14 +791,14 @@ export default function BrowseJobsPage() {
               </select>
             </div>
             <div className="flex flex-col">
-              <label htmlFor="hoursType" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="hoursType" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Work Period
               </label>
               <select
                 id="hoursType"
                 value={hoursTypeFilter}
                 onChange={(e) => handleFilterChange(setHoursTypeFilter, e.target.value)}
-                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white appearance-none pr-8 transition-all duration-200"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none pr-8 transition-all duration-200"
               >
                 <option value="">All periods</option>
                 <option value="term-time">Term-time (up to 20hrs)</option>
@@ -810,14 +806,14 @@ export default function BrowseJobsPage() {
               </select>
             </div>
             <div className="flex flex-col">
-              <label htmlFor="dateFilter" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="dateFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Posted Date
               </label>
               <select
                 id="dateFilter"
                 value={dateFilter}
                 onChange={(e) => handleFilterChange(setDateFilter, e.target.value)}
-                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white appearance-none pr-8 transition-all duration-200"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none pr-8 transition-all duration-200"
               >
                 <option value="">All dates</option>
                 <option value="today">Today</option>
@@ -827,14 +823,14 @@ export default function BrowseJobsPage() {
             </div>
             {/* New Applied Jobs Filter */}
             <div className="flex flex-col">
-              <label htmlFor="appliedFilter" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="appliedFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Application Status
               </label>
               <select
                 id="appliedFilter"
                 value={appliedFilter}
                 onChange={(e) => handleFilterChange(setAppliedFilter, e.target.value as "all" | "applied" | "not-applied")}
-                className="w-full px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white appearance-none pr-8 transition-all duration-200"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white appearance-none pr-8 transition-all duration-200"
               >
                 <option value="all">All Jobs</option>
                 <option value="applied">Applied Jobs</option>
@@ -846,7 +842,7 @@ export default function BrowseJobsPage() {
             <div className="flex items-end justify-center col-span-full mt-4 md:mt-0">
               <button
                 onClick={clearFilters}
-                className="px-8 py-3 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg transition-all duration-200 active:scale-95 text-lg font-semibold"
+                className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-600 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg transition-all duration-200 text-lg font-semibold"
               >
                 Clear Filters
               </button>
@@ -855,15 +851,15 @@ export default function BrowseJobsPage() {
         </div>
 
         {/* Results Count */}
-        <div className="mb-6 flex items-center justify-between text-gray-300">
+        <div className="mb-6 flex items-center justify-between text-gray-700 dark:text-gray-300">
           <p className="text-lg font-medium">
-            <span className="text-blue-400 font-bold">{sortedJobs.length}</span> job{sortedJobs.length !== 1 ? 's' : ''} found
+            <span className="text-blue-600 dark:text-blue-400 font-bold">{sortedJobs.length}</span> job{sortedJobs.length !== 1 ? 's' : ''} found
             {totalPages > 1 && (
-              <span className="text-gray-400 ml-2"> • Page {currentPage} of {totalPages}</span>
+              <span className="text-gray-500 dark:text-gray-500 dark:text-gray-400 ml-2"> • Page {currentPage} of {totalPages}</span>
             )}
           </p>
           {totalPages > 1 && (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-500 dark:text-gray-400">
               Showing {startIndex + 1}-{Math.min(endIndex, sortedJobs.length)} of {sortedJobs.length} jobs
             </p>
           )}
@@ -879,7 +875,7 @@ export default function BrowseJobsPage() {
         )}
 
         {jobsError && (
-          <div className="text-center py-12 bg-red-950 rounded-2xl border border-red-700 text-red-400 shadow-lg">
+          <div className="text-center py-12 bg-red-50 dark:bg-red-950 rounded-2xl border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 shadow-lg">
             <p className="text-xl font-semibold mb-4">Oops! Something went wrong.</p>
             <p className="mb-6">{jobsError}</p>
             <Button onClick={() => window.location.reload()} className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-200">
@@ -894,39 +890,39 @@ export default function BrowseJobsPage() {
             {currentJobs.map((job) => (
               // START OF TOTALLY NEW JOB CARD BLOCK DESIGN
               <div key={job.job_id} className={`
-                bg-gray-800
+                bg-white dark:bg-gray-800
                 p-6 rounded-xl shadow-lg transition-all duration-300 flex flex-col justify-between
                 hover:shadow-2xl hover:scale-[1.01]
                 ${job.is_sponsored
-                  ? 'border-4 border-blue-400 bg-gradient-to-br from-blue-900 to-gray-850 transform -translate-y-1' // More prominent sponsored style
-                  : 'border border-gray-700'
+                  ? 'border-4 border-blue-400 bg-gradient-to-br from-blue-50 to-white dark:from-blue-900 dark:to-gray-850 transform -translate-y-1' // More prominent sponsored style
+                  : 'border border-zinc-200 dark:border-gray-700'
                 }
               `}>
                 {/* Job Info Header - Flex container for Title, Company/Location & Price */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-grow pr-4">
                     {/* Job Title */}
-                    <h3 className="text-xl md:text-2xl font-extrabold text-white leading-tight mb-1 break-words">
+                    <h3 className="text-xl md:text-2xl font-extrabold text-gray-900 dark:text-white leading-tight mb-1 break-words">
                       {job.job_title}
                     </h3>
                     {/* Employer Name & Location */}
-                    <p className="text-sm text-gray-300 flex flex-col overflow-hidden">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 flex flex-col overflow-hidden">
                       <span className="flex items-center gap-1 overflow-hidden whitespace-nowrap mb-1">
-                        <Building2Icon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                        <Building2Icon className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                         <span className="flex-grow truncate">{job.contact_name}</span>
                       </span>
                       <span className="flex items-center gap-1 overflow-hidden whitespace-nowrap">
-                        <GlobeIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                        <GlobeIcon className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                         <span className="flex-shrink-0 truncate">{job.job_location}</span>
                       </span>
                     </p>
                   </div>
                   {/* Hourly Pay / Hours Per Week */}
                   <div className="text-right flex-shrink-0 mt-1">
-                    <div className="text-xl font-bold text-green-400 leading-tight">
+                    <div className="text-xl font-bold text-green-600 dark:text-green-400 leading-tight">
                       £{job.hourly_pay}<span className="text-base font-medium">/hr</span>
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
                       <ClockIcon className="h-3 w-3" />
                       {job.hours_per_week} hrs/wk
                     </div>
@@ -938,28 +934,28 @@ export default function BrowseJobsPage() {
                   {/* Work Period Tag */}
                   <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
                     job.hoursType === 'holiday'
-                      ? 'bg-purple-900 text-purple-300'
-                      : 'bg-gray-700 text-gray-200'
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
                   }`}>
                     {job.hoursType === 'holiday' ? 'Holiday' : 'Term-Time'}
                   </span>
                   {/* Category Tag */}
-                  <span className="px-2 py-0.5 text-xs bg-blue-900 text-blue-300 rounded-full font-medium">
+                  <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium">
                     {job.job_category}
                   </span>
                   {/* Posted Date */}
-                  <span className="flex items-center gap-1 text-xs text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0">
+                  <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0">
                       <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 .174.45l3.5 4.499a.75.75 0 0 0 1.14-.948L13.5 12.579V6Z" clipRule="evenodd" />
                     </svg>
                     {job.postedDate}
                   </span>
                   {/* Application Count Badge */}
-                  <span className="inline-flex items-center px-2 py-0.5 bg-gray-700 rounded-full text-xs text-gray-300 font-medium">
+                  <span className="inline-flex items-center px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-xs text-gray-700 dark:text-gray-300 font-medium">
                     {job.applicationCount} applications
                   </span>
                   {/* Positions Available Badge */}
-                  <span className="inline-flex items-center px-2 py-0.5 bg-yellow-900/20 rounded-lg text-xs text-yellow-400 font-semibold border border-yellow-500/20">
+                  <span className="inline-flex items-center px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg text-xs text-yellow-800 dark:text-yellow-400 font-semibold border border-yellow-300 dark:border-yellow-500/20">
                     {Math.max(0, (job.positions_available || 1) - (job.positions_filled || 0))} open
                   </span>
                    {/* Sponsored Badge (internal, if desired) */}
@@ -975,17 +971,17 @@ export default function BrowseJobsPage() {
 
                 {/* Job Description (expandable) - separate block */}
                 {isMobile && expandedJobIds.has(job.job_id) && ( // Show only on mobile and if expanded
-                  <div className="p-4 bg-gray-700 rounded-lg mt-4 text-sm leading-relaxed">
-                    <h4 className="font-semibold text-white mb-2">Full Job Description</h4>
+                  <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg mt-4 text-sm leading-relaxed">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Full Job Description</h4>
                     <p dangerouslySetInnerHTML={{ __html: job.job_description.replace(/\n/g, '<br />') }} />
                   </div>
                 )}
 
                 {/* Action Buttons - aligned to bottom, full width container */}
-                <div className="mt-auto pt-4 border-t border-gray-700 flex flex-wrap gap-3 items-center justify-center sm:justify-start">
+                <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3 items-center justify-center sm:justify-start">
                   <button
                     onClick={() => handleJobDescriptionClick(job)}
-                    className="px-5 py-2 border border-gray-600 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
+                    className="px-5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
                   >
                     {isMobile && expandedJobIds.has(job.job_id) ? 'Hide Description' : 'View Description'}
                   </button>
@@ -999,7 +995,7 @@ export default function BrowseJobsPage() {
                         ? 'bg-purple-600 text-white hover:bg-purple-700 cursor-not-allowed opacity-90'
                         : user && appliedJobs.has(job.job_id)
                         ? 'bg-green-700 text-white hover:bg-green-800 cursor-not-allowed opacity-90'
-                        : 'bg-blue-700 text-white hover:bg-blue-800'
+                        : 'bg-blue-600 text-white hover:bg-blue-600 hover:scale-105'
                     }`}
                     disabled={!!user && (appliedJobs.has(job.job_id) || applicationsStatus.get(job.job_id)?.status === 'declined' || applicationsStatus.get(job.job_id)?.status === 'hired')}
                   >
@@ -1020,8 +1016,8 @@ export default function BrowseJobsPage() {
                       onClick={() => handleRevealPhone(job.job_id)}
                       className={`px-5 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-sm ${
                         revealedPhones.has(job.job_id) || (user && appliedJobs.has(job.job_id))
-                          ? 'border-green-600 bg-green-900 text-green-300 cursor-not-allowed opacity-90'
-                          : 'border-gray-600 hover:bg-gray-700 text-gray-200'
+                          ? 'border-green-500 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 cursor-not-allowed opacity-90'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
                       }`}
                       disabled={revealedPhones.has(job.job_id) || (!!user && appliedJobs.has(job.job_id))}
                     >
@@ -1040,9 +1036,9 @@ export default function BrowseJobsPage() {
 
         {/* No Results (only show if not loading, no error, and filteredJobs is empty) */}
         {!jobsLoading && !jobsError && sortedJobs.length === 0 && (
-          <div className="text-center py-7 bg-gray-800 rounded-2xl border border-gray-700 shadow-lg">
-            <h3 className="text-xl font-semibold mb-2 text-white">No jobs found matching your criteria!</h3>
-            <p className="text-gray-300 mb-6">
+          <div className="text-center py-7 bg-white dark:bg-gray-800 rounded-2xl border border-zinc-200 dark:border-gray-700 shadow-lg">
+            <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">No jobs found matching your criteria!</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
               Try broadening your search or check back later as new opportunities are posted frequently.
             </p>
           </div>
@@ -1055,7 +1051,7 @@ export default function BrowseJobsPage() {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                   <path fillRule="evenodd" d="M11.72 9.47a.75.75 0 0 1 0 1.06L7.47 15.72a.75.75 0 0 1-1.06 0L2.22 11.47a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25Z" clipRule="evenodd" />
@@ -1072,7 +1068,7 @@ export default function BrowseJobsPage() {
 
                   if (!showPage) {
                     if (page === currentPage - 3 || page === currentPage + 3) {
-                      return <span key={page} className="px-2 py-2 text-gray-400">...</span>
+                      return <span key={page} className="px-2 py-2 text-gray-500 dark:text-gray-400">...</span>
                     }
                     return null
                   }
@@ -1083,8 +1079,8 @@ export default function BrowseJobsPage() {
                       onClick={() => handlePageChange(page)}
                       className={`px-4 py-2 border rounded-lg transition-all duration-200 active:scale-98 shadow-sm ${
                         currentPage === page
-                          ? 'bg-blue-700 text-white border-blue-700'
-                          : 'border-gray-600 hover:bg-gray-700 text-gray-200'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
                       }`}
                     >
                       {page}
@@ -1096,7 +1092,7 @@ export default function BrowseJobsPage() {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                   <path fillRule="evenodd" d="M8.28 9.47a.75.75 0 0 1 0 1.06l4.25 4.25a.75.75 0 0 1-1.06 0L7.22 10.53a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l-4.25 4.25Z" clipRule="evenodd" />
@@ -1109,19 +1105,22 @@ export default function BrowseJobsPage() {
         )}
 
         {/* Important Work Hour Limits Block - Moved Here and re-centered */}
-        <div className="mt-12 p-6 bg-blue-950 border border-blue-700 rounded-2xl shadow-xl max-w-2xl w-full mx-auto text-center transform transition-transform duration-300 hover:scale-[1.01] hover:shadow-2xl">
-          <h3 className="font-bold text-blue-200 mb-3 flex items-center justify-center gap-3 text-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-blue-400">
+        <div className="mt-12 p-6 bg-blue-50 dark:bg-blue-950 border border-blue-300 dark:border-blue-700 rounded-2xl shadow-xl max-w-2xl w-full mx-auto text-center transform transition-transform duration-300 hover:scale-[1.01] hover:shadow-2xl">
+          <h3 className="font-bold text-blue-700 dark:text-blue-200 mb-3 flex items-center justify-center gap-3 text-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-blue-600 dark:text-blue-400">
               <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 .174.45l3.5 4.499a.75.75 0 0 0 1.14-.948L13.5 12.579V6Z" clipRule="evenodd" />
             </svg>
             Important: Understand Student Work Hour Limits
           </h3>
-          <div className="text-base text-blue-300 space-y-2 text-left">
-            <p><strong>During term-time:</strong> Up to <span className="font-semibold text-blue-100">20 hours</span> per week while studying.</p>
-            <p><strong>During holidays/semester breaks:</strong> Up to <span className="font-semibold text-blue-100">40 hours</span> per week (full-time).</p>
+          <div className="text-base text-blue-700 dark:text-blue-300 space-y-2 text-left">
+            <p><strong>During term-time:</strong> Up to <span className="font-semibold text-blue-800 dark:text-blue-100">20 hours</span> per week while studying.</p>
+            <p><strong>During holidays/semester breaks:</strong> Up to <span className="font-semibold text-blue-800 dark:text-blue-100">40 hours</span> per week (full-time).</p>
           </div>
         </div>
       </div>
+
+      {/* Add breathing space before footer */}
+      <div className="pb-16"></div>
 
       {/* The JobDetailsModal is only rendered for desktop view */}
       {!isMobile && showJobDetailsModal && (
@@ -1147,60 +1146,9 @@ export default function BrowseJobsPage() {
           onSubmit={handleApplicationMessageSubmit}
           onClose={handleCloseApplicationMessageModal}
           isOpen={showApplicationMessageModal}
-        />
+                />
       )}
 
-
-      {/* Reduced mt-20 to mt-10 for less space */}
-      <footer className="bg-gray-900 text-white py-10">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-10 lg:grid-cols-4 md:grid-cols-2">
-            <div>
-              <h3 className="font-bold text-xl mb-4">StudentJobs UK</h3>
-              <p className="text-gray-300 text-sm leading-relaxed">
-                Connecting UK students with flexible part-time opportunities.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-bold text-base mb-3 text-blue-300">For Students</h4>
-             <ul className="space-y-1.5 text-sm">
-                  <li><Link href="/browse-jobs" className="text-gray-400 hover:text-blue-200 transition-colors duration-200">Browse Jobs</Link></li>
-                  <li><Link href="/how-it-works" className="text-gray-400 hover:text-blue-200 transition-colors duration-200">How It Works</Link></li>
-                  <li><Link href="/student-guide" className="text-gray-400 hover:text-blue-200 transition-colors duration-200">Student Guide</Link></li>
-                </ul>
-            </div>
-            <div>
-               <h4 className="font-bold text-base mb-3 text-indigo-300">For Employers</h4>
-                <ul className="space-y-1.5 text-sm">
-                  <li><Link href="/post-job" className="text-gray-400 hover:text-indigo-200 transition-colors duration-200">Post a Job</Link></li>
-                  <li>
-                    <Link
-                      href={pricingHref}
-                      className="text-gray-400 hover:text-indigo-200 transition-colors duration-200"
-                    >
-                      Pricing
-                    </Link>
-                  </li>
-                  <li><Link href="/employer-guide" className="text-gray-400 hover:text-indigo-200 transition-colors duration-200">Employer Guide</Link></li>
-                </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-base mb-3 text-purple-300">Legal</h4>
-              <nav className="flex flex-col space-y-3 text-sm">
-                  <Link href="/privacy" className="text-gray-400 hover:text-purple-200 transition-colors duration-200">Privacy Policy</Link>
-                  <Link href="/terms" className="text-gray-400 hover:text-purple-200 transition-colors duration-200">Terms & Conditions</Link>
-                  <Link href="/refund-policy" className="text-gray-400 hover:text-purple-200 transition-colors duration-200">Refund Policy</Link>
-                 <ContactModal>
-                        <button className="text-gray-400 hover:text-purple-200 transition-colors duration-200 text-left text-sm">Contact Us</button>
-                      </ContactModal>
-              </nav>
-            </div>
-          </div>
-          <div className="mt-10 pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
-            © {new Date().getFullYear()} StudentJobs UK. All rights reserved.
-          </div>
-        </div>
-      </footer>
-    </div>
+      </div>
   )
 }

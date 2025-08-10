@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { ContactModal } from "@/components/ui/contact-modal"
+// Removed ContactModal import; global footer contains contact
 import { useAuth } from '@/app/context/AuthContext'
 // Removed: import Image from 'next/image' // No longer needed if no images are used
 
@@ -39,20 +39,23 @@ function PaymentContent() {
 
 
   // Get authentication state from useAuth hook
-  const { user, isLoading: isAuthLoading, logout } = useAuth();
+  const { user, isLoading: isAuthLoading, logout, refreshUser } = useAuth();
 
   const jobId = searchParams?.get('jobId')
   const purchaseType = searchParams?.get('type');
+
+  // If no type is provided, render themed 404 content inline (URL remains)
+  if (!purchaseType) {
+    const NotFoundContent = require('@/components/ui/not-found-content').default
+    return <NotFoundContent />
+  }
   const isSponsored = searchParams?.get('sponsored') === 'true';
 
   let displayAmount = '0.00';
   let purchaseItemName = 'Purchase';
   let redirectPathOnSuccess = '/my-account';
 
-  useEffect(() => {
-    // Ensure the 'dark' class is present on the html element
-    document.documentElement.classList.add('dark');
-  }, []);
+  // Removed forced dark theme; global theme logic in layout handles this
 
   if (purchaseType === 'pro_pack') {
     if (!isAuthLoading && user && user.user_type === 'employer') {
@@ -78,6 +81,10 @@ function PaymentContent() {
     displayAmount = '5.00';
     purchaseItemName = `Job Sponsorship Upgrade`;
     redirectPathOnSuccess = '/my-account?tab=activity';
+  } else if (purchaseType === 'post_job') {
+    displayAmount = isSponsored ? '5.00' : '1.00';
+    purchaseItemName = isSponsored ? 'Sponsored Job Posting' : 'Job Posting Fee';
+    redirectPathOnSuccess = '/my-account';
   } else {
     displayAmount = searchParams?.get('amount') || '1.00';
     purchaseItemName = `Service Fee for: ${purchaseType || 'Unknown Item'}`;
@@ -193,6 +200,87 @@ function PaymentContent() {
           alert('Payment successful, but there was an issue upgrading your job. Please contact support.');
           router.push('/my-account?tab=activity');
         }
+      } else if (purchaseType === 'post_job') {
+        try {
+          // 1) Retrieve job payload
+          const jobPayloadRaw = sessionStorage.getItem('jobToPost');
+          if (!jobPayloadRaw) {
+            alert('Payment successful, but job details were not found. Please re-enter your job details.');
+            router.push('/post-job');
+            setLoading(false);
+            return;
+          }
+          const jobPayload = JSON.parse(jobPayloadRaw);
+
+          // Ensure is_sponsored matches the payment intent
+          jobPayload.is_sponsored = isSponsored;
+
+          // 2) If user not logged in, register employer first
+          let postedByUserId = user?.user_id;
+          if (!postedByUserId) {
+            const employerRaw = sessionStorage.getItem('employerRegistration');
+            if (!employerRaw) {
+              alert('Payment successful, but employer details are missing. Please contact support.');
+              router.push('/post-job');
+              setLoading(false);
+              return;
+            }
+            const employerRegistration = JSON.parse(employerRaw);
+
+            const registerResponse = await fetch('/api/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(employerRegistration),
+            });
+
+            if (!registerResponse.ok) {
+              const errorData = await registerResponse.json().catch(() => ({}));
+              console.error('Registration failed after payment:', errorData);
+              alert('Payment successful, but account creation failed. Please contact support.');
+              router.push('/post-job');
+              setLoading(false);
+              return;
+            }
+
+            const registerData = await registerResponse.json();
+            postedByUserId = registerData.user?.user_id;
+            await refreshUser();
+          }
+
+          if (!postedByUserId) {
+            alert('Payment successful, but we could not identify your account.');
+            router.push('/post-job');
+            setLoading(false);
+            return;
+          }
+
+          // 3) Post the job
+          const finalJobPayload = { ...jobPayload, posted_by_user_id: postedByUserId };
+          const jobPostResponse = await fetch('/api/job', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(finalJobPayload),
+          });
+
+          if (!jobPostResponse.ok) {
+            const errorData = await jobPostResponse.json().catch(() => ({}));
+            console.error('Job posting failed after payment:', errorData);
+            alert('Payment successful, but job posting failed. Please contact support.');
+            router.push('/post-job');
+            setLoading(false);
+            return;
+          }
+
+          // 4) Clear staged data and redirect
+          sessionStorage.removeItem('jobToPost');
+          sessionStorage.removeItem('employerRegistration');
+          alert('Payment successful! Your job has been posted.');
+          router.push('/my-account');
+        } catch (err) {
+          console.error('Error finalising job posting after payment:', err);
+          alert('Payment successful, but there was an unexpected error finishing your job post.');
+          router.push('/post-job');
+        }
       } else {
         // For other payment types, use the original redirect
         alert(`Payment successful via ${method} for ${purchaseItemName}! Redirecting...`);
@@ -236,8 +324,8 @@ function PaymentContent() {
 
   if (isAuthLoading) {
       return (
-          <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-              <p className="text-gray-300">Checking user authentication...</p>
+          <div className="min-h-screen bg-zinc-50 text-gray-900 dark:bg-gray-950 dark:text-gray-300 flex items-center justify-center">
+              <p>Checking user authentication...</p>
           </div>
       );
   }
@@ -249,35 +337,35 @@ function PaymentContent() {
   const pricingHref = user?.user_type === "student" ? "/pricing#student" : "/pricing#employer";
 
   return (
-    <div className="min-h-screen bg-[rgb(7,8,21)] text-white flex flex-col pt-[80px]">
+    <div className="min-h-screen bg-zinc-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex flex-col pt-[80px]">
       <Header
         user={user}
         isLoading={isAuthLoading}
         logout={logout}
         pricingHref={pricingHref}
         currentPage="pay"
-        className="fixed top-0 left-0 right-0 z-[9999] bg-gray-900 text-white border-b-0"
+        className="fixed top-0 left-0 right-0 z-[9999] bg-white text-gray-900 border-b border-zinc-200 dark:bg-gray-900 dark:text-white dark:border-gray-800"
       />
 
-      <div className="flex-grow container mx-auto px-4 py-8">
+      <div className="flex-grow container mx-auto px-4 py-8 pb-24 md:pb-16">
         {/* Back button for apply route */}
 
         <div className="max-w-md mx-auto">
-          <Card className="bg-gray-800 border border-gray-700 shadow-xl rounded-2xl text-white">
-            <CardHeader className="border-b border-gray-700 pb-4">
-              <CardTitle className="text-2xl font-bold text-white">
+          <Card className="bg-white border border-zinc-200 shadow-xl rounded-2xl text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+            <CardHeader className="border-b border-zinc-200 pb-4 dark:border-gray-700">
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
                 {currentStage === 1 ? 'Billing Details' : 'Payment Method'}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="mb-6 p-4 bg-blue-900/20 rounded-lg border border-blue-700">
-                <p className="text-sm font-medium text-blue-300">Payment Summary</p>
-                <p className="text-2xl font-bold text-blue-400">£{displayAmount}</p>
-                <p className="text-sm text-gray-400">
+              <div className="mb-6 p-4 rounded-lg border bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-200">
+                <p className="text-sm font-medium">Payment Summary</p>
+                <p className="text-2xl font-bold">£{displayAmount}</p>
+                <p className="text-sm text-zinc-600 dark:text-gray-400">
                   {purchaseItemName}
                 </p>
-                <div className="mt-2 pt-2 border-t border-blue-700">
-                  <p className="text-xs text-gray-400">
+                <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
+                  <p className="text-xs text-zinc-600 dark:text-gray-400">
                     No additional fees: What you see is what you pay.
                     Includes secure payment processing and instant access.
                   </p>
@@ -288,70 +376,70 @@ function PaymentContent() {
               {currentStage === 1 && (
                 <form onSubmit={handleNextStage} className="space-y-4">
                   <div>
-                    <Label htmlFor="billingName" className="text-gray-300">Full Name</Label>
+                    <Label htmlFor="billingName" className="text-gray-700 dark:text-gray-300">Full Name</Label>
                     <Input
                       id="billingName"
                       placeholder="John Smith"
                       required
                       value={billingName}
                       onChange={(e) => setBillingName(e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                      className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="addressLine1" className="text-gray-300">Address Line 1</Label>
+                    <Label htmlFor="addressLine1" className="text-gray-700 dark:text-gray-300">Address Line 1</Label>
                     <Input
                       id="addressLine1"
                       placeholder="123 Example Street"
                       required
                       value={addressLine1}
                       onChange={(e) => setAddressLine1(e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                      className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="addressLine2" className="text-gray-300">Address Line 2 (Optional)</Label>
+                    <Label htmlFor="addressLine2" className="text-gray-700 dark:text-gray-300">Address Line 2 (Optional)</Label>
                     <Input
                       id="addressLine2"
                       placeholder="Apt, Suite, Building"
                       value={addressLine2}
                       onChange={(e) => setAddressLine2(e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                      className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="city" className="text-gray-300">City</Label>
+                      <Label htmlFor="city" className="text-gray-700 dark:text-gray-300">City</Label>
                       <Input
                         id="city"
                         placeholder="London"
                         required
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                        className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="postcode" className="text-gray-300">Postcode</Label>
+                      <Label htmlFor="postcode" className="text-gray-700 dark:text-gray-300">Postcode</Label>
                       <Input
                         id="postcode"
                         placeholder="SW1A 0AA"
                         required
                         value={postcode}
                         onChange={(e) => setPostcode(e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                        className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="country" className="text-gray-300">Country</Label>
+                    <Label htmlFor="country" className="text-gray-700 dark:text-gray-300">Country</Label>
                     <Input
                       id="country"
                       placeholder="United Kingdom"
                       required
                       value={country}
                       readOnly
-                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500 cursor-not-allowed"
+                      className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                     />
                   </div>
 
@@ -360,9 +448,9 @@ function PaymentContent() {
                       id="saveBillingAddress"
                       checked={saveBillingAddress}
                       onCheckedChange={(checked) => setSaveBillingAddress(!!checked)}
-                      className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                      className="border-zinc-400 dark:border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
                     />
-                    <Label htmlFor="saveBillingAddress" className="text-sm text-gray-300">Save this billing address for future payments</Label>
+                    <Label htmlFor="saveBillingAddress" className="text-sm text-zinc-700 dark:text-gray-300">Save this billing address for future payments</Label>
                   </div>
 
                   <div className="flex justify-between pt-4">
@@ -412,9 +500,9 @@ function PaymentContent() {
 
                   {/* Separator */}
                   <div className="relative flex items-center py-5">
-                    <div className="flex-grow border-t border-gray-700"></div>
-                    <span className="flex-shrink mx-4 text-gray-500 text-sm">Or pay by card</span>
-                    <div className="flex-grow border-t border-gray-700"></div>
+                    <div className="flex-grow border-t border-zinc-200 dark:border-gray-700"></div>
+                    <span className="flex-shrink mx-4 text-zinc-500 text-sm dark:text-gray-500">Or pay by card</span>
+                    <div className="flex-grow border-t border-zinc-200 dark:border-gray-700"></div>
                   </div>
 
                   {/* Card Payment Form */}
@@ -426,7 +514,7 @@ function PaymentContent() {
                             id="useSavedCard"
                             checked={useSavedCard}
                             onCheckedChange={(checked) => setUseSavedCard(!!checked)}
-                            className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                            className="border-zinc-400 dark:border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
                           />
                           <Label htmlFor="useSavedCard" className="text-gray-300">Use saved payment method</Label>
                         </div>
@@ -434,18 +522,18 @@ function PaymentContent() {
                         {useSavedCard && (
                           <div className="space-y-2">
                             {savedCards.map((card) => (
-                              <div key={card.id} className="border border-gray-700 rounded-lg p-3 cursor-pointer bg-gray-700 hover:bg-gray-600 transition-colors">
+                              <div key={card.id} className="border rounded-lg p-3 cursor-pointer transition-colors border-zinc-200 bg-zinc-100 hover:bg-zinc-200 dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-3">
                                     <input
                                       type="radio"
                                       name="savedCard"
                                       defaultChecked={card.id === 1}
-                                      className="form-radio h-4 w-4 text-blue-600 bg-gray-600 border-gray-500 focus:ring-blue-500"
+                                      className="form-radio h-4 w-4 text-blue-600 bg-white border-zinc-300 focus:ring-blue-500 dark:bg-gray-600 dark:border-gray-500"
                                     />
                                     <div>
-                                      <p className="font-medium text-white">{card.brand} {card.last4}</p>
-                                      <p className="text-sm text-gray-400">Expires {card.expiryMonth}/{card.expiryYear}</p>
+                                      <p className="font-medium text-gray-900 dark:text-white">{card.brand} {card.last4}</p>
+                                      <p className="text-sm text-zinc-600 dark:text-gray-400">Expires {card.expiryMonth}/{card.expiryYear}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -459,42 +547,42 @@ function PaymentContent() {
                     {!useSavedCard && (
                       <>
                         <div>
-                          <Label htmlFor="name" className="text-gray-300">Name on Card</Label>
+                          <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Name on Card</Label>
                           <Input
                             id="name"
                             placeholder="John Smith"
                             required
-                            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                            className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                           />
                         </div>
 
                         <div>
-                          <Label htmlFor="cardNumber" className="text-gray-300">Card Number</Label>
+                          <Label htmlFor="cardNumber" className="text-gray-700 dark:text-gray-300">Card Number</Label>
                           <Input
                             id="cardNumber"
                             placeholder="1234 5678 9012 3456"
                             required
-                            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                            className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                           />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label htmlFor="expiry" className="text-gray-300">Expiry</Label>
+                            <Label htmlFor="expiry" className="text-gray-700 dark:text-gray-300">Expiry</Label>
                             <Input
                               id="expiry"
                               placeholder="MM/YY"
                               required
-                              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                             />
                           </div>
                           <div>
-                            <Label htmlFor="cvv" className="text-gray-300">CVV</Label>
+                            <Label htmlFor="cvv" className="text-gray-700 dark:text-gray-300">CVV</Label>
                             <Input
                               id="cvv"
                               placeholder="123"
                               required
-                              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-500"
+                              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
                             />
                           </div>
                         </div>
@@ -504,9 +592,9 @@ function PaymentContent() {
                             id="saveCard"
                             checked={saveCard}
                             onCheckedChange={(checked) => setSaveCard(!!checked)}
-                            className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+                            className="border-zinc-400 dark:border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
                           />
-                          <Label htmlFor="saveCard" className="text-sm text-gray-300">Save this card for future payments</Label>
+                          <Label htmlFor="saveCard" className="text-sm text-zinc-700 dark:text-gray-300">Save this card for future payments</Label>
                         </div>
                       </>
                     )}
@@ -516,7 +604,7 @@ function PaymentContent() {
                         type="button"
                         onClick={() => setCurrentStage(1)}
                         variant="outline"
-                        className="border-gray-600 hover:bg-gray-700 text-gray-300 py-3 px-6 rounded-lg transition-colors duration-200"
+                        className="border-zinc-300 text-gray-900 hover:bg-zinc-50 py-3 px-6 rounded-lg transition-colors duration-200 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                       >
                         Back
                       </Button>
@@ -536,62 +624,17 @@ function PaymentContent() {
         </div>
       </div>
 
-      {/* Footer - already dark, no changes needed */}
-      <footer className="w-full py-6 bg-gray-900 text-white mt-16">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="grid gap-8 lg:grid-cols-4">
-            <div>
-              <h3 className="font-bold text-lg mb-4">StudentJobs UK</h3>
-              <p className="text-gray-300 text-sm">
-                Connecting UK students with flexible part-time opportunities.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">For Students</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/browse-jobs" className="text-gray-300 hover:text-white">Browse Jobs</Link>
-                <Link href="/how-it-works" className="text-gray-300 hover:text-white">How It Works</Link>
-                <Link href="/student-guide" className="text-gray-300 hover:text-white">Student Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">For Employers</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/post-job" className="text-gray-300 hover:text-white">Post a Job</Link>
-                <Link href={pricingHref} className="text-gray-300 hover:text-white">Pricing</Link>
-                <Link href="/employer-guide" className="text-gray-300 hover:text-white">Employer Guide</Link>
-              </nav>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3">Legal</h4>
-              <nav className="flex flex-col space-y-2 text-sm">
-                <Link href="/privacy" className="text-gray-300 hover:text-white">Privacy Policy</Link>
-                <Link href="/terms" className="text-gray-300 hover:text-white">Terms & Conditions</Link>
-                <Link href="/refund-policy" className="text-gray-300 hover:text-white">Refund Policy</Link>
-                <Link href="/about" className="text-gray-300 hover:text-white">About Us</Link>
-                <ContactModal>
-                  <button className="text-gray-300 hover:text-white text-sm text-left w-full pl-0">
-                    Contact Us
-                  </button>
-                </ContactModal>
-              </nav>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-300">
-            © 2025 StudentJobs UK. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      {/* Global footer is included via RootLayout */}
     </div>
   )
 }
 
 export default function PaymentPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    <Suspense fallback={<div className="min-h-screen bg-zinc-50 text-gray-900 dark:bg-gray-950 dark:text-gray-300 flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-2 text-gray-300">Loading payment form...</p>
+        <p className="mt-2">Loading payment form...</p>
       </div>
     </div>}>
       <PaymentContent />

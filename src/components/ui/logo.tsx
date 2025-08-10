@@ -18,7 +18,7 @@ export function Logo({ className = "" }: { className?: string }) {
           />
         </svg>
       </div>
-      <span className="font-bold text-xl text-white"> {/* Changed text-foreground to text-white */}
+      <span className="font-bold text-xl text-slate-900 dark:text-white">
   StudentJobs UK
 </span>
     </div>
