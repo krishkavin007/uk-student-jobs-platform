@@ -20,6 +20,17 @@ import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 import { useAuth } from "@/app/context/AuthContext";
 
+// Helper functions for display-side capitalization
+const formatTitleCase = (text: string | undefined | null): string => {
+  if (!text) return '';
+  return text.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+};
+
+const formatSentenceCase = (text: string | undefined | null): string => {
+  if (!text) return '';
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+};
+
 // User, Transaction, AppliedJob, Applicant, PostedJob interfaces remain the same.
 interface User {
   user_id: string;
@@ -210,6 +221,15 @@ function MyAccountContent() {
 
   // UPDATED: Phone number validation regex for common UK formats.
   const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?\d{3}$/;
+
+  // Helper function for auto-capitalization
+  const handleInputChange = (field: string, value: string, setter: (value: string) => void) => {
+    if (['firstName', 'lastName', 'universityCollege', 'organisationName', 'userCity'].includes(field)) {
+      // Title case for name fields, university, business name, and city
+      value = value.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+    setter(value);
+  };
 
   const router = useRouter();
 
@@ -1364,18 +1384,18 @@ Thank you for using StudentJobs UK!
                 <div className="flex items-center gap-4">
                   <div 
                     className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
-                    aria-label={`${user.user_first_name || user.user_username} profile avatar`}
+                    aria-label={`${formatTitleCase(user.user_first_name) || user.user_username} profile avatar`}
                   >
-                    <div className="text-white text-lg font-bold uppercase">
-                      {user.user_first_name?.[0]}{user.user_last_name?.[0] || user.user_username?.[0]}
-                    </div>
+                                          <div className="text-white text-lg font-bold uppercase">
+                        {formatTitleCase(user.user_first_name)?.[0]}{formatTitleCase(user.user_last_name)?.[0] || user.user_username?.[0]}
+                      </div>
                   </div>
                   <div className="flex-1">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                      Welcome back, {user.user_first_name || user.user_username}!
+                      Welcome back, {formatTitleCase(user.user_first_name) || user.user_username}!
                     </h2>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Logged in as <span className="text-blue-600 dark:text-blue-400">{user.user_type}</span>
+                      Logged in as <span className="text-blue-600 dark:text-blue-400">{formatTitleCase(user.user_type)}</span>
                     </p>
                   </div>
                 </div>
@@ -1654,8 +1674,8 @@ Thank you for using StudentJobs UK!
                         <label className="text-sm font-semibold text-gray-900 dark:text-white">First Name</label>
                         <div className={`bg-zinc-50 dark:bg-gray-800/50 rounded-xl border border-zinc-200 dark:border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
-                      value={isEditingProfile ? editedFirstName : user.user_first_name || ''}
-                      onChange={(e) => setEditedFirstName(e.target.value)}
+                      value={isEditingProfile ? editedFirstName : formatTitleCase(user.user_first_name)}
+                      onChange={(e) => handleInputChange('firstName', e.target.value, setEditedFirstName)}
                       disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                             placeholder="Enter your first name..."
@@ -1668,8 +1688,8 @@ Thank you for using StudentJobs UK!
                         <label className="text-sm font-semibold text-gray-900 dark:text-white">Last Name</label>
                         <div className={`bg-zinc-50 dark:bg-gray-800/50 rounded-xl border border-zinc-200 dark:border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
-                      value={isEditingProfile ? editedLastName : user.user_last_name || ''}
-                      onChange={(e) => setEditedLastName(e.target.value)}
+                      value={isEditingProfile ? editedLastName : formatTitleCase(user.user_last_name)}
+                      onChange={(e) => handleInputChange('lastName', e.target.value, setEditedLastName)}
                       disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                             placeholder="Enter your last name..."
@@ -1683,7 +1703,7 @@ Thank you for using StudentJobs UK!
                         <div className={`bg-zinc-50 dark:bg-gray-800/50 rounded-xl border border-zinc-200 dark:border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
                       type="email"
-                      value={isEditingProfile ? editedEmail : user.user_email || ''}
+                      value={isEditingProfile ? editedEmail : formatSentenceCase(user.user_email)}
                       onChange={(e) => setEditedEmail(e.target.value)}
                       disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
@@ -1711,8 +1731,8 @@ Thank you for using StudentJobs UK!
                         <label className="text-sm font-semibold text-gray-900 dark:text-white">City</label>
                         <div className={`bg-zinc-50 dark:bg-gray-800/50 rounded-xl border border-zinc-200 dark:border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                           <input
-                      value={isEditingProfile ? editedUserCity : user.user_city || ''}
-                      onChange={(e) => setEditedUserCity(e.target.value)}
+                      value={isEditingProfile ? editedUserCity : formatTitleCase(user.user_city)}
+                      onChange={(e) => handleInputChange('userCity', e.target.value, setEditedUserCity)}
                       disabled={!isEditingProfile}
                             className="w-full p-3 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                             placeholder="e.g., Manchester"
@@ -1726,8 +1746,8 @@ Thank you for using StudentJobs UK!
                           <label className="text-sm font-semibold text-gray-900 dark:text-white">University/College</label>
                           <div className={`bg-zinc-50 dark:bg-gray-800/50 rounded-xl border border-zinc-200 dark:border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                             <input
-                        value={isEditingProfile ? editedUniversityCollege : user.university_college || ''}
-                        onChange={(e) => setEditedUniversityCollege(e.target.value)}
+                        value={isEditingProfile ? editedUniversityCollege : formatTitleCase(user.university_college)}
+                        onChange={(e) => handleInputChange('universityCollege', e.target.value, setEditedUniversityCollege)}
                         disabled={!isEditingProfile}
                               className="w-full p-3 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                               placeholder="Enter your university or college..."
@@ -1739,8 +1759,8 @@ Thank you for using StudentJobs UK!
                           <label className="text-sm font-semibold text-gray-900 dark:text-white">Business Name</label>
                           <div className={`bg-zinc-50 dark:bg-gray-800/50 rounded-xl border border-zinc-200 dark:border-gray-700/50 transition-colors ${isEditingProfile ? 'focus-within:border-blue-500/50' : ''}`}>
                             <input
-                        value={isEditingProfile ? editedOrganisationName : user.organisation_name || ''}
-                        onChange={(e) => setEditedOrganisationName(e.target.value)}
+                        value={isEditingProfile ? editedOrganisationName : formatTitleCase(user.organisation_name)}
+                        onChange={(e) => handleInputChange('organisationName', e.target.value, setEditedOrganisationName)}
                         disabled={!isEditingProfile}
                               className="w-full p-3 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:outline-none rounded-xl disabled:cursor-not-allowed disabled:opacity-60"
                               placeholder="Enter your business name..."
@@ -1926,7 +1946,7 @@ Thank you for using StudentJobs UK!
                                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3 md:mb-4">
                                       <div className="flex-1 min-w-0">
                                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:gap-3 mb-2">
-                                          <h4 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors break-words">{job.title}</h4>
+                                          <h4 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors break-words">{formatTitleCase(job.title)}</h4>
                                           <Badge className={`${
                                             job.studentOutcome === 'hired' ? 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30 hover:bg-green-500/30' :
                                             job.studentOutcome === 'declined' ? 'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30 hover:bg-red-500/30' :
@@ -1954,7 +1974,7 @@ Thank you for using StudentJobs UK!
                                             <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                             </svg>
-                                            {job.company}
+                                            {formatTitleCase(job.company)}
                                           </span>
                                           <span className="flex items-center gap-1">
                                             <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2398,7 +2418,7 @@ Thank you for using StudentJobs UK!
                                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                                          <div className="flex-1">
                                            <div className="flex items-center gap-2 mb-2">
-                                             <h4 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-300 transition-colors">{job.title}</h4>
+                                             <h4 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-300 transition-colors">{formatTitleCase(job.title)}</h4>
                                              {hasPendingConfirmation && (
                                                <span className="px-3 py-1 bg-orange-500/20 text-orange-400 border border-orange-500/40 rounded-full text-xs font-medium flex items-center gap-1 animate-pulse">
                                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -2644,7 +2664,7 @@ Thank you for using StudentJobs UK!
                               <div className="bg-zinc-50 dark:bg-gray-800/50 rounded-xl border border-zinc-200 dark:border-gray-700/50 focus-within:border-blue-500/50 transition-colors">
                                 <input
                             value={editJobData.title}
-                            onChange={(e) => setEditJobData(prev => ({ ...prev, title: e.target.value }))}
+                            onChange={(e) => setEditJobData(prev => ({ ...prev, title: formatTitleCase(e.target.value) }))}
                                   className="w-full p-4 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:outline-none rounded-xl"
                                   placeholder="Enter job title..."
                           />
@@ -2660,7 +2680,7 @@ Thank you for using StudentJobs UK!
                               <div className="bg-zinc-50 dark:bg-gray-800/50 rounded-xl border border-zinc-200 dark:border-gray-700/50 focus-within:border-blue-500/50 transition-colors">
                           <textarea
                             value={editJobData.description}
-                            onChange={(e) => setEditJobData(prev => ({ ...prev, description: e.target.value }))}
+                            onChange={(e) => setEditJobData(prev => ({ ...prev, description: formatSentenceCase(e.target.value) }))}
                                   className="w-full p-4 bg-transparent text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-500 focus:outline-none rounded-xl resize-none"
                                   rows={8}
                                   placeholder="Describe the job requirements, responsibilities, and benefits..."
@@ -3187,7 +3207,7 @@ Thank you for using StudentJobs UK!
               <div className="flex items-start justify-between gap-4 pr-8">
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-tight mb-3">
-                    {selectedJobForModal.job_title}
+                    {formatTitleCase(selectedJobForModal.job_title)}
                   </h2>
                   
                   {!selectedJobForModal.is_removed && (
@@ -3200,7 +3220,7 @@ Thank you for using StudentJobs UK!
                                <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z"/>
                              </svg>
                            </div>
-                           <span className="font-medium text-gray-900 dark:text-white">{selectedJobForModal.contact_name}</span>
+                           <span className="font-medium text-gray-900 dark:text-white">{formatTitleCase(selectedJobForModal.contact_name)}</span>
                          </span>
                          <span className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                            <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -3210,7 +3230,7 @@ Thank you for using StudentJobs UK!
                                <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" stroke="currentColor" strokeWidth="2" fill="none"/>
                              </svg>
                            </div>
-                           <span>{selectedJobForModal.job_location || 'Location not specified'}</span>
+                           <span>{formatTitleCase(selectedJobForModal.job_location) || 'Location not specified'}</span>
                          </span>
                        </div>
 
@@ -3250,7 +3270,7 @@ Thank you for using StudentJobs UK!
                 
                 <div className="bg-zinc-50 dark:bg-gray-800/50 rounded-xl p-3 border border-zinc-200 dark:border-gray-700/50">
                   <div className="text-gray-900 dark:text-gray-300 leading-relaxed text-sm whitespace-pre-wrap">
-                    {selectedJobForModal.job_description}
+                    {formatSentenceCase(selectedJobForModal.job_description)}
                   </div>
                 </div>
               </div>
@@ -3410,7 +3430,7 @@ Thank you for using StudentJobs UK!
                             )}
             </div>
             <div>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{applicant.name}</h3>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{formatTitleCase(applicant.name)}</h3>
             </div>
           </div>
                         
@@ -3450,7 +3470,7 @@ Thank you for using StudentJobs UK!
                             </div>
                             <div className="flex-1">
                               <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Email</p>
-                              <p className="text-gray-900 dark:text-white font-medium">{applicant.email}</p>
+                              <p className="text-gray-900 dark:text-white font-medium">{formatTitleCase(applicant.email)}</p>
                             </div>
                           </div>
                           
@@ -3504,7 +3524,7 @@ Thank you for using StudentJobs UK!
                               </svg>
                               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Application Message</h4>
                             </div>
-                            <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{applicant.message}</p>
+                            <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{formatSentenceCase(applicant.message)}</p>
                           </div>
                         </div>
                       )}

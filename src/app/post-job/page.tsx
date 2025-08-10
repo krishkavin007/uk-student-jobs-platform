@@ -17,6 +17,21 @@ import { Header } from '@/components/ui/header';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
+// Helper functions for text formatting
+const formatTitleCase = (text: string): string => {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const formatSentenceCase = (text: string): string => {
+  if (!text) return '';
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+};
+
 // Define the interface for JobPayload
 interface JobPayload {
   job_title: string;
@@ -94,12 +109,12 @@ function PostJobContent() {
     if (!isAuthLoading && user && user.user_type === 'employer') {
       setFormData(prev => ({
         ...prev,
-        firstName: user.user_first_name || "",
-        lastName: user.user_last_name || "",
-        email: user.user_email || "",
+        firstName: formatTitleCase(user.user_first_name || ""),
+        lastName: formatTitleCase(user.user_last_name || ""),
+        email: formatSentenceCase(user.user_email || ""),
         phoneNumber: user.contact_phone_number || "",
-        city: user.user_city || "",
-        organisationName: user.organisation_name || "", // Pre-fill from user.organisation_name
+        city: formatTitleCase(user.user_city || ""),
+        organisationName: formatTitleCase(user.organisation_name || ""), // Pre-fill from user.organisation_name
       }));
       console.log("LOG: Employer data pre-filled:", user);
     }
@@ -120,7 +135,18 @@ function PostJobContent() {
   }, [searchParams])
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    let processedValue = value;
+    
+    // Apply title case to specific fields
+    if (typeof value === 'string') {
+      if (['title', 'location', 'firstName', 'lastName', 'city', 'organisationName'].includes(field)) {
+        processedValue = formatTitleCase(value);
+      } else if (field === 'description') {
+        processedValue = formatSentenceCase(value);
+      }
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: processedValue }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,15 +204,15 @@ function PostJobContent() {
     try {
       // 1) Prepare Job Payload (without posted_by_user_id yet)
       const jobPayload: JobPayload = {
-        job_title: formData.title,
+        job_title: formatTitleCase(formData.title),
         job_category: formData.category,
-        job_location: formData.location,
+        job_location: formatTitleCase(formData.location),
         hourly_pay: parseFloat(formData.hourlyPay),
         hours_per_week: formData.hoursPerWeek,
         positions_available: positions,
-        job_description: formData.description,
+        job_description: formatSentenceCase(formData.description),
         is_sponsored: formData.sponsored,
-        contact_name: user ? `${user.user_first_name || ''} ${user.user_last_name || ''}`.trim() : `${formData.firstName} ${formData.lastName}`.trim(),
+        contact_name: user ? `${formatTitleCase(user.user_first_name || '')} ${formatTitleCase(user.user_last_name || '')}`.trim() : `${formData.firstName} ${formData.lastName}`.trim(),
         contact_phone: user ? (user.contact_phone_number || '') : formData.phoneNumber,
         contact_email: user ? (user.user_email || '') : formData.email,
       };
@@ -194,12 +220,12 @@ function PostJobContent() {
       // 2) If not logged in, store employer registration data for after payment
       if (!user && !isAuthLoading) {
         const employerRegistrationDataForBackend: EmployerRegistrationPayload = {
-          user_first_name: formData.firstName,
-          user_last_name: formData.lastName,
+          user_first_name: formatTitleCase(formData.firstName),
+          user_last_name: formatTitleCase(formData.lastName),
           user_email: formData.email,
           contact_phone_number: formData.phoneNumber,
-          user_city: formData.city,
-          organisation_name: formData.organisationName,
+          user_city: formatTitleCase(formData.city),
+          organisation_name: formatTitleCase(formData.organisationName),
           user_type: 'employer',
           password: formData.password,
         };
@@ -420,7 +446,7 @@ function PostJobContent() {
                                   onChange={(e) => handleInputChange("firstName", e.target.value)}
                                   required
                                   disabled={!!user}
-                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
+                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-zinc-400"
                               />
                           </div>
                           <div className="space-y-2">
@@ -432,7 +458,7 @@ function PostJobContent() {
                                   onChange={(e) => handleInputChange("lastName", e.target.value)}
                                   required
                                   disabled={!!user}
-                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
+                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-zinc-400"
                               />
                           </div>
                       </div>
@@ -462,11 +488,11 @@ function PostJobContent() {
                                   onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                                   required
                                   disabled={!!user}
-                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
+                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-zinc-400"
                               />
                           </div>
                           <div className="space-y-2">
-                              <Label htmlFor="city" className="text-zinc-800 dark:text-gray-200">City *</Label>
+                              <Label htmlFor="city" className="text-zinc-200">City *</Label>
                               <Input
                                   id="city"
                                   placeholder="e.g., London"
@@ -474,7 +500,7 @@ function PostJobContent() {
                                   onChange={(e) => handleInputChange("city", e.target.value)}
                                   required
                                   disabled={!!user}
-                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
+                                  className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-zinc-400"
                               />
                           </div>
                       </div>
@@ -488,7 +514,7 @@ function PostJobContent() {
                               onChange={(e) => handleInputChange("organisationName", e.target.value)}
                               required
                               disabled={!!user}
-                              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
+                              className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 disabled:bg-zinc-200 disabled:text-zinc-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:disabled:bg-gray-700 dark:disabled:text-zinc-400"
                           />
                       </div>
 

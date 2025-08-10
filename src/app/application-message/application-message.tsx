@@ -45,6 +45,16 @@ interface ApplicationMessageModalProps {
   isOpen: boolean;
 }
 
+const formatTitleCase = (text: string | undefined | null): string => {
+  if (!text) return '';
+  return text.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const formatSentenceCase = (text: string | undefined | null): string => {
+  if (!text) return '';
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+};
+
 const ApplicationMessageModal: React.FC<ApplicationMessageModalProps> = ({ 
   job, 
   message, 
@@ -100,20 +110,20 @@ const ApplicationMessageModal: React.FC<ApplicationMessageModalProps> = ({
 
         <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-gray-700 pr-6 sm:pr-8">
           <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold text-white leading-tight mb-2 sm:mb-3">
-            Apply for {job.job_title}
+            Apply for {formatTitleCase(job.job_title)}
           </h2>
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2 sm:mb-3">
             <span className="text-xs sm:text-sm md:text-base text-gray-300 flex items-center gap-1 sm:gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-400">
                 <path fillRule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM12 18.75a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-.75h-.75a.75.75 0 0 1-.75-.75v-.75Zm-5.495-2.261A9.752 9.752 0 0 0 6 12a6 6 0 0 1 6-6h.75a.75.75 0 0 0 0-1.5H12a7.5 7.5 0 0 0-7.5 7.5c0 1.574.341 3.085.992 4.475C6.425 18.17 7.72 18.75 9 18.75h.75a.75.75 0 0 1 0 1.5H9c-1.802 0-3.52-.693-4.821-1.994A10.455 10.455 0 0 1 2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75a9.752 9.752 0 0 0-.992 4.475 7.472 7.472 0 0 1-1.282 1.832 7.5 7.5 0 0 0-6.177 1.62.75.75 0 0 1-.954-.937Z" clipRule="evenodd" />
               </svg>
-              {job.contact_name}
+              {formatTitleCase(job.contact_name)}
             </span>
             <span className="text-xs sm:text-sm md:text-base text-gray-300 flex items-center gap-1 sm:gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-400">
                 <path fillRule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a8.75 8.75 0 0 0 4.721-6.786c1.294-4.507-1.697-9.078-6.75-9.078s-8.044 4.571-6.75 9.078a8.75 8.75 0 0 0 4.72 6.786ZM12 12.75a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clipRule="evenodd" />
               </svg>
-              {job.job_location}
+              {formatTitleCase(job.job_location)}
             </span>
           </div>
           <div className="text-sm sm:text-base md:text-lg font-bold text-green-400">£{job.hourly_pay}<span className="text-xs sm:text-sm md:text-base font-medium">/hr</span></div>
@@ -122,16 +132,16 @@ const ApplicationMessageModal: React.FC<ApplicationMessageModalProps> = ({
         <div className="flex-grow overflow-y-auto pr-1 custom-scrollbar">
           <div className="mb-3 sm:mb-4">
             <label htmlFor="applicationMessage" className="block text-sm sm:text-base md:text-lg font-semibold text-white mb-1 sm:mb-2 md:mb-3">
-              Your Application Message
+              {formatSentenceCase("Your Application Message")}
             </label>
             <p className="text-gray-400 mb-2 sm:mb-3 md:mb-4 text-xs sm:text-sm">
-              Introduce yourself and explain why you're interested in this position. This message will be sent to the employer.
+              {formatSentenceCase("Introduce yourself and explain why you're interested in this position. This message will be sent to the employer.")}
             </p>
             <textarea
               id="applicationMessage"
               value={message}
               onChange={(e) => onMessageChange(e.target.value)}
-              placeholder="Hi! I'm interested in this position because... I have experience in... I'm available for... I'm excited about the opportunity to..."
+              placeholder={formatSentenceCase("Hi! I'm interested in this position because... I have experience in... I'm available for... I'm excited about the opportunity to...")}
               className="w-full h-40 sm:h-36 md:h-40 lg:h-44 xl:h-48 px-2 sm:px-3 md:px-4 py-2 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-700 text-white placeholder-gray-400 transition-all duration-200 resize-none text-xs sm:text-sm md:text-base"
               maxLength={1000}
             />

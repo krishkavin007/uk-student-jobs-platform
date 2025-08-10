@@ -65,6 +65,11 @@ export default function SignupPage() {
   // UPDATED: Phone number validation regex for common UK formats.
 const UK_PHONE_REGEX = /^(?:\+44\s?7|0044\s?7|44\s?7|07|7)\d{3}[\s-]?\d{3}[\s-]?\d{3}$/;
   const handleInputChange = (field: string, value: string | boolean) => {
+    // Capitalize first letter for name fields (excluding email, phone, password)
+    if (typeof value === 'string' && ['firstName', 'lastName', 'university', 'businessName', 'city'].includes(field)) {
+      // Capitalize first letter of each word
+      value = value.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+    }
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 

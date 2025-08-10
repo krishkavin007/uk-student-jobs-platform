@@ -23,6 +23,18 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
     website: ''
   })
 
+  // Helper function to capitalize first letter of each word (except email)
+  const handleInputChange = (field: string, value: string) => {
+    if (field === 'name') {
+      // Capitalize first letter of each word (title case)
+      value = value.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+    } else if (['subject', 'message'].includes(field)) {
+      // Capitalize only first letter of first word (sentence case)
+      value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+    }
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -63,11 +75,11 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
             <>
               <div>
                 {/* MODIFIED: Label to match login page labels */}
-                <Label htmlFor="name" className="text-zinc-800 dark:text-gray-200">Name</Label>
+                <Label htmlFor="name" className="text-zinc-800 dark:text-gray-200">Full Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   required
                   // MODIFIED: Input to match login page inputs
                   className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
@@ -80,7 +92,7 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
                   required
                   // MODIFIED: Input to match login page inputs
                   className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
@@ -95,7 +107,7 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
             <Input
               id="subject"
               value={formData.subject}
-              onChange={(e) => setFormData({...formData, subject: e.target.value})}
+              onChange={(e) => handleInputChange('subject', e.target.value)}
               required
               // MODIFIED: Input to match login page inputs
               className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
@@ -109,7 +121,7 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
               id="message"
               rows={4}
               value={formData.message}
-              onChange={(e) => setFormData({...formData, message: e.target.value})}
+              onChange={(e) => handleInputChange('message', e.target.value)}
               required
               // MODIFIED: Textarea to match login page inputs
               className="bg-white text-gray-900 border-zinc-300 placeholder:text-zinc-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500"
@@ -124,7 +136,7 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
               name="website"
               type="text"
               value={formData.website}
-              onChange={(e) => setFormData({...formData, website: e.target.value})}
+              onChange={(e) => handleInputChange('website', e.target.value)}
               autoComplete="off"
               tabIndex={-1}
             />
