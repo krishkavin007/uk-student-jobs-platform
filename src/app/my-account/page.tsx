@@ -235,7 +235,6 @@ function MyAccountContent() {
 
 
   useEffect(() => {
-    console.log("🚀 Loaded user data in /my-account:", user);
     if (!isLoading && !user) {
       router.push('/login');
       return;
@@ -271,7 +270,6 @@ function MyAccountContent() {
           
           if (response.ok) {
             const jobsData = await response.json();
-            console.log('--- DEBUG: Raw job data from server:', jobsData);
             
           // Transform the database jobs and fetch applications for each job
           const transformedJobs: PostedJob[] = await Promise.all(
@@ -288,9 +286,6 @@ function MyAccountContent() {
                 if (applicationsResponse.ok) {
                   const applicationsData = await applicationsResponse.json();
                   applicationCount = applicationsData.totalCount || applicationsData.length;
-                  
-                  console.log(`Job ${job.job_id}: applicationsData=`, applicationsData);
-                  console.log(`Job ${job.job_id}: applicationCount=`, applicationCount);
                   
                   // Transform applications to match Applicant interface
                   applications = applicationsData.applications.map((app: any) => ({
@@ -331,10 +326,7 @@ function MyAccountContent() {
                 applicants: applications
               };
               
-              console.log(`--- DEBUG: Transformed job ${job.job_id}:`, {
-                original_positions: job.positions_available,
-                transformed_positions: transformedJob.positions_available
-              });
+
               
               return transformedJob;
             })
@@ -3245,7 +3237,7 @@ Thank you for using StudentJobs UK!
                            </div>
                            <div className="bg-gradient-to-r from-orange-500/20 to-orange-600/20 rounded-xl px-4 py-2 border border-orange-500/30">
                                                             <div className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                                 {console.log('Application count in modal:', selectedJobForModal.application_count, 'Type:', typeof selectedJobForModal.application_count)} {/* Debug log */}
+                 
                                  {selectedJobForModal.application_count || 0} {Number(selectedJobForModal.application_count || 0) === 1 ? 'applicant' : 'applicants'}
                                </div>
                            </div>
@@ -3417,7 +3409,7 @@ Thank you for using StudentJobs UK!
                         <div className="flex items-center gap-4">
                           <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gradient-to-br from-gray-200/50 to-gray-300/50 dark:from-gray-600/20 dark:to-gray-500/20 flex items-center justify-center">
                             {applicant.image ? (
-                              console.log("DEBUG: applicant.image value in modal:", applicant.image),
+              
                               <img 
                                 src={applicant.image} 
                                 alt={applicant.name}

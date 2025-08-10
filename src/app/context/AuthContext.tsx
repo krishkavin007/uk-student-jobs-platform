@@ -41,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchUser = useCallback(async () => {
         setIsLoading(true);
-        console.log("AuthContext fetchUser (called via useCallback): Attempting to fetch user from /api/auth/me...");
         try {
             const response = await fetch('/api/auth/me', {
                 credentials: 'include' // Ensures session cookies are sent
@@ -55,10 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 // --- MODIFIED CODE END ---
 
                 setUser(userData);
-                console.log("AuthContext fetchUser: User data received and set:", userData);
             } else {
                 setUser(null);
-                console.log("AuthContext fetchUser: No user session found or session invalid.");
             }
         } catch (error) {
             console.error('AuthContext fetchUser: Error fetching user from /api/auth/me:', error);
@@ -69,14 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        console.log("AuthContext useEffect: Triggered for initial session check.");
         fetchUser();
     }, [fetchUser]);
 
    const login = async (data: LoginData) => {
         // Handle cases where 'data' might be just the User object or wrapped in { user: User }
         const userData: User = 'user' in data && data.user ? data.user : data as User;
-        console.log("AuthContext: login function processed and SETTING user state:", userData);
         setUser(userData);
         setIsLoading(false);
         // Immediately fetch user data from the server to confirm session and get full details
@@ -96,12 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setIsLoading(false);
             router.push('/login');
-            console.log("AuthContext: Logout complete, redirecting to /login.");
         }
     };
 
     const refreshUser = async () => {
-        console.log("AuthContext: refreshUser called.");
         await fetchUser();
     };
 

@@ -222,7 +222,7 @@ export default function Home() {
   }, []);
 
   const getEmailTemplates = useCallback(async () => {
-    console.log("Fetching email templates...");
+    
     // This is mock data; replace with actual API call
     setEmailTemplates([
       {
@@ -250,7 +250,7 @@ export default function Home() {
 
   const getAuditLogs = useCallback(async () => {
     // Implement API call to fetch audit logs
-    console.log("Fetching audit logs...");
+    
     // This is mock data; replace with actual API call
     setAuditLogs([
       { id: '1', timestamp: '2025-07-25 10:00:00', user: 'Admin User 1', action: 'Approved Job: Job A', ip: '192.168.1.1', browser: 'Chrome' },
@@ -260,7 +260,7 @@ export default function Home() {
 
   const getFraudulentAds = useCallback(async () => {
     // Implement API call to fetch fraudulent ads
-    console.log("Fetching fraudulent ads...");
+    
     // This is mock data; replace with actual API call
     setFraudulentAds([
       { id: '1', title: 'Work from home - Easy Money', reportedBy: 'User C', status: 'Pending Review' },
@@ -275,7 +275,7 @@ const getAdminUsers = useCallback(async () => {
     setAdminUsersError(null);
 
     const data = await fetchAdminUsers();
-    console.log("✅ Raw admin users fetched in page.tsx:", data);
+    
     
     // CORRECTED: Ensure first_name and last_name are included in normalizedData
     const normalizedData = data.map((admin: any) => ({
@@ -293,7 +293,7 @@ const getAdminUsers = useCallback(async () => {
       last_login_at: admin.last_login_at || null,
     }));
 
-    console.log("✅ Normalized admin users in page.tsx:", normalizedData);
+    
 
     setAdminUsers(normalizedData);
   } catch (err: any) {
@@ -352,14 +352,14 @@ const getAdminUsers = useCallback(async () => {
 
   // Handler for refund actions (placeholder)
   const handleProcessRefund = (refundId: string, action: string) => {
-    console.log(`Processing refund ${refundId}: ${action}`);
+
     // Implement API call to process refund
     getRefunds(); // Refresh refunds list
   };
 
   // Handler for report actions (placeholder)
   const handleUpdateReportStatus = (reportId: string, newStatus: string) => {
-    console.log(`Updating report ${reportId} status to ${newStatus}`);
+
     // Implement API call to update report status
     getReports(); // Refresh reports list
   };
@@ -380,13 +380,7 @@ const getAdminUsers = useCallback(async () => {
   // Handle saving the current template
   const handleSaveEmailTemplate = () => {
     if (!currentTemplateId) {
-      console.log("No template selected to save or creating a new template.");
-      console.log("Saving new/modified template content:", currentTemplateContent);
-      console.log("Template Name:", currentTemplateName);
-      console.log("Template Subject:", currentTemplateSubject);
-      console.log("Template Type:", currentTemplateTypeSelected);
-      console.log("Template Channel:", currentTemplateChannel);
-      console.log("Selected Theme:", selectedTheme);
+
       return;
     }
     setEmailTemplates(prevTemplates =>
@@ -405,50 +399,50 @@ const getAdminUsers = useCallback(async () => {
           : template
       )
     );
-    console.log(`Saving template ${currentTemplateId} with content: ${currentTemplateContent}`);
+    
   };
 
   const handleToggleRogueDetection = () => {
     setIsRogueDetectionEnabled(prevState => !prevState);
-    console.log(`Rogue word detection toggled to ${!isRogueDetectionEnabled}`);
+
   };
 
   const handleAddJobFilterKeyword = () => {
     if (newFilterKeyword.trim() !== '') {
       setJobFilterKeywords(prev => [...prev, newFilterKeyword.trim()]);
       setNewFilterKeyword('');
-      console.log(`Adding job filter keyword: ${newFilterKeyword}`);
+  
     }
   };
 
   const handleRemoveJobFilterKeyword = (keywordToRemove: string) => {
     setJobFilterKeywords(prev => prev.filter(k => k !== keywordToRemove));
-    console.log(`Removing job filter keyword: ${keywordToRemove}`);
+
   };
 
   const handleReviewFraudAd = (adId: string, action: string) => {
-    console.log(`Reviewing fraud ad ${adId}: ${action}`);
+
     getFraudulentAds();
   };
 
   const handleBotProtectionSetting = (setting: string) => {
-    console.log(`Updating bot protection setting: ${setting}`);
+
   };
 
   // NEW: Admin User Management Handlers
   const handleAddAdminUser = () => {
-    console.log("Add New Admin User clicked.");
+
     setIsAddAdminUserModalOpen(true); // Open Add Admin User Modal
   };
 
   const handleEditAdminUser = (userId: string) => {
-    console.log(`Edit Admin User ${userId} clicked.`);
+
     setSelectedAdminUserId(userId);
     setIsEditAdminUserModalOpen(true); // Open Edit Admin User Modal
   };
 
   const handleViewAdminUser = (userId: string) => {
-    console.log(`View Admin User ${userId} clicked.`);
+
     setSelectedAdminUserId(userId);
     setIsViewAdminUserModalOpen(true);
   };
@@ -461,7 +455,7 @@ const getAdminUsers = useCallback(async () => {
   };
 
   const handleUsersLoaded = (loadedUsers: User[]) => {
-    console.log('Admin Dashboard - received users:', loadedUsers.length);
+
     setUsers(loadedUsers);
   };
 
@@ -472,7 +466,7 @@ const getAdminUsers = useCallback(async () => {
         getAdminUsers(); // Refresh the list of admin users
         setIsDeleteAdminUserConfirmationOpen(false); // Close the modal
         setSelectedAdminUserId(null); // Clear selected user ID
-        console.log(`Admin user ${selectedAdminUserId} deleted successfully.`);
+  
       } catch (error) {
         console.error("Failed to delete admin user:", error);
         // Handle error, e.g., show a toast notification
@@ -492,7 +486,7 @@ const getAdminUsers = useCallback(async () => {
 
       // Call the API to update the status in the backend
       await updateAdminUser(adminId, { is_active: isActive });
-      console.log(`Admin user ${adminId} status updated to ${isActive}`);
+
       // Re-fetch users to ensure data consistency, or handle error if API call fails
       getAdminUsers();
     } catch (error) {
@@ -591,7 +585,7 @@ const getAdminUsers = useCallback(async () => {
   // NEW: useEffect for Admin Users
   useEffect(() => {
     if (isAuthenticated && activeTab === "admin-users") {
-      console.log("✅ useEffect triggered: Fetching Admin Users");
+
       getAdminUsers();
     }
   }, [isAuthenticated, activeTab, getAdminUsers]);
@@ -1204,7 +1198,7 @@ const getAdminUsers = useCallback(async () => {
                       id="mfa-toggle"
                       aria-label="Toggle MFA"
                       pressed={true} // This would ideally come from state
-                      onPressedChange={() => console.log("Toggle MFA")} // Implement MFA toggle logic
+                      onPressedChange={() => {}} // Implement MFA toggle logic
                       className="data-[state=on]:bg-blue-600 data-[state=off]:bg-gray-700"
                     >
                       Enabled

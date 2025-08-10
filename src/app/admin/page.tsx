@@ -10,20 +10,10 @@ export default function AdminRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log(`[AdminRedirectPage useEffect] isLoading: ${isLoading}, isAuthenticated: ${isAuthenticated}`);
-    }
-
     if (!isLoading) {
       if (isAuthenticated) {
-        if (process.env.NODE_ENV === "development") {
-          console.log("AdminRedirectPage: Authenticated, redirecting to /admin-dashboard");
-        }
         router.push("/admin-dashboard");
       } else {
-        if (process.env.NODE_ENV === "development") {
-          console.log("AdminRedirectPage: Not authenticated, redirecting to /admin-login");
-        }
         router.push("/admin-login");
       }
     }

@@ -99,7 +99,6 @@ function PostJobContent() {
   // Redirect logic for logged-in students
   useEffect(() => {
     if (!isAuthLoading && user && user.user_type === 'student') {
-      console.log("LOG: Redirecting student to browse-jobs page.");
       router.push('/browse-jobs');
     }
   }, [user, isAuthLoading, router]);
@@ -116,7 +115,6 @@ function PostJobContent() {
         city: formatTitleCase(user.user_city || ""),
         organisationName: formatTitleCase(user.organisation_name || ""), // Pre-fill from user.organisation_name
       }));
-      console.log("LOG: Employer data pre-filled:", user);
     }
   }, [user, isAuthLoading]);
 
@@ -154,32 +152,28 @@ function PostJobContent() {
     setIsLoading(true);
     setError(null);
 
-    console.log("LOG 0: handleSubmit initiated.");
+
 
     // Frontend validation for password fields if displayed (non-logged-in flow)
     if (!user && !isAuthLoading) {
       if (!formData.password) {
         setError("Password is required to create an account.");
         setIsLoading(false);
-        console.log("LOG V1: Password missing.");
         return;
       }
       if (formData.password !== formData.confirmPassword) {
         setError("Passwords do not match.");
         setIsLoading(false);
-        console.log("LOG V2: Passwords do not match.");
         return;
       }
       if (formData.password.length < 6) {
         setError("Password must be at least 6 characters long.");
         setIsLoading(false);
-        console.log("LOG V3: Password too short.");
         return;
       }
       if (!formData.agreeToTerms) {
         setError("You must agree to the Terms & Conditions and Privacy Policy.");
         setIsLoading(false);
-        console.log("LOG V4: Terms not agreed.");
         return;
       }
     }
@@ -188,7 +182,6 @@ function PostJobContent() {
     if (!formData.title || !formData.category || !formData.location || !formData.hourlyPay || !formData.hoursPerWeek || !formData.positionsAvailable || !formData.description || (!user && !formData.agreeToTerms)) {
       setError("Please fill in all required job details and accept the terms and conditions (if creating an account).");
       setIsLoading(false);
-      console.log("LOG V5: Missing job or terms data.");
       return;
     }
 
@@ -240,7 +233,6 @@ function PostJobContent() {
       router.push(`/pay?type=post_job&sponsored=${sponsoredParam}`);
 
     } catch (err: unknown) {
-      console.error("LOG C1: Error preparing job/payment flow:", err);
       setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }

@@ -119,7 +119,6 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
   // Notify parent component when users are loaded
   React.useEffect(() => {
     if (users.length > 0 && onUsersLoaded) {
-      console.log('UserManagementTable - calling onUsersLoaded with:', users.length, 'users');
       onUsersLoaded(users);
     }
   }, [users, onUsersLoaded]);
@@ -553,7 +552,6 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                         variant="outline"
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                         onClick={() => {
-                          console.log('View button clicked for user:', user.user_id);
                           onViewUser?.(user.user_id);
                         }}
                       >

@@ -38,15 +38,8 @@ export default function AdminLoginPage() {
   }, []);
 
   useEffect(() => {
-    console.log(`[AdminLoginPage Redirect Effect] CURRENT STATE - isLoading: ${isLoading}, isAuthenticated: ${isAuthenticated}`);
     if (!isLoading && isAuthenticated) {
-        console.log("AdminLoginPage: Condition met for redirect from useEffect - Authenticated and not loading.");
         router.push("/admin");
-        console.log("AdminLoginPage: router.push('/admin') called from useEffect.");
-    } else if (!isLoading && !isAuthenticated) {
-        console.log("AdminLoginPage: Condition not met - Not authenticated and not loading. Staying on login page.");
-    } else if (isLoading) {
-        console.log("AdminLoginPage: Still loading authentication status in useEffect.");
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -75,7 +68,6 @@ export default function AdminLoginPage() {
       // so you likely don't need to store a token here.
       // localStorage.setItem("admin_jwt", success.token); // This line is likely no longer needed if using httpOnly cookies
 
-      console.log("AdminLoginPage: handleSubmit detected successful login, directly redirecting to /admin");
       router.push("/admin");
     }
     setIsSubmitting(false);

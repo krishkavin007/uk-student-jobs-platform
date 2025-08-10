@@ -45,7 +45,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) { // Ad
 const fetchAdminUser = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    console.log("AdminAuthContext fetchAdminUser: Attempting to fetch admin user session...");
 
     try {
         const response = await fetch(`${BACKEND_URL}/api/admin/admin-check`, {
@@ -66,10 +65,8 @@ const fetchAdminUser = useCallback(async () => {
             };
 
             setAdminUser(normalizedUser);
-            console.log("AdminAuthContext fetchAdminUser: Admin user data received and set:", normalizedUser);
         } else {
             setAdminUser(null);
-            console.log("AdminAuthContext fetchAdminUser: Admin session invalid or expired.");
         }
     } catch (err) {
         console.error('AdminAuthContext fetchAdminUser: Error fetching admin user:', err);
@@ -82,7 +79,6 @@ const fetchAdminUser = useCallback(async () => {
 
     // useEffect hook to run fetchAdminUser on component mount
     useEffect(() => {
-        console.log("AdminAuthContext useEffect: Initial session check for admin.");
         fetchAdminUser();
     }, [fetchAdminUser]); // Dependency array ensures it runs when fetchAdminUser changes (which it won't due to useCallback)
 
@@ -90,7 +86,6 @@ const fetchAdminUser = useCallback(async () => {
     const login = async (identifier: string, password: string): Promise<{ success: boolean }> => {
         setIsLoading(true);
         setError(null); // Clear any previous errors
-        console.log("AdminAuthContext: Attempting admin login...");
         try {
             // Directly call the Express backend's /api/admin/login endpoint
             const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
@@ -104,13 +99,11 @@ const fetchAdminUser = useCallback(async () => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("AdminAuthContext: Full login response data:", data);
 
                 // The backend sets an httpOnly cookie, so we don't access the token client-side.
                 // Call refreshAdminUser to fetch the user data from /api/admin/admin-check
                 await refreshAdminUser(); // This will update adminUser and isAuthenticated, and set isLoading to false.
 
-                console.log("AdminAuthContext: Admin login successful, triggering user data refresh.");
                 return { success: true };
             } else {
                 const errorData = await response.json(); // Parse error message from backend
@@ -132,7 +125,6 @@ const fetchAdminUser = useCallback(async () => {
     // Logout function for administrators
     const logout = async () => {
         setIsLoading(true);
-        console.log("AdminAuthContext: Admin logout initiated. Calling backend logout endpoint.");
         try {
             const response = await fetch(`${BACKEND_URL}/api/admin/logout`, {
                 method: 'POST',
@@ -142,7 +134,7 @@ const fetchAdminUser = useCallback(async () => {
             });
 
             if (response.ok) {
-                console.log("AdminAuthContext: Backend logout successful.");
+                // Backend logout successful
             } else {
                 console.error("AdminAuthContext: Backend logout responded with an error:", response.status, response.statusText);
             }
@@ -152,13 +144,11 @@ const fetchAdminUser = useCallback(async () => {
             setAdminUser(null);
             setIsLoading(false);
             router.push('/admin-login');
-            console.log("AdminAuthContext: Admin logout process complete, redirecting to /admin-login.");
         }
     };
 
     // Allows other components to manually trigger a refresh of the admin user state
     const refreshAdminUser = async () => {
-        console.log("AdminAuthContext: refreshAdminUser called.");
         await fetchAdminUser();
     };
 
