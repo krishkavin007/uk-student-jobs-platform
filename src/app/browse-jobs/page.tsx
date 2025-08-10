@@ -128,6 +128,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
   const modalContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Disable background scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
@@ -142,7 +145,10 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
 
     document.addEventListener('keydown', handleEscape);
     document.addEventListener('mousedown', handleClickOutside);
+    
     return () => {
+      // Re-enable background scroll when modal is closed
+      document.body.style.overflow = 'unset';
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -151,11 +157,11 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
   if (!job) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[999] transition-opacity duration-300">
-      <div ref={modalContentRef} className="bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-3xl max-w-4xl w-full mx-4 my-8 relative flex flex-col max-h-[90vh] overflow-hidden transition-all duration-300 transform scale-100 opacity-100">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[999] transition-opacity duration-300 pt-0 sm:pt-20">
+      <div ref={modalContentRef} className="bg-white dark:bg-gray-900 p-4 sm:p-8 rounded-3xl shadow-3xl w-full sm:max-w-4xl mx-4 mt-20 mb-4 sm:my-8 relative flex flex-col max-h-[75vh] sm:max-h-[85vh] overflow-hidden transition-all duration-300 transform scale-100 opacity-100">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors duration-200 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 active:scale-90"
+          className="absolute top-3 sm:top-5 right-3 sm:right-5 p-2 sm:p-2 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors duration-200 z-10 focus:outline-none focus:ring-2 focus:ring-blue-500 active:scale-90"
           aria-label="Close job details"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
@@ -163,9 +169,9 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
           </svg>
         </button>
 
-        <div className="mb-6 pb-6 border-b border-zinc-200 dark:border-gray-700 pr-12">
+        <div className="mb-3 sm:mb-6 pb-3 sm:pb-6 border-b border-zinc-200 dark:border-gray-700 pr-10 sm:pr-12">
           <div className="flex items-center flex-wrap gap-2 mb-3">
-            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white leading-tight">
+            <h2 className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white leading-tight">
               {job.job_title}
             </h2>
             {job.is_sponsored && (
@@ -184,15 +190,17 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
               {job.hoursType === 'holiday' ? 'Holiday Work' : 'Term-Time'}
             </span>
           </div>
-          <p className="text-lg text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-            <Building2Icon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            {job.contact_name} <GlobeIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <p className="text-sm sm:text-lg text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+            <Building2Icon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 dark:text-gray-400" />
+            {job.contact_name} <GlobeIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 dark:text-gray-400" />
             {job.job_location}
           </p>
-          <div className="text-lg font-bold text-green-600 dark:text-green-400 mb-2">£{job.hourly_pay}<span className="text-base font-medium">/hr</span></div>
-          <div className="text-md text-gray-600 dark:text-gray-300 mb-4 flex items-center gap-2">
-            <ClockIcon className="h-4 w-4" />
-            {job.hours_per_week} hours/week
+          <div className="flex items-center gap-4 mb-3">
+            <div className="text-lg font-bold text-green-600 dark:text-green-400">£{job.hourly_pay}<span className="text-base font-medium">/hr</span></div>
+            <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
+              <ClockIcon className="h-4 w-4" />
+              {job.hours_per_week} hours/week
+            </div>
           </div>
           <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
             <span className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium shadow-sm">
@@ -215,14 +223,14 @@ const JobDetailsModal: React.FC<JobDetailsModalProps> = ({ job, onClose, onApply
           </div>
         </div>
 
-        <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
-          <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-3">Full Job Description</h3>
-          <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-base prose dark:prose-invert">
+        <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar min-h-0">
+          <h3 className="font-bold text-lg sm:text-xl text-gray-900 dark:text-white mb-3">Full Job Description</h3>
+          <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base prose dark:prose-invert max-w-none">
             <p dangerouslySetInnerHTML={{ __html: job.job_description.replace(/\n/g, '<br />') }} />
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-gray-700 flex flex-wrap gap-4 justify-center sm:justify-start">
+        <div className="mt-4 sm:mt-8 pt-4 sm:pt-6 border-t border-zinc-200 dark:border-gray-700 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center sm:justify-start">
           <button
             onClick={() => onApply(job)}
             className={`px-6 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 active:scale-98 shadow-md text-lg font-semibold ${
@@ -305,8 +313,7 @@ export default function BrowseJobsPage() {
   const jobIdFromUrl = useSearchParams()?.get('jobId');
 
 
-  // New state for mobile job description expansion
-  const [expandedJobIds, setExpandedJobIds] = useState<Set<number>>(new Set<number>()); // Initialize as empty set directly
+
 
   const [currentPage, setCurrentPage] = useState(1)
   
@@ -343,7 +350,9 @@ export default function BrowseJobsPage() {
   }, [appliedJobs]);
 
 
-  const [isMobile, setIsMobile] = useState<boolean>(false); 
+  const [isMobile, setIsMobile] = useState<boolean>(() => 
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  ); 
 
   useEffect(() => {
     const checkMobile = () => window.innerWidth < 768;
@@ -358,16 +367,7 @@ export default function BrowseJobsPage() {
 
   }, []);
 
-  useEffect(() => {
-    if (showJobDetailsModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [showJobDetailsModal]); 
+ 
 
   // Handle URL parameters for filters (when coming from home page categories and search)
   useEffect(() => {
@@ -537,12 +537,12 @@ export default function BrowseJobsPage() {
         matchesDate = diffDays <= 30;
       }
 
-      // Filter logic for applied jobs (this remains correct)
+      // Filter logic for applied jobs (includes declined status)
       let matchesApplied = true;
       if (appliedFilter === 'applied') {
-        matchesApplied = appliedJobs.has(job.job_id);
+        matchesApplied = appliedJobs.has(job.job_id) || applicationsStatus.get(job.job_id)?.status === 'declined';
       } else if (appliedFilter === 'not-applied') {
-        matchesApplied = !appliedJobs.has(job.job_id);
+        matchesApplied = !appliedJobs.has(job.job_id) && applicationsStatus.get(job.job_id)?.status !== 'declined';
       }
 
       return (
@@ -555,7 +555,7 @@ export default function BrowseJobsPage() {
         matchesApplied // Include applied status in filter
       )
     })
-  }, [jobs, searchTerm, locationFilter, categoryFilter, hoursTypeFilter, dateFilter, appliedFilter, appliedJobs])
+  }, [jobs, searchTerm, locationFilter, categoryFilter, hoursTypeFilter, dateFilter, appliedFilter, appliedJobs, applicationsStatus])
 
   const sortedJobs = useMemo(() => {
     const jobsCopy = [...filteredJobs]; 
@@ -585,22 +585,9 @@ export default function BrowseJobsPage() {
   const currentJobs = sortedJobs.slice(startIndex, endIndex)
 
   const handleJobDescriptionClick = (job: Job) => {
-    if (isMobile) {
-      // Toggle description expansion on mobile
-      setExpandedJobIds(prev => {
-        const newState = new Set(prev);
-        if (newState.has(job.job_id)) {
-          newState.delete(job.job_id); // Collapse
-        } else {
-          newState.add(job.job_id);    // Expand
-        }
-        return newState;
-      });
-    } else {
-      // Show modal on desktop
-      setSelectedJobForModal(job);
-      setShowJobDetailsModal(true);
-    }
+    // Show modal on both mobile and desktop
+    setSelectedJobForModal(job);
+    setShowJobDetailsModal(true);
   }
 
   const handleCloseJobDetailsModal = () => {
@@ -615,14 +602,13 @@ export default function BrowseJobsPage() {
     setHoursTypeFilter("")
     setDateFilter("")
     setAppliedFilter("all");
-    setExpandedJobIds(new Set()); // Clear expanded descriptions
+
     handleCloseJobDetailsModal();
   }
 
   const handleFilterChange = (filterSetter: (value: any) => void, value: string) => {
     filterSetter(value)
     setCurrentPage(1)
-    setExpandedJobIds(new Set()); // Clear expanded descriptions on filter change
     handleCloseJobDetailsModal();
   }
 
@@ -743,7 +729,7 @@ export default function BrowseJobsPage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Refine Your Job Search</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
             <div className="flex flex-col">
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Search Jobs
               </label>
               <input
@@ -969,13 +955,7 @@ export default function BrowseJobsPage() {
                   )}
                 </div>
 
-                {/* Job Description (expandable) - separate block */}
-                {isMobile && expandedJobIds.has(job.job_id) && ( // Show only on mobile and if expanded
-                  <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg mt-4 text-sm leading-relaxed">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Full Job Description</h4>
-                    <p dangerouslySetInnerHTML={{ __html: job.job_description.replace(/\n/g, '<br />') }} />
-                  </div>
-                )}
+
 
                 {/* Action Buttons - aligned to bottom, full width container */}
                 <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3 items-center justify-center sm:justify-start">
@@ -983,7 +963,7 @@ export default function BrowseJobsPage() {
                     onClick={() => handleJobDescriptionClick(job)}
                     className="px-5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-200 transition-all duration-200 active:scale-98 shadow-sm"
                   >
-                    {isMobile && expandedJobIds.has(job.job_id) ? 'Hide Description' : 'View Description'}
+                    View Description
                   </button>
 
                   <button
@@ -1122,8 +1102,8 @@ export default function BrowseJobsPage() {
       {/* Add breathing space before footer */}
       <div className="pb-16"></div>
 
-      {/* The JobDetailsModal is only rendered for desktop view */}
-      {!isMobile && showJobDetailsModal && (
+      {/* The JobDetailsModal is rendered for both mobile and desktop */}
+      {showJobDetailsModal && (
         <JobDetailsModal
           job={selectedJobForModal}
           onClose={handleCloseJobDetailsModal}
