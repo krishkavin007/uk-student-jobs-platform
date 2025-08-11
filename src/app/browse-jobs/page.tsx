@@ -12,6 +12,25 @@
   import { useAuth } from "@/app/context/AuthContext"
   import ApplicationMessageModal from '@/app/application-message/application-message';
 
+  interface User {
+    user_id: number;
+    user_username?: string;
+    user_email: string;
+    user_type: "student" | "employer";
+    user_first_name?: string;
+    user_last_name?: string;
+    user_image?: string;
+    user_city?: string;
+    contact_phone_number?: string;
+    university_college?: string;
+    organisation_name?: string;
+    google_id?: string;
+    google_oauth_completed?: boolean;
+    profile_completion_status?: 'pending' | 'completed';
+    terms_accepted_at?: string;
+    privacy_accepted_at?: string;
+  }
+
   interface Job {
     job_id: number;
     job_title: string;
@@ -293,9 +312,35 @@
 
   // --- Main BrowseJobsPage Component ---
   export default function BrowseJobsPage() {
-    const router = useRouter()
     const { user, isLoading: isAuthLoading, logout } = useAuth();
+    const router = useRouter()
     
+    // Check if user needs to complete profile (for Google OAuth users)
+    useEffect(() => {
+      if (!isAuthLoading && user) {
+        // Check if user is a Google OAuth user with incomplete profile
+        if (user.google_oauth_completed && user.profile_completion_status !== 'completed') {
+          // Use startTransition to avoid router update during render
+          const redirectUser = () => {
+            if (!user.terms_accepted_at || !user.privacy_accepted_at) {
+              router.push('/terms-agreement');
+            } else if (!user.user_type) {
+              router.push('/user-type-selection');
+            } else {
+              router.push('/profile-completion');
+            }
+          };
+          
+          // Wrap in startTransition to avoid React warnings
+          if (typeof window !== 'undefined') {
+            import('react').then(({ startTransition }) => {
+              startTransition(redirectUser);
+            });
+          }
+        }
+      }
+    }, [user, isAuthLoading, router]);
+
     // No longer forcing dark mode - let theme toggle handle it
 
     const [jobs, setJobs] = useState<Job[]>([]);

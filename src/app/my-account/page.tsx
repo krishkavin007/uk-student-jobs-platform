@@ -23,12 +23,37 @@ import { useAuth } from "@/app/context/AuthContext";
 // Helper functions for display-side capitalization
 const formatTitleCase = (text: string | undefined | null): string => {
   if (!text) return '';
-  return text.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+  return text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
 };
 
 const formatSentenceCase = (text: string | undefined | null): string => {
   if (!text) return '';
   return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+};
+
+// Utility function to handle profile image URLs
+const getProfileImageUrl = (imagePath: string | null | undefined): string | null => {
+  if (!imagePath) return null;
+  
+  console.log(`--- DEBUG: getProfileImageUrl input: "${imagePath}"`);
+  console.log(`--- DEBUG: input type: ${typeof imagePath}`);
+  console.log(`--- DEBUG: input length: ${imagePath.length}`);
+  
+  // Clean the URL - remove any quotes or extra whitespace
+  const cleanPath = imagePath.trim().replace(/^["']|["']$/g, '');
+  
+  console.log(`--- DEBUG: after cleaning: "${cleanPath}"`);
+  
+  // If it's already a full URL (Google OAuth), use as-is
+  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+    console.log(`--- DEBUG: Using Google OAuth image URL: ${cleanPath}`);
+    return cleanPath;
+  }
+  
+  // If it's a local path, prepend the base URL
+  const localPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  console.log(`--- DEBUG: Using local image path: ${localPath}`);
+  return localPath;
 };
 
 // User, Transaction, AppliedJob, Applicant, PostedJob interfaces remain the same.
@@ -1633,15 +1658,27 @@ Thank you for using StudentJobs UK!
                       <div className="relative w-36 h-36 rounded-2xl overflow-hidden border-2 border-zinc-300 dark:border-gray-700 bg-zinc-100 dark:bg-gray-800 flex items-center justify-center shadow-lg">
                     {(user.user_image) ? (
                       <img
-                        src={user.user_image}
+                        src={getProfileImageUrl(user.user_image) || ''}
                         alt="Profile Image"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('--- DEBUG: Profile image failed to load:', user.user_image);
+                          console.error('--- DEBUG: Raw user_image from database:', JSON.stringify(user.user_image));
+                          // Fallback to initials if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const fallback = parent.querySelector('.profile-fallback') as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }
+                        }}
                       />
-                    ) : (
-                          <div className="text-gray-600 dark:text-gray-400 text-4xl font-bold uppercase">
+                    ) : null}
+                    {/* Fallback initials - always present but hidden when image exists */}
+                    <div className={`profile-fallback text-gray-600 dark:text-gray-400 text-4xl font-bold uppercase ${user.user_image ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
                         {user.user_first_name?.[0]}{user.user_last_name?.[0]}
-                      </div>
-                    )}
+                    </div>
                   </div>
                   {isEditingProfile && (
                         <div className="space-y-2 w-full">
@@ -3687,17 +3724,69 @@ Thank you for using StudentJobs UK!
 
 // Export a default function that wraps MyAccountContent in a Suspense boundary
 export default function MyAccountPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-zinc-50 text-gray-900 dark:bg-gray-950 dark:text-gray-300">
-        <svg className="animate-spin h-8 w-8 text-blue-500 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <p className="text-lg">Loading account details...</p>
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  // Check if user needs to complete profile (for Google OAuth users)
+  useEffect(() => {
+    if (!isLoading && user) {
+      console.log('--- DEBUG: Profile completion check ---');
+      console.log('User data:', user);
+      console.log('google_oauth_completed:', user.google_oauth_completed);
+      console.log('profile_completion_status:', user.profile_completion_status);
+      console.log('terms_accepted_at:', user.terms_accepted_at);
+      console.log('privacy_accepted_at:', user.privacy_accepted_at);
+      console.log('user_type:', user.user_type);
+      
+      // Check if user is a Google OAuth user with incomplete profile
+      if (user.google_oauth_completed && user.profile_completion_status !== 'completed') {
+        console.log('--- DEBUG: Redirecting Google user to profile completion ---');
+        // Use startTransition to avoid router update during render
+        const redirectUser = () => {
+          if (!user.terms_accepted_at || !user.privacy_accepted_at) {
+            console.log('--- DEBUG: Redirecting to terms agreement ---');
+            router.push('/terms-agreement');
+          } else if (!user.user_type) {
+            console.log('--- DEBUG: Redirecting to user type selection ---');
+            router.push('/user-type-selection');
+          } else {
+            console.log('--- DEBUG: Redirecting to profile completion ---');
+            router.push('/profile-completion');
+          }
+        };
+        
+        // Wrap in startTransition to avoid React warnings
+        if (typeof window !== 'undefined') {
+          import('react').then(({ startTransition }) => {
+            startTransition(redirectUser);
+          });
+        }
+      } else {
+        console.log('--- DEBUG: User profile is complete or not a Google OAuth user ---');
+      }
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-foreground">Loading...</p>
+        </div>
       </div>
-    }>
-      <MyAccountContent />
-    </Suspense>
-  );
+    );
+  }
+
+  if (!user) {
+    // Use startTransition for this redirect too
+    if (typeof window !== 'undefined') {
+      import('react').then(({ startTransition }) => {
+        startTransition(() => router.push('/login'));
+      });
+    }
+    return null;
+  }
+
+  return <MyAccountContent />;
 }

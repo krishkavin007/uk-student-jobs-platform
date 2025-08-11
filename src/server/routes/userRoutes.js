@@ -161,9 +161,22 @@ if (cleanedPhoneNumber && !UK_PHONE_REGEX.test(contact_phone_number)) {
     // --- Backend Validation Ends Here ---
 
     try {
-        // Check if email already exists
-        const checkEmail = await pool.query('SELECT user_id FROM users WHERE user_email = $1', [user_email]);
+        // Check if email already exists and if it's linked to Google OAuth
+        const checkEmail = await pool.query(
+            'SELECT user_id, google_id FROM users WHERE user_email = $1', 
+            [user_email]
+        );
+        
         if (checkEmail.rows.length > 0) {
+            const existingUser = checkEmail.rows[0];
+            
+            // Check if this email is linked to Google OAuth
+            if (existingUser.google_id) {
+                return res.status(409).json({ 
+                    error: { message: 'This email is already linked to a Google account. Please sign in with Google instead.' }
+                });
+            }
+            
             return res.status(409).json({ error: { message: 'Email already registered.' } });
         }
 

@@ -16,24 +16,39 @@ export default function ForgotPasswordPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   // Honeypot field - should remain empty
   const [website, setWebsite] = useState("")
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
     // Honeypot check - if website field is filled, it's likely a bot
     if (website) {
-      console.log('Bot detected via honeypot field on forgot password');
-      setIsLoading(false);
-      return; // Silently reject without showing error
+      console.log("Bot detected via honeypot field")
+      setIsLoading(false)
+      return
     }
 
-    // Simulate password reset process
-    setTimeout(() => {
-      setIsLoading(false)
-      setIsSubmitted(true)
-      console.log("Password reset request:", { email })
-    }, 1000)
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsSubmitted(true);
+      } else {
+        setError(data.error || 'Failed to process request');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -140,6 +155,12 @@ export default function ForgotPasswordPage() {
                       tabIndex={-1}
                     />
                   </div>
+
+                  {error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
 
                   <Button
                     type="submit"

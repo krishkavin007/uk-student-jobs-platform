@@ -18,6 +18,10 @@ interface User {
     created_at: string;
     user_image?: string;
     user_city?: string;
+    google_oauth_completed?: boolean;
+    profile_completion_status?: 'pending' | 'completed';
+    terms_accepted_at?: string;
+    privacy_accepted_at?: string;
 }
 
 // LoginData type handles cases where the login response might directly be User

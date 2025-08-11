@@ -673,14 +673,50 @@ function PostJobContent() {
 }
 
 export default function PostJobPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto"></div>
-        <p className="mt-2 text-gray-300">Loading...</p>
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  // Check if user needs to complete profile (for Google OAuth users)
+  useEffect(() => {
+    if (!isLoading && user) {
+      // Check if user is a Google OAuth user with incomplete profile
+      if (user.google_oauth_completed && user.profile_completion_status !== 'completed') {
+        // Use startTransition to avoid router update during render
+        const redirectUser = () => {
+          if (!user.terms_accepted_at || !user.privacy_accepted_at) {
+            router.push('/terms-agreement');
+          } else if (!user.user_type) {
+            router.push('/user-type-selection');
+          } else {
+            router.push('/profile-completion');
+          }
+        };
+        
+        // Wrap in startTransition to avoid React warnings
+        if (typeof window !== 'undefined') {
+          import('react').then(({ startTransition }) => {
+            startTransition(redirectUser);
+          });
+        }
+      }
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-foreground">Loading...</p>
+        </div>
       </div>
-    </div>}>
-      <PostJobContent />
-    </Suspense>
-  )
+    );
+  }
+
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
+
+  return <PostJobContent />;
 }
