@@ -25,6 +25,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "StudentJobs UK - Connect Students with Part-Time Jobs",
   description: "The UK's premier platform connecting local businesses with talented students seeking flexible part-time work. Start at just £1 per job post.",
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' }
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({

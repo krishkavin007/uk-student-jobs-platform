@@ -70,9 +70,10 @@ export function DeleteAdminUserConfirmation({ userId, isOpen, onClose, onConfirm
             Cancel
           </Button>
           <Button
-            variant="destructive"
+            variant="outline"
             onClick={handleDelete}
             disabled={loading}
+            className="bg-red-700 hover:bg-red-800 text-white border-red-600 hover:border-red-700"
           >
             {loading ? 'Deleting...' : 'Delete'}
           </Button>

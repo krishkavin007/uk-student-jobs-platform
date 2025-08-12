@@ -59,6 +59,34 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
+  // Prevent page scroll when scrolling within the table
+  React.useEffect(() => {
+    const handleTableScroll = (e: WheelEvent | TouchEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      if (e instanceof WheelEvent) {
+        const container = scrollContainerRef.current
+        if (container) {
+          container.scrollTop += e.deltaY
+        }
+      }
+    }
+
+    const currentRef = scrollContainerRef.current
+    if (currentRef) {
+      currentRef.addEventListener('wheel', handleTableScroll, { passive: false })
+      currentRef.addEventListener('touchmove', handleTableScroll, { passive: false })
+    }
+
+    return () => {
+      if (currentRef) {
+        currentRef.removeEventListener('wheel', handleTableScroll)
+        currentRef.removeEventListener('touchmove', handleTableScroll)
+      }
+    }
+  }, [])
+
   const fetchUsers = async (page: number) => {
     setIsLoadingMore(true);
     setError(null);
@@ -360,7 +388,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
       ) : error ? (
         <p className="text-red-400 text-center py-8">Error: {error}</p>
       ) : (
-        <div ref={scrollContainerRef} className="overflow-auto max-h-[600px] rounded-md border border-gray-700">
+        <div ref={scrollContainerRef} className="overflow-auto max-h-[500px] rounded-md overscroll-none border border-gray-700">
           <table className="min-w-full divide-y divide-gray-700">
             <thead className="bg-gray-700 sticky top-0 z-10"><tr>
               {/* USER ID COLUMN HEADER WITH SORT ICON */}
@@ -567,8 +595,9 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({ onUser
                       </Button>
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="outline"
                         onClick={() => handleDelete(user)}
+                        className="bg-red-700 hover:bg-red-800 text-white border-red-600 hover:border-red-700"
                       >
                         Delete
                       </Button>

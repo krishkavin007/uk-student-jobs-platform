@@ -200,8 +200,9 @@ export function JobDetailsModal({ jobId, isOpen, onClose, onJobUpdated }: JobDet
               </DropdownMenuContent>
             </DropdownMenu>
             <Button
-              variant="destructive"
+              variant="outline"
               onClick={handleDeleteJob}
+              className="bg-red-700 hover:bg-red-800 text-white border-red-600 hover:border-red-700"
             >
               Delete Job
             </Button>

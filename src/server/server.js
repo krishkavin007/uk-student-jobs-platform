@@ -26,6 +26,7 @@ const adminAuthRoutes = require('./routes/adminAuthRoutes');
 const userRoutes = require('./routes/userRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const adminJobRoutes = require('./routes/adminJobRoutes');
+const supportRoutes = require('./routes/supportRoutes');
 
 // --- NEW IMPORTS: Authentication and Authorization Middleware for Admin Endpoints ---
 const authenticateAdminJWT = require('./middleware/authenticateAdminJWT');
@@ -78,6 +79,7 @@ app.prepare().then(async () => {
     server.use('/api/job', express.json(), jobRoutes);
     server.use('/api/admin/dashboard', express.json(), require('./routes/adminDashboardRoutes'));
     server.use('/api/admin/jobs', express.json(), adminJobRoutes);
+    server.use('/api/support', express.json(), supportRoutes);
 
 
 

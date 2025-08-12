@@ -1,7 +1,7 @@
 // components/admin/JobManagementTable.tsx
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,36 @@ export function JobManagementTable({
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  
+  // Prevent page scroll when scrolling within the table
+  useEffect(() => {
+    const handleTableScroll = (e: WheelEvent | TouchEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      if (e instanceof WheelEvent) {
+        const container = scrollContainerRef.current
+        if (container) {
+          container.scrollTop += e.deltaY
+        }
+      }
+    }
+
+    const currentRef = scrollContainerRef.current
+    if (currentRef) {
+      currentRef.addEventListener('wheel', handleTableScroll, { passive: false })
+      currentRef.addEventListener('touchmove', handleTableScroll, { passive: false })
+    }
+
+    return () => {
+      if (currentRef) {
+        currentRef.removeEventListener('wheel', handleTableScroll)
+        currentRef.removeEventListener('touchmove', handleTableScroll)
+      }
+    }
+  }, [])
 
   // Categories from browse-jobs page
   const categories = [
@@ -124,207 +154,208 @@ export function JobManagementTable({
   };
 
   return (
-    <Card className="bg-gray-800 border-gray-700">
-      <CardHeader>
-        <div className="flex flex-col md:flex-row gap-4 mt-4">
+    <div className="space-y-6">
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="relative flex-1">
           <Input
             placeholder="Search by title, company, location, or category..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow bg-gray-900 border-gray-700 text-gray-200 placeholder-gray-500 focus:border-blue-500"
+            className="bg-gray-900 border-gray-700 text-gray-200 placeholder-gray-500 focus:border-blue-500"
           />
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-[180px] bg-gray-900 border-gray-700 text-gray-200 focus:ring-blue-500">
-              <SelectValue placeholder="Filter by Category" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[180px] bg-gray-900 border-gray-700 text-gray-200 focus:ring-blue-500">
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
-              <SelectItem value="all">All Statuses</SelectItem>
-              {statuses.map(status => (
-                <SelectItem key={status} value={status}>
-                  {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={onJobUpdated} className="bg-gray-700 hover:bg-gray-600 text-white">Refresh Data</Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {loading && <div className="text-center py-4 text-gray-400">Loading jobs...</div>}
-        {error && <div className="text-red-500 text-center py-4">{error}</div>}
-        {!loading && !error && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-gray-300">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="px-4 py-2">Job Title</th>
-                  <th className="px-4 py-2">Company</th>
-                  <th className="px-4 py-2">Location</th>
-                  <th className="px-4 py-2">Category</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Applicants</th>
-                  <th className="px-4 py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredJobs.length > 0 ? (
-                  filteredJobs.map((job) => (
-                    <tr key={job.id} className="border-b border-gray-700 last:border-b-0 hover:bg-gray-700">
-                      <td className="px-4 py-3">{job.title}</td>
-                      <td className="px-4 py-3">{job.companyName}</td>
-                      <td className="px-4 py-3">{job.location}</td>
-                      <td className="px-4 py-3">{job.type}</td>
-                      <td className="px-4 py-3">
-                        <Badge className={`transition-colors duration-200 ${getStatusBadgeColor(job.status)}`}>
-                          {job.status === 'active' ? 'Active' :
-                           job.status === 'filled' ? 'Filled' :
-                           job.status === 'removed' ? 'Removed' :
-                           job.status === 'expired' ? 'Expired' :
-                           job.status === 'archived' ? 'Archived' :
-                           job.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200">
-                          {job.applicantsCount}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => onViewDetails(job.id)}
-                          className="ml-2 bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          View Details
-                        </Button>
-                        {job.status === 'active' && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleJobStatusUpdate(job.id, 'archived')}
-                            disabled={isUpdatingStatus}
-                            className="ml-2 bg-purple-600 hover:bg-purple-700 text-white"
-                          >
-                            {isUpdatingStatus ? 'Archiving...' : 'Archive'}
-                          </Button>
-                        )}
-                        {job.status === 'filled' && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleJobStatusUpdate(job.id, 'archived')}
-                            disabled={isUpdatingStatus}
-                            className="ml-2 bg-purple-600 hover:bg-purple-700 text-white"
-                          >
-                            {isUpdatingStatus ? 'Archiving...' : 'Archive'}
-                          </Button>
-                        )}
-                        {job.status === 'archived' && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleJobStatusUpdate(job.id, 'active')}
-                            disabled={isUpdatingStatus}
-                            className="ml-2 bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            {isUpdatingStatus ? 'Unarchiving...' : 'Unarchive'}
-                          </Button>
-                        )}
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <SelectTrigger className="w-[180px] bg-gray-900 border-gray-700 text-gray-200 focus:ring-blue-500">
+            <SelectValue placeholder="Filter by Category" />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map(category => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[180px] bg-gray-900 border-gray-700 text-gray-200 focus:ring-blue-500">
+            <SelectValue placeholder="Filter by Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statuses.map(status => (
+              <SelectItem key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button onClick={onJobUpdated} className="bg-gray-700 hover:bg-gray-600 text-white">Refresh Data</Button>
+      </div>
+
+      {/* Jobs Table */}
+      {loading && <div className="text-center py-4 text-gray-400">Loading jobs...</div>}
+      {error && <div className="text-red-500 text-center py-4">{error}</div>}
+      {!loading && !error && (
+        <div ref={scrollContainerRef} className="overflow-auto max-h-[500px] rounded-md overscroll-none border border-gray-700">
+          <table className="min-w-full text-left text-gray-300 border-collapse">
+            <thead className="bg-gray-700 sticky top-0 z-10">
+              <tr>
+                <th className="w-48 px-4 py-2 text-xs font-medium text-gray-300 uppercase tracking-wider">Job Title</th>
+                <th className="w-40 px-4 py-2 text-xs font-medium text-gray-300 uppercase tracking-wider">Company</th>
+                <th className="w-32 px-4 py-2 text-xs font-medium text-gray-300 uppercase tracking-wider">Location</th>
+                <th className="w-28 px-4 py-2 text-xs font-medium text-gray-300 uppercase tracking-wider">Category</th>
+                <th className="w-24 px-4 py-2 text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                <th className="w-20 px-4 py-2 text-xs font-medium text-gray-300 uppercase tracking-wider">Applicants</th>
+                <th className="w-32 px-4 py-2 text-xs font-medium text-gray-300 uppercase tracking-wider text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-gray-900 divide-y divide-gray-800">
+              {filteredJobs.length > 0 ? (
+                filteredJobs.map((job) => (
+                  <tr key={job.id} className="border-b border-gray-700 last:border-b-0 hover:bg-gray-800">
+                    <td className="px-4 py-3 text-sm text-gray-300">{job.title}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300">{job.companyName}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300">{job.location}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300">{job.type}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300">
+                      <Badge className={`transition-colors duration-200 ${getStatusBadgeColor(job.status)}`}>
+                        {job.status === 'active' ? 'Active' :
+                         job.status === 'filled' ? 'Filled' :
+                         job.status === 'removed' ? 'Removed' :
+                         job.status === 'expired' ? 'Expired' :
+                         job.status === 'archived' ? 'Archived' :
+                         job.status}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm text-gray-300">
+                      <Badge className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200">
+                        {job.applicantsCount}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap text-sm text-gray-300">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => onViewDetails(job.id)}
+                        className="ml-2 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        View Details
+                      </Button>
+                      {job.status === 'active' && (
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleJobAction(job.id, 'Delete')}
-                          className="ml-2"
+                          onClick={() => handleJobStatusUpdate(job.id, 'archived')}
+                          disabled={isUpdatingStatus}
+                          className="ml-2 bg-purple-600 hover:bg-purple-700 text-white"
                         >
-                          Delete
+                          {isUpdatingStatus ? 'Archiving...' : 'Archive'}
                         </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-4 text-center text-gray-400">No jobs found matching your criteria.</td>
+                      )}
+                      {job.status === 'filled' && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleJobStatusUpdate(job.id, 'archived')}
+                          disabled={isUpdatingStatus}
+                          className="ml-2 bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                          {isUpdatingStatus ? 'Archiving...' : 'Archive'}
+                        </Button>
+                      )}
+                      {job.status === 'archived' && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleJobStatusUpdate(job.id, 'active')}
+                          disabled={isUpdatingStatus}
+                          className="ml-2 bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {isUpdatingStatus ? 'Unarchiving...' : 'Unarchive'}
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleJobAction(job.id, 'Delete')}
+                        className="ml-2 bg-red-700 hover:bg-red-800 text-white border-red-600 hover:border-red-700"
+                      >
+                        Delete
+                      </Button>
+                    </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-4 py-4 text-center text-gray-400">No jobs found matching your criteria.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
+      {/* Pagination Controls */}
+      {!loading && !error && totalPages > 1 && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
+          <div className="text-sm text-gray-400">
+            Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, totalCount)} of {totalCount} jobs
           </div>
-        )}
-        
-        {/* Pagination Controls */}
-        {!loading && !error && totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
-            <div className="text-sm text-gray-400">
-              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, totalCount)} of {totalCount} jobs
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+            >
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => onPageChange?.(pageNum)}
+                    className={
+                      currentPage === pageNum 
+                        ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                        : "bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                    }
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
             </div>
             
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange?.(currentPage - 1)}
-                disabled={currentPage <= 1}
-                className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
-              >
-                Previous
-              </Button>
-              
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => onPageChange?.(pageNum)}
-                      className={
-                        currentPage === pageNum 
-                          ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                          : "bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
-                      }
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange?.(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-                className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
-              >
-                Next
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className="bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+            >
+              Next
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }

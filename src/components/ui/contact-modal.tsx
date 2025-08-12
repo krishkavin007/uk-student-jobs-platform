@@ -9,10 +9,11 @@ import { Textarea } from './textarea'
 
 interface ContactModalProps {
   isLoggedIn?: boolean
+  userId?: string
   children: React.ReactNode
 }
 
-export function ContactModal({ isLoggedIn = false, children }: ContactModalProps) {
+export function ContactModal({ isLoggedIn = false, userId, children }: ContactModalProps) {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -35,7 +36,7 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Honeypot check - if website field is filled, it's likely a bot
@@ -45,10 +46,35 @@ export function ContactModal({ isLoggedIn = false, children }: ContactModalProps
       return; // Silently reject without showing error
     }
 
-    // Handle form submission
-    alert('Thank you for your message! We\'ll get back to you within 24 hours.')
-    setOpen(false)
-    setFormData({ name: '', email: '', subject: '', message: '', website: '' })
+    try {
+      // Send to backend API
+      const response = await fetch('/api/support/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject: formData.subject,
+          message: formData.message,
+          guestName: isLoggedIn ? undefined : formData.name, // Only send for guests
+          guestEmail: isLoggedIn ? undefined : formData.email, // Only send for guests
+          guestType: !isLoggedIn ? 'guest' : undefined,
+          // For logged in users, pass the userId
+          userId: isLoggedIn ? userId : undefined,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Thank you for your message! We\'ll get back to you within 24 hours.')
+        setOpen(false)
+        setFormData({ name: '', email: '', subject: '', message: '', website: '' })
+      } else {
+        throw new Error('Failed to send message')
+      }
+    } catch (error) {
+      console.error('Error sending support message:', error)
+      alert('Sorry, there was an error sending your message. Please try again.')
+    }
   }
 
   return (

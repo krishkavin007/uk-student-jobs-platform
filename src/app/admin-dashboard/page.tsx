@@ -41,6 +41,7 @@ import { ViewAdminUserModal } from '@/components/admin/ViewAdminUserModal';
 import { ViewUserModal } from '@/components/admin/ViewUserModal';
 // Import the new AddUserModal
 import { AddUserModal } from "@/components/admin/AddUserModal"; // Import AddUserModal
+import { SupportMessagesTable } from "@/components/admin/SupportMessagesTable"; // Import SupportMessagesTable
 import { AdminAccountSettingsModal } from "@/components/ui/admin-account-settings";
 
 // --- UPDATED IMPORTS FOR AUTHENTICATION ---
@@ -64,6 +65,26 @@ export default function Home() {
     }
   }, []);
 
+  // Check URL hash on component mount to restore tab state
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && hash !== 'overview') {
+        setActiveTab(hash);
+      }
+    }
+  }, []);
+
+  // Update URL hash when activeTab changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const newHash = activeTab === 'overview' ? '' : `#${activeTab}`;
+      if (window.location.hash !== newHash) {
+        window.location.hash = newHash;
+      }
+    }
+  }, [activeTab]);
+
   // Inside src/app/admin-dashboard/page.tsx, within the Home component:
   const [isAddAdminUserModalOpen, setIsAddAdminUserModalOpen] = useState(false);
   const [isEditAdminUserModalOpen, setIsEditAdminUserModalOpen] = useState(false);
@@ -76,6 +97,8 @@ export default function Home() {
   
   // State for Admin Account Settings Modal
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  
+
 
   // State for Overview tab data
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -634,47 +657,50 @@ const getAdminUsers = useCallback(async () => {
       {/* Main content area - added pt-16 to push content below the fixed header */}
       <div className="flex flex-1 pt-16">
         <aside className="w-64 border-r border-gray-800 bg-gray-900 p-4">
-          <nav className="space-y-2">
+          <nav className="space-y-2 mt-4">
             {/* Sidebar Links - These now exclusively control the active tab */}
-            <Link href="#" onClick={() => setActiveTab("overview")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "overview" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#overview" onClick={() => setActiveTab("overview")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "overview" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <span className="text-lg">📊</span> Overview
             </Link>
-            <Link href="#" onClick={() => setActiveTab("users")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "users" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#users" onClick={() => setActiveTab("users")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "users" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <span className="text-lg">👥</span> Users
             </Link>
             {/* NEW ADMIN USERS TAB */}
-            <Link href="#" onClick={() => setActiveTab("admin-users")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "admin-users" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#admin-users" onClick={() => setActiveTab("admin-users")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "admin-users" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <UserCog className="h-5 w-5" /> Admin Users
             </Link>
-            <Link href="#" onClick={() => setActiveTab("jobs")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "jobs" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#jobs" onClick={() => setActiveTab("jobs")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "jobs" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <span className="text-lg">💼</span> Jobs
             </Link>
-            <Link href="#" onClick={() => setActiveTab("payments")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "payments" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#payments" onClick={() => setActiveTab("payments")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "payments" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <span className="text-lg">💰</span> Payments
             </Link>
-            <Link href="#" onClick={() => setActiveTab("refunds")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "refunds" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#support-messages" onClick={() => setActiveTab("support-messages")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "support-messages" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+              <span className="text-lg">💬</span> Support Messages
+            </Link>
+            <Link href="#refunds" onClick={() => setActiveTab("refunds")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "refunds" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <span className="text-lg">↩️</span> Refunds
             </Link>
-            <Link href="#" onClick={() => setActiveTab("reports")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "reports" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#reports" onClick={() => setActiveTab("reports")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "reports" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <span className="text-lg">🛡️</span> Moderation
             </Link>
-            <Link href="#" onClick={() => setActiveTab("analytics")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "analytics" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#analytics" onClick={() => setActiveTab("analytics")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "analytics" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <span className="text-lg">📈</span> Analytics & Insights
             </Link>
-            <Link href="#" onClick={() => setActiveTab("promotions")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "promotions" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
+            <Link href="#promotions" onClick={() => setActiveTab("promotions")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "promotions" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"}`}>
               <span className="text-lg">🎁</span> Promotions
             </Link>
             {/* NEW ADVANCED SIDEBAR LINKS - Renamed to email-templates */}
-            <Link href="#" onClick={() => setActiveTab("email-templates")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "email-templates" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}>
+            <Link href="#email-templates" onClick={() => setActiveTab("email-templates")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "email-templates" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}>
               <span className="text-lg">📧</span> Email Templates
             </Link>
-            <Link href="#" onClick={() => setActiveTab("audit-consent")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "audit-consent" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}>
+            <Link href="#audit-consent" onClick={() => setActiveTab("audit-consent")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "audit-consent" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}>
               <span className="text-lg">📝</span> Consent
             </Link>
-            <Link href="#" onClick={() => setActiveTab("content-moderation")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "content-moderation" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}>
+            <Link href="#content-moderation" onClick={() => setActiveTab("content-moderation")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "content-moderation" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}>
               <span className="text-lg">🚫</span> Content Moderation
             </Link>
-            <Link href="#" onClick={() => setActiveTab("security")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "security" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}>
+            <Link href="#security" onClick={() => setActiveTab("security")} className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "security" ? "bg-gray-800 text-white" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}>
               <span className="text-lg">🔒</span> Security Settings
             </Link>
           </nav>
@@ -689,6 +715,7 @@ const getAdminUsers = useCallback(async () => {
               <TabsTrigger value="admin-users">Admin User Management</TabsTrigger>
               <TabsTrigger value="jobs">Job Management</TabsTrigger>
               <TabsTrigger value="payments">Payment Management</TabsTrigger>
+              <TabsTrigger value="support-messages">Support Messages</TabsTrigger>
               <TabsTrigger value="refunds">Refund Management</TabsTrigger>
               <TabsTrigger value="reports">Report Management</TabsTrigger>
               <TabsTrigger value="analytics">Analytics & Insights</TabsTrigger>
@@ -714,55 +741,35 @@ const getAdminUsers = useCallback(async () => {
 
             {/* NEW TAB CONTENT: Admin User Management */}
             <TabsContent value="admin-users">
-              <Card className="bg-gray-800 text-gray-100 border-gray-700">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-white">Admin User Accounts</CardTitle>
-                  <Button
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={handleAddAdminUser}
-                  >
-                    Add New Admin
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                   <AdminUserManagementTable
-                    adminUsers={adminUsers}
-                    loading={adminUsersLoading}
-                    error={adminUsersError}
-                    onEditAdminUser={handleEditAdminUser}
-                    onDeleteAdminUser={(userId) => {
-                      setSelectedAdminUserId(userId);
-                      setIsDeleteAdminUserConfirmationOpen(true);
-                    }}
-                    onViewAdminUser={handleViewAdminUser}
-                    onToggleAdminUserStatus={handleToggleAdminUserStatus}
-                    onRefreshData={getAdminUsers}
-                  />
-                </CardContent>
-              </Card>
+              <AdminUserManagementTable
+                adminUsers={adminUsers}
+                loading={adminUsersLoading}
+                error={adminUsersError}
+                onEditAdminUser={handleEditAdminUser}
+                onDeleteAdminUser={(userId) => {
+                  setSelectedAdminUserId(userId);
+                  setIsDeleteAdminUserConfirmationOpen(true);
+                }}
+                onViewAdminUser={handleViewAdminUser}
+                onToggleAdminUserStatus={handleToggleAdminUserStatus}
+                onRefreshData={getAdminUsers}
+                onAddAdminUser={handleAddAdminUser}
+              />
             </TabsContent>
 
 
             <TabsContent value="jobs">
-              <Card className="bg-gray-800 text-gray-100 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white">Job Management</CardTitle>
-                  <CardDescription className="text-gray-400">Approve, reject, or edit job listings.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <JobManagementTable
-                    jobs={jobs}
-                    loading={jobsLoading}
-                    error={jobsError}
-                    onViewDetails={handleViewJobDetails}
-                    onJobUpdated={handleRefreshJobs} // Pass the refresh function
-                    onPageChange={handlePageChange}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalCount={totalCount}
-                  />
-                </CardContent>
-              </Card>
+              <JobManagementTable
+                jobs={jobs}
+                loading={jobsLoading}
+                error={jobsError}
+                onViewDetails={handleViewJobDetails}
+                onJobUpdated={handleRefreshJobs} // Pass the refresh function
+                onPageChange={handlePageChange}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+              />
             </TabsContent>
 
             <TabsContent value="payments">
@@ -780,6 +787,11 @@ const getAdminUsers = useCallback(async () => {
                   />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* NEW TAB CONTENT: Support Messages */}
+            <TabsContent value="support-messages">
+              <SupportMessagesTable />
             </TabsContent>
 
             {/* NEW TAB CONTENT: Refund Management */}
@@ -1273,6 +1285,8 @@ const getAdminUsers = useCallback(async () => {
         onClose={() => setIsAccountSettingsOpen(false)}
         adminUser={adminUser}
       />
+
+
     </div>
   );
 }

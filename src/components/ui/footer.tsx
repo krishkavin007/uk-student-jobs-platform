@@ -81,7 +81,7 @@ export function Footer() {
                   <li><Link href="/terms" className="text-slate-600 dark:text-gray-400 hover:text-purple-700 dark:hover:text-purple-200 transition-colors duration-200" aria-label="Terms and conditions">Terms & Conditions</Link></li>
                   <li><Link href="/refund-policy" className="text-slate-600 dark:text-gray-400 hover:text-purple-700 dark:hover:text-purple-200 transition-colors duration-200" aria-label="Refund policy">Refund Policy</Link></li>
                   <li>
-                    <ContactModal isLoggedIn={!!user}>
+                    <ContactModal isLoggedIn={!!user} userId={user?.user_id}>
                       <button className="text-slate-600 dark:text-gray-400 hover:text-purple-700 dark:hover:text-purple-200 transition-colors duration-200 text-left text-base" aria-label="Contact us">Contact Us</button>
                     </ContactModal>
                   </li>
@@ -121,7 +121,7 @@ export function Footer() {
                 <li><Link href="/terms" className="text-slate-600 dark:text-gray-400 hover:text-purple-700 dark:hover:text-purple-200 transition-colors duration-200" aria-label="Terms and conditions">Terms & Conditions</Link></li>
                 <li><Link href="/refund-policy" className="text-slate-600 dark:text-gray-400 hover:text-purple-700 dark:hover:text-purple-200 transition-colors duration-200" aria-label="Refund policy">Refund Policy</Link></li>
                 <li>
-                  <ContactModal isLoggedIn={!!user}>
+                  <ContactModal isLoggedIn={!!user} userId={user?.user_id}>
                     <button className="text-slate-600 dark:text-gray-400 hover:text-purple-700 dark:hover:text-purple-200 transition-colors duration-200 text-left text-sm" aria-label="Contact us">Contact Us</button>
                   </ContactModal>
                 </li>
