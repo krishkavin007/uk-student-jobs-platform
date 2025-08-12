@@ -278,9 +278,9 @@ router.put('/:id/applicant-status', authenticateAdminJWT, async (req, res) => {
 
     try {
         // Validate status - these are the frontend display values
-        const validStatuses = ['applied', 'hired', 'rejected', 'cancelled'];
+        const validStatuses = ['applied', 'hired', 'rejected', 'cancelled', 'pending_hire_offer'];
         if (!validStatuses.includes(status)) {
-            return res.status(400).json({ error: 'Invalid status. Must be one of: applied, hired, rejected, cancelled' });
+            return res.status(400).json({ error: 'Invalid status. Must be one of: applied, hired, rejected, cancelled, pending_hire_offer' });
         }
 
         console.log('--- DEBUG: Updating applicant status to:', status);
@@ -299,6 +299,9 @@ router.put('/:id/applicant-status', authenticateAdminJWT, async (req, res) => {
                 break;
             case 'cancelled':
                 studentOutcome = 'cancelled';
+                break;
+            case 'pending_hire_offer':
+                studentOutcome = 'pending_hire_offer';
                 break;
             default:
                 studentOutcome = 'applied';
